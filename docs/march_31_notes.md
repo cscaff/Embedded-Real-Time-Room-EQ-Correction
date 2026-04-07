@@ -60,3 +60,13 @@ I assume then that we want to take the frequency samples and pass them through t
 ### Useful Example: Karoke Machine
 
 [See section 5.3](http://www.ee.ic.ac.uk/pcheung/teaching/ee2_digital/DE1-SoC_User_manual.pdf). Illustrates example of a karaoke machine that takes line and mic in and outputs line out.
+
+# April 7th Notes:
+
+Today, I want to take a step back from attempting a block diagram design already. Let's build out the prototype in python to get a high-level understanding of what we want here. I'll probably use Claude to speed up implementation. The goal here is get a pretty good understanding of what the algorithm is.
+
+Here is what we will do:
+
+I found this repo: https://github.com/baranovmv/RoomResponse/blob/master/create_probe_sweep.py
+
+Which implement the first half of our project, up until calculating the coefficients. I'm gonna look through how they did this and take notes so we can create our own prototype.
