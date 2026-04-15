@@ -11,10 +11,12 @@ Pipeline:
 """
 
 import numpy as np
-from scipy.signal import fftconvolve
+from scipy.signal import fftconvolve, resample_poly
 from scipy.fft import fft
+from scipy.io import wavfile
 from numpy import kaiser
 import sounddevice as sd
+from math import gcd
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -33,8 +35,8 @@ BETA          = 0.0001   # regularization strength (fraction of mean spectral po
 BLOCK         = 512      # real-time block size (samples); ~11.6 ms at 44100 Hz
 STREAM_DURATION = 30     # seconds to run the real-time EQ stream
 VOLUME        = 0.5      # playback level for sweep (0.0–1.0)
-INPUT_DEVICE  = 1        # sounddevice index for microphone
-OUTPUT_DEVICE = 3        # sounddevice index for speakers
+INPUT_DEVICE  = 2        # sounddevice index for microphone
+OUTPUT_DEVICE = 5        # sounddevice index for speakers
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -259,6 +261,111 @@ def run_realtime_eq(coeffs, fs=FS, block=BLOCK,
                    channels=(1, 1),
                    callback=eq_callback):
         sd.sleep(int(duration * 1000))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 6b: Load an Audio File for Real-Time EQ Playback
+#
+# Supports any WAV file (8/16/24/32-bit int or float).
+# Converts to mono float32 and resamples to FS if the file's sample rate
+# differs.  Returns a 1-D float32 array normalised to peak ≤ 1.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def load_audio_file(filepath, target_fs=FS):
+    file_fs, data = wavfile.read(filepath)
+
+    # Normalise integer PCM to float32 in [-1, 1]
+    if data.dtype == np.int16:
+        data = data.astype(np.float32) / 32768.0
+    elif data.dtype == np.int32:
+        data = data.astype(np.float32) / 2147483648.0
+    elif data.dtype == np.uint8:
+        data = (data.astype(np.float32) - 128.0) / 128.0
+    else:
+        data = data.astype(np.float32)
+
+    # Stereo → mono
+    if data.ndim == 2:
+        data = data.mean(axis=1)
+
+    # Resample if sample rates differ
+    if file_fs != target_fs:
+        g    = gcd(file_fs, target_fs)
+        up   = target_fs // g
+        down = file_fs   // g
+        data = resample_poly(data, up, down).astype(np.float32)
+
+    # Normalise peak to 1
+    peak = np.max(np.abs(data))
+    if peak > 0:
+        data /= peak
+
+    return data
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 6c: Real-Time FIR EQ on a File (no microphone)
+#
+# Uses an sd.OutputStream (output only) so there is no mic input and no
+# feedback risk.  The same overlap-add processing as run_realtime_eq applies,
+# driven from a file buffer instead of the mic callback's indata.
+#
+# Playback stops automatically when the file ends, or on Ctrl+C.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def run_realtime_eq_file(coeffs, audio, fs=FS, block=BLOCK,
+                         output_device=OUTPUT_DEVICE):
+    """
+    Process `audio` (1-D float32, already at sample rate `fs`) through the
+    FIR correction filter in real-time blocks and play via `output_device`.
+
+    Parameters
+    ----------
+    coeffs        : 1-D ndarray  — FIR correction coefficients
+    audio         : 1-D float32  — source audio at sample rate `fs`
+    fs, block     : sample rate and block size
+    output_device : sounddevice device index for speakers
+    """
+    coeffs    = coeffs.astype(np.float32)
+    rms_gain  = float(np.sqrt(np.sum(coeffs ** 2)))
+    safe_gain = min(1.0, 1.0 / rms_gain)
+    n_filt    = len(coeffs)
+
+    state = {
+        "pos":  0,
+        "tail": np.zeros(n_filt - 1, dtype=np.float32),
+        "done": False,
+    }
+
+    def callback(outdata, frames, time, status):
+        pos = state["pos"]
+        x   = audio[pos : pos + frames].copy()
+
+        # End of file — pad with zeros and signal stop
+        if len(x) < frames:
+            x = np.pad(x, (0, frames - len(x)))
+            state["done"] = True
+
+        y_full              = np.convolve(x, coeffs)
+        y_full[:n_filt - 1] += state["tail"]
+        state["tail"]        = y_full[frames:].copy()
+        state["pos"]         = pos + frames
+
+        out = np.clip(y_full[:frames] * safe_gain, -1.0, 1.0).astype(np.float32)
+        outdata[:, 0] = out
+
+        if state["done"]:
+            raise sd.CallbackStop()
+
+    with sd.OutputStream(samplerate=fs,
+                         blocksize=block,
+                         dtype="float32",
+                         device=output_device,
+                         channels=1,
+                         callback=callback) as stream:
+        # Block until the stream finishes or the user hits Ctrl+C
+        while stream.active:
+            sd.sleep(100)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
