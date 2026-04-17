@@ -1,0 +1,49 @@
+%% System block diagram — top level
+%% Corresponds to §2 of docs/design.md
+%% Render: mmdc -i system_block.mmd -o system_block.svg
+flowchart LR
+  subgraph HPS["ARM HPS (Linux)"]
+    APP["Userspace app<br/>calibrate • load coefs"]
+    I2CDEV["/dev/i2c-N<br/>(i2c-dev)"]
+    MMAP["/dev/mem mmap<br/>peripheral CSR window"]
+  end
+
+  subgraph FPGA["FPGA Fabric (Cyclone V)"]
+    PERIPH["room_eq_peripheral<br/>Avalon-MM slave"]
+    PLL["clock_gen (PLL)<br/>50 MHz → 12.288 MHz XCK"]
+  end
+
+  subgraph CODEC["WM8731 Audio Codec"]
+    I2C_IN["I2C control regs"]
+    ADC["24-bit ADC"]
+    DAC["24-bit DAC"]
+    SER["I2S serializer"]
+  end
+
+  subgraph ANALOG["Analog"]
+    MIC["Condenser mic"]
+    SPK["Speakers"]
+  end
+
+  APP --> MMAP
+  APP --> I2CDEV
+  MMAP <-->|lightweight AXI<br/>32-bit| PERIPH
+  MMAP <-.->|heavyweight AXI<br/>bulk, future| PERIPH
+  I2CDEV -->|I2C 100 kHz<br/>via PCA9157S mux| I2C_IN
+
+  PERIPH -->|I2S TX: DACDAT,<br/>DACLRCK, BCLK| SER
+  SER -->|I2S RX: ADCDAT,<br/>ADCLRCK, BCLK| PERIPH
+  PLL -->|XCK 12.288 MHz| CODEC
+
+  MIC --> ADC
+  DAC --> SPK
+
+  classDef hps      fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef fpga     fill:#dcfce7,stroke:#166534,color:#14532d
+  classDef codec    fill:#fef3c7,stroke:#a16207,color:#713f12
+  classDef analog   fill:#f3f4f6,stroke:#4b5563,color:#1f2937
+
+  class APP,I2CDEV,MMAP hps
+  class PERIPH,PLL fpga
+  class I2C_IN,ADC,DAC,SER codec
+  class MIC,SPK analog

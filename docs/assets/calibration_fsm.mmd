@@ -1,0 +1,35 @@
+%% Calibration sequencer FSM
+%% Corresponds to §3 / §4.2 of docs/design.md
+%% Render: mmdc -i calibration_fsm.mmd -o calibration_fsm.svg
+stateDiagram-v2
+  [*] --> IDLE
+
+  IDLE: IDLE
+  IDLE: STATUS.fir_ready=1 after reset
+  IDLE --> SWEEP: CTRL.start_sweep=1
+
+  SWEEP: SWEEP
+  SWEEP: sweep_generator → i2s_tx
+  SWEEP: i2s_rx → capture_fifo
+  SWEEP --> CAPTURE: SWEEP_LEN samples emitted
+
+  CAPTURE: CAPTURE
+  CAPTURE: drain capture_fifo → fft_engine
+  CAPTURE: AvalonST valid/ready, sop/eop
+  CAPTURE --> FFT: 8192 samples streamed
+  CAPTURE --> ERROR: capture_fifo.wrfull
+
+  FFT: FFT
+  FFT: Altera FFT IP core running
+  FFT: write bins → fft_result_ram
+  FFT --> DONE: fft.source_eop
+
+  DONE: DONE
+  DONE: STATUS.sweep_done=1
+  DONE: STATUS.fft_done=1
+  DONE: HPS reads bins, designs taps
+  DONE --> IDLE: CTRL.soft_reset=1
+
+  ERROR: ERROR
+  ERROR: STATUS.capture_overflow=1
+  ERROR --> IDLE: CTRL.soft_reset=1

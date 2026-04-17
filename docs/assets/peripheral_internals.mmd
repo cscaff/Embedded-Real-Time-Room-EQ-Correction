@@ -1,0 +1,74 @@
+%% Custom peripheral internals — room_eq_peripheral
+%% Corresponds to §3 of docs/design.md
+%% Color code:
+%%   blue   = control/status (CSR + sequencer)
+%%   orange = sweep-out path
+%%   purple = calibration path (capture → FFT → result RAM)
+%%   green  = real-time audio path (FIR)
+%%   grey   = memories
+%% Render: mmdc -i peripheral_internals.mmd -o peripheral_internals.svg
+flowchart TB
+  AXI(["AXI slave"])
+
+  subgraph PERIPH["room_eq_peripheral"]
+    CSR["avalon_csr<br/>16 × 32-bit regs"]
+    SEQ["calibration_sequencer<br/>FSM"]
+
+    SWEEP["sweep_generator<br/>phase accum + sine LUT"]
+    LUT[("sine_lut<br/>~72 Kbit ROM")]
+    I2STX["i2s_tx"]
+    I2SRX["i2s_rx"]
+
+    FIFO[("capture_fifo<br/>dcfifo 8192×24b<br/>~192 Kbit")]
+    FFT["fft_engine<br/>Altera FFT IP<br/>8192-pt BFP"]
+    FRAM[("fft_result_ram<br/>4097 × 48-bit + exp<br/>~192 Kbit")]
+
+    FIR["fir_engine<br/>stereo 128-tap MAC"]
+    COEF[("coef_ram<br/>256×24b<br/>~6 Kbit")]
+    DL[("delay_line_ram<br/>256×24b<br/>~6 Kbit")]
+
+    CDC["cdc_sync<br/>2-FF synchronizers"]
+    PLL["clock_gen<br/>PLL"]
+  end
+
+  AXI <--> CSR
+  CSR -->|ctrl| SEQ
+  CSR <-->|bin read| FRAM
+  CSR <-->|coef write auto-inc| COEF
+  CSR <-->|capture read| FIFO
+
+  SEQ -->|start| SWEEP
+  SEQ -->|drain_en| FIFO
+  SEQ -->|fft_start| FFT
+  SEQ -->|status| CDC
+  CDC --> CSR
+
+  SWEEP --> LUT
+  SWEEP -->|24b sample| I2STX
+
+  I2SRX -->|24b @ bclk| FIFO
+  FIFO -->|AvalonST<br/>valid/ready sop/eop| FFT
+  FFT -->|complex bin + exp| FRAM
+
+  I2SRX -->|24b stereo| FIR
+  FIR --> I2STX
+  COEF --> FIR
+  FIR <--> DL
+
+  PLL -.->|xck to codec| I2STX
+  PLL -.->|bclk, lrck| I2STX
+  PLL -.->|bclk, lrck| I2SRX
+
+  classDef ctrl      fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef sweepPath fill:#ffedd5,stroke:#c2410c,color:#7c2d12
+  classDef calPath   fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+  classDef rtPath    fill:#dcfce7,stroke:#166534,color:#14532d
+  classDef mem       fill:#f3f4f6,stroke:#4b5563,color:#1f2937
+  classDef misc      fill:#fef3c7,stroke:#a16207,color:#713f12
+
+  class CSR,SEQ,CDC ctrl
+  class SWEEP,I2STX sweepPath
+  class I2SRX,FIFO,FFT calPath
+  class FIR rtPath
+  class LUT,FRAM,COEF,DL mem
+  class PLL misc
