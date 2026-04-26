@@ -20,7 +20,7 @@ module sine_lut(
     input clock;
     input reset;
     input [31:0] phase; // 32-bit phase accumulator
-    input [23:0] amplitude; // 24-bit amplitude control for the CODEC
+    output [23:0] amplitude; // 24-bit amplitude control for the CODEC
     // My understanding is that the CODEC expects a 24-bit value so that's what is supplied?
 
     // Determining the quadrant and LUT index from the phase accumulator:
