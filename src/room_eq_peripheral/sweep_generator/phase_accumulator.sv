@@ -1,4 +1,12 @@
 // The Following code was inspired by: https://github.com/samiyaalizaidi/Direct-Digital-Synthesizer/blob/main/phase_accumulator.v
+// ==================== MODULE INTERFACE ====================
+// Inputs:
+// - clock: 48kHz sample tick (Divided From 12.288MHz PLL Clock)
+// - reset: Active High
+// Outputs:
+// - phase: 32-bit phase accumulator (Tells us where we are in the waveform cycle.)
+//
+// ===========================================================
 
 module phase_accumulator(
     clock, // 48kHz sample tick (Divided From 12.288MHz PLL Clock)
