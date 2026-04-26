@@ -38,13 +38,17 @@ module sine_lookup(
     // BRAM output wire — 1-cycle read latency is handled inside sine_lut.
     wire [23:0] lut_out;
 
-    // Instantiate sine_lut BRAM (read-only during normal operation; we/din used for init).
+    // Instantiate sine_lut BRAM.
+    // Port A (write) is tied off here — init writes come from the top level, not sine_lookup.
+    // Port B (read) is driven by the 48 kHz sample clock and lut_index.
     sine_lut lut (
-        .clk  (clock),
-        .we   (1'b0),
-        .addr (lut_index),
-        .din  (24'b0),
-        .dout (lut_out)
+        .clk_a  (clock),    // tied to sample clock; Port A unused (we_a = 0). Unsure if I need to change this a little?
+        .we_a   (1'b0),
+        .addr_a (8'b0),
+        .din_a  (24'b0),
+        .clk_b  (clock),
+        .addr_b (lut_index),
+        .dout_b (lut_out)
     );
 
     // Register quadrant in sync with the BRAM's 1-cycle read pipeline.
