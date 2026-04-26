@@ -1,23 +1,30 @@
 module sweep_generator(
     clock,
     reset,
-    start
+    start,
+    amplitude,
+    clk_sys,
+    we_lut,
+    addr_lut,
+    din_lut
     );
 
-    // Inputs and Outputs:
-    input clock;
-    input reset;
-    input start;
+    input          clock;
+    input          reset;
+    input          start;
+    output  [23:0] amplitude;
+    input          clk_sys;
+    input          we_lut;
+    input    [7:0] addr_lut;
+    input   [23:0] din_lut;
 
-    // Internal Signals
     wire [31:0] phase;
 
-    // Internal Modules
     phase_accumulator mac (
         .clock (clock),
         .reset (reset),
         .phase (phase)
-    )
+    );
 
     sine_lookup lookup (
         .clock    (clock),
@@ -30,5 +37,4 @@ module sweep_generator(
         .din_lut  (din_lut)
     );
 
-    
 endmodule
