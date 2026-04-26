@@ -1,7 +1,7 @@
 // The Following code was inspired by: https://github.com/samiyaalizaidi/Direct-Digital-Synthesizer/blob/main/phase_accumulator.v
 
 module phase_accumulator(
-    clock, // This will be our 12.288MHz clock from the PLL
+    clock, // 48kHz sample tick (Divided From 12.288MHz PLL Clock)
     reset, // Let's say active high reset for now.
     phase, // Output: Phase Accumulator value
     );
