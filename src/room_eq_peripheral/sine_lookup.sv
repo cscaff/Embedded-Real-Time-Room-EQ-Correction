@@ -17,14 +17,14 @@
 // ===========================================================
 
 module sine_lookup(
-    clock,
+    clock, // 48 kHz sample clock
     reset,
     phase,
     amplitude,
-    clk_sys,
-    we_lut,
-    addr_lut,
-    din_lut
+    clk_sys, // System Clock - 50 MHz for LUT initialization
+    we_lut, // LUT Write Enable
+    addr_lut, // LUT Write Address
+    din_lut // LUT Write Data
     );
 
     // Inputs and Outputs:
