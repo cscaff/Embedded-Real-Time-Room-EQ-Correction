@@ -10,15 +10,15 @@ module tb_phase_accumulator;
     // ── Signals ─────────────────────────────────────────────
     logic        clk;
     logic        reset;
+    logic [31:0] increment;
     logic [31:0] phase;
 
     // ── DUT ─────────────────────────────────────────────────
-    phase_accumulator #(
-        .increment(PHASE_INC) // Overrides Param (Should be the same anyways)
-    ) dut (
-        .clock(clk),
-        .reset(reset),
-        .phase(phase)
+    phase_accumulator dut (
+        .clock    (clk),
+        .reset    (reset),
+        .increment(increment),
+        .phase    (phase)
     );
 
     // ── Clock ────────────────────────────────────────────────
@@ -43,6 +43,9 @@ module tb_phase_accumulator;
     logic [31:0] expected_phase;
 
     initial begin
+        // ── Default state ────────────────────────────────────
+        increment = PHASE_INC; // 20 Hz fixed increment for all tests below
+
         // ── T1: Reset holds phase at 0 ───────────────────────
         reset = 1;
         @(posedge clk); #1;
