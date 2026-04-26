@@ -35,24 +35,26 @@ module sine_lookup(
     // Assuming quadrant[0] reads LSB bit, then we read the LUT backwards for Q2 and Q4.
     wire [7:0] lut_index = (quadrant[0]) ? ~phase[29:22] : phase[29:22];
 
-    // Initialize BRAM (LUT w/ 256 entries of 24-bit signed values)
-    // Motivation for 256 entries: Maps tp 8 bits of phase accumulator.
-    // I think the idea is that is sufficient resolution for our sine wave. We can always adjust.
-    reg [23:0] sine_lut [255:0];
+    // BRAM output wire — 1-cycle read latency is handled inside sine_lut.
+    wire [23:0] lut_out;
 
-    // Delayed Output Registers to align with BRAM read latency. (I am assuming 1 cycle).
-    reg [23:0] lut_out;
+    // Instantiate sine_lut BRAM (read-only during normal operation; we/din used for init).
+    sine_lut lut (
+        .clk  (clock),
+        .we   (1'b0),
+        .addr (lut_index),
+        .din  (24'b0),
+        .dout (lut_out)
+    );
+
+    // Register quadrant in sync with the BRAM's 1-cycle read pipeline.
     reg [1:0] quadrant_d;
 
-    // On clock edge, read from the LUT and store the output and quadrant for use in the next cycle.
     always @ (posedge clock or posedge reset) begin
-        if (reset) begin
-            lut_out <= 24'd0; // Reset LUT output to 0 on reset.
-            quadrant_d <= 2'b00; // Reset delayed quadrant to 0 on reset.
-        end else begin
-            lut_out <= sine_lut[lut_index]; // Read from LUT using the calculated index
-            quadrant_d <= quadrant; // Store the current quadrant for use in the next cycle
-        end
+        if (reset)
+            quadrant_d <= 2'b00;
+        else
+            quadrant_d <= quadrant;
     end
 
     // Output logic based on the quadrant:

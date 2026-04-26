@@ -3,6 +3,16 @@
 // Synchronous write, synchronous read with 1-cycle registered output.
 // Both Xilinx and Intel tools infer a true BRAM from this pattern.
 
+// ==================== MODULE INTERFACE ====================
+// Inputs:
+// - clk: ...
+// - phase: 32-bit phase accumulator (Tells us where we are in the waveform cycle.)
+//
+// Outputs:
+// - amplitude: 24-bit signed output for the CODEC, representing the sine wave value
+//
+// ===========================================================
+
 module sine_lut (
     input  logic        clk,
     input  logic        we,        // write enable (active high)
