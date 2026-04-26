@@ -10,15 +10,18 @@ module tb_phase_accumulator;
     // ── Signals ─────────────────────────────────────────────
     logic        clk;
     logic        reset;
-    logic [31:0] increment;
     logic [31:0] phase;
 
     // ── DUT ─────────────────────────────────────────────────
-    phase_accumulator dut (
-        .clock    (clk),
-        .reset    (reset),
-        .increment(increment),
-        .phase    (phase)
+    // K_FRAC=0 disables exponential growth (delta=0), giving fixed-increment
+    // behavior so all existing tests remain valid.
+    phase_accumulator #(
+        .INCREMENT_START(PHASE_INC),
+        .K_FRAC        (32'd0)
+    ) dut (
+        .clock (clk),
+        .reset (reset),
+        .phase (phase)
     );
 
     // ── Clock ────────────────────────────────────────────────
@@ -43,9 +46,6 @@ module tb_phase_accumulator;
     logic [31:0] expected_phase;
 
     initial begin
-        // ── Default state ────────────────────────────────────
-        increment = PHASE_INC; // 20 Hz fixed increment for all tests below
-
         // ── T1: Reset holds phase at 0 ───────────────────────
         reset = 1;
         @(posedge clk); #1;
