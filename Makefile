@@ -8,9 +8,9 @@ OUT_DIR  = sim_out
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc clean
+.PHONY: all sim_phase_acc sim_sine_lut clean
 
-all: sim_phase_acc
+all: sim_phase_acc sim_sine_lut
 
 sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
 	$(VVP) $<
@@ -18,6 +18,15 @@ sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
 $(OUT_DIR)/tb_phase_accumulator.vvp: \
 		$(SRC_DIR)/room_eq_peripheral/sweep_generator/phase_accumulator.sv \
 		$(TEST_DIR)/sweep_generator/tb_phase_accumulator.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
+
+sim_sine_lut: $(OUT_DIR)/tb_sine_lut.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_sine_lut.vvp: \
+		$(SRC_DIR)/room_eq_peripheral/sweep_generator/sine_lut.sv \
+		$(TEST_DIR)/sweep_generator/sine_lut.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
