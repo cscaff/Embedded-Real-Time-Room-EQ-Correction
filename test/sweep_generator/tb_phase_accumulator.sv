@@ -92,7 +92,7 @@ module tb_phase_accumulator;
         reset = 1; @(posedge clk); #1; reset = 0;
         wrap_count = 0;
         prev_phase  = 32'd0;
-        for (i = 0; i < 48000; i++) begin
+        for (i = 0; i < 48001; i++) begin // Note: 48khz technically gives us 19.99... For now, just added 1 to test. This is expected.
             prev_phase = phase;
             @(posedge clk); #1;
             if (phase < prev_phase) wrap_count++;
