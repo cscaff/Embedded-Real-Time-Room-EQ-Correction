@@ -24,11 +24,30 @@ module tb_phase_accumulator;
         .phase (phase)
     );
 
+    // ── MAC DUT (K_FRAC nonzero) ─────────────────────────────
+    // K_FRAC = 2^31 = 0.5 × 2^32  →  K = 1.5 per step.
+    // Chosen so increment[63:32] grows by a predictable integer each cycle,
+    // making exact hand-derived expected values tractable (see T7–T10).
+    localparam MAC_INC_START = 32'd2;
+    localparam MAC_K_FRAC    = 32'h8000_0000; // 2^31
+
+    logic        mac_reset;
+    logic [31:0] mac_phase;
+
+    phase_accumulator #(
+        .INCREMENT_START(MAC_INC_START),
+        .K_FRAC        (MAC_K_FRAC)
+    ) dut_mac (
+        .clock (clk),
+        .reset (mac_reset),
+        .phase (mac_phase)
+    );
+
     // ── Clock ────────────────────────────────────────────────
     initial clk = 0;
     always #(CLK_PERIOD / 2) clk = ~clk; // 5ns high, 5ns low → 10ns period → 100 MHz
 
-    // ── Helper task ──────────────────────────────────────────
+    // ── Helper tasks ─────────────────────────────────────────
     task automatic check(
         input [31:0] expected,
         input string label
@@ -39,13 +58,27 @@ module tb_phase_accumulator;
             $display("PASS [%s]  phase=%0d", label, phase);
     endtask
 
+    task automatic check_mac(
+        input [31:0] expected,
+        input string label
+    );
+        if (mac_phase !== expected)
+            $display("FAIL [%s]  got=%0d  expected=%0d", label, mac_phase, expected);
+        else
+            $display("PASS [%s]  mac_phase=%0d", label, mac_phase);
+    endtask
+
     // ── Test sequence ────────────────────────────────────────
     integer      i;
     integer      wrap_count;
     logic [31:0] prev_phase;
     logic [31:0] expected_phase;
+    logic [31:0] mac_prev;
+    logic [31:0] mac_diff_early, mac_diff_late;
 
     initial begin
+        mac_reset = 1; // hold MAC DUT in reset until T7
+
         // ── T1: Reset holds phase at 0 ───────────────────────
         reset = 1;
         @(posedge clk); #1;
@@ -105,6 +138,76 @@ module tb_phase_accumulator;
             $display("PASS [T6 frequency check]");
         else
             $display("FAIL [T6 frequency check]  got=%0d  expected=20", wrap_count);
+
+        // ── T7: MAC reset holds phase at 0 ───────────────────
+        mac_reset = 1;
+        @(posedge clk); #1;
+        check_mac(32'd0, "T7 MAC reset asserted -> 0");
+
+        @(posedge clk); #1;
+        check_mac(32'd0, "T7 MAC reset still held -> 0");
+
+        // TODO: VERIFY THESE GENERATED UNIT TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // ── T8: Exact cycle trace with K_FRAC = 2^31 (K=1.5) ─
+        // Hand-derived expected values (see script in repo for derivation):
+        //   delta[n] = inc_int[n] * K_FRAC  (mult path under test)
+        //   Cycle 1 : phase=2   (inc_int 2→3)
+        //   Cycle 2 : phase=5   (inc_int 3→4,  K_FRAC effect first visible)
+        //   Cycle 3 : phase=9   (inc_int 4→6)
+        //   Cycle 4 : phase=15  (inc_int 6→9)
+        //   Cycle 5 : phase=24  (inc_int 9→14)
+        //   Cycle 6 : phase=38  (inc_int 14→21)
+        mac_reset = 0;
+        @(posedge clk); #1;
+        check_mac(32'd2,  "T8 MAC cycle 1 (inc_int=2, same as K=0)");
+
+        @(posedge clk); #1;
+        check_mac(32'd5,  "T8 MAC cycle 2 (K_FRAC effect: 2+3 not 2+2)");
+
+        @(posedge clk); #1;
+        check_mac(32'd9,  "T8 MAC cycle 3");
+
+        @(posedge clk); #1;
+        check_mac(32'd15, "T8 MAC cycle 4");
+
+        @(posedge clk); #1;
+        check_mac(32'd24, "T8 MAC cycle 5");
+
+        @(posedge clk); #1;
+        check_mac(32'd38, "T8 MAC cycle 6");
+
+        // ── T9: Successive phase diffs grow (multiply path active) ─
+        // With K_FRAC > 0 the integer part of increment must increase each
+        // cycle, so phase[n]-phase[n-1] strictly increases.
+        mac_reset = 1; @(posedge clk); #1;
+        mac_reset = 0;
+        @(posedge clk); #1;            // cycle 1: diff = MAC_INC_START = 2
+        mac_prev       = mac_phase;
+        @(posedge clk); #1;            // cycle 2: diff should be 3
+        mac_diff_early = mac_phase - mac_prev;
+        mac_prev       = mac_phase;
+        @(posedge clk); #1;            // cycle 3: diff should be 4
+        mac_diff_late  = mac_phase - mac_prev;
+        if (mac_diff_late > mac_diff_early)
+            $display("PASS [T9 MAC diffs grow]  diff_c2=%0d  diff_c3=%0d",
+                     mac_diff_early, mac_diff_late);
+        else
+            $display("FAIL [T9 MAC diffs grow]  diff_c2=%0d  diff_c3=%0d (expected c3>c2)",
+                     mac_diff_early, mac_diff_late);
+
+        // ── T10: Total phase > fixed-increment total after N cycles ─
+        // After 10 cycles of exponential growth, accumulated phase must
+        // exceed the 10 * MAC_INC_START that a K=0 run would produce.
+        mac_reset = 1; @(posedge clk); #1;
+        mac_reset = 0;
+        for (i = 0; i < 10; i++) @(posedge clk);
+        #1;
+        if (mac_phase > 10 * MAC_INC_START)
+            $display("PASS [T10 MAC total > fixed]  mac_phase=%0d  fixed_would_be=%0d",
+                     mac_phase, 10 * MAC_INC_START);
+        else
+            $display("FAIL [T10 MAC total > fixed]  mac_phase=%0d  fixed_would_be=%0d",
+                     mac_phase, 10 * MAC_INC_START);
 
         $display("\n=== All tests complete ===");
         $finish;
