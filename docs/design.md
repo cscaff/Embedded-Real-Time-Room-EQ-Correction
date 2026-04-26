@@ -26,8 +26,6 @@ Every listening room colors the sound played inside it: room modes boost or canc
 
 The system has four domains: the ARM HPS (running Linux userspace), the FPGA fabric (all custom hardware), the on-board Wolfson WM8731 audio codec, and the analog path (speakers and microphone). The FPGA presents one custom peripheral — `room_eq_peripheral` — to the HPS. Everything the HPS does passes through that peripheral's register window over AXI; everything the codec does passes through I2S (audio) and I2C (control).
 
-*(Source: [`assets/system_block.mmd`](assets/system_block.mmd).)*
-
 ```mermaid
 flowchart LR
   subgraph HPS["ARM HPS (Linux)"]
@@ -83,6 +81,8 @@ flowchart LR
 - **Peripheral ↔ codec I2S.** The FPGA is the I2S master: it generates the bit clock (~3.07 MHz), the left/right frame clock (48 kHz), and the master clock XCK (12.288 MHz). Audio samples are 24-bit two's-complement, channels time-multiplexed in each frame.
 - **Mic and speakers.** Condenser mic into LINE IN through an external preamp (the WM8731's on-chip mic preamp is noisy). Speakers on LINE OUT through a consumer amplifier.
 
+<div class="page-break"></div>
+
 **Clocks.**
 
 | Clock     | Frequency    | Source              |
@@ -100,7 +100,7 @@ Clock-domain crossings use an Altera `dcfifo` (for the capture path) and 2-flip-
 
 `room_eq_peripheral` is one Platform Designer component written in Verilog. Internally it organizes around three data paths: the **sweep-out path** (HPS trigger → sweep generator → I2S TX), the **calibration path** (I2S RX → capture FIFO → FFT → result RAM → HPS read), and the **real-time audio path** (I2S RX → FIR → I2S TX). A `calibration_sequencer` FSM arbitrates during calibration and rests when the real-time path runs.
 
-*(Source: [`assets/peripheral_internals.mmd`](assets/peripheral_internals.mmd). Blue = control, orange = sweep-out, purple = calibration, green = real-time audio, grey = memories.)*
+*(Blue = control, orange = sweep-out, purple = calibration, green = real-time audio, grey = memories.)*
 
 ```mermaid
 flowchart TB
@@ -169,11 +169,11 @@ flowchart TB
   class PLL misc
 ```
 
+<div class="page-break"></div>
+
 ### Calibration sequencer FSM
 
 The FSM rests in `IDLE` during real-time playback. A sweep trigger runs through the measurement cycle exactly once and returns to `IDLE`.
-
-*(Source: [`assets/calibration_fsm.mmd`](assets/calibration_fsm.mmd).)*
 
 ```mermaid
 stateDiagram-v2
@@ -186,6 +186,8 @@ stateDiagram-v2
   DONE --> IDLE: soft_reset
   ERROR --> IDLE: soft_reset
 ```
+
+<div class="page-break"></div>
 
 ### Memories
 
@@ -210,6 +212,8 @@ Audio samples are 24-bit signed (Q1.23 on the FIR path, plain PCM elsewhere). FF
 The data path that needs a real protocol is `capture_fifo → fft_engine`: AvalonST with `valid`/`ready` on both sides and `sop`/`eop` framing, so the FFT IP core sees a well-formed 8192-sample packet. Everything else — HPS coefficient writes, HPS bin reads — uses simple register-side-effect auto-increment pointers. Single-bit status (e.g., `sweep_done`) crosses clock domains through a 2-FF synchronizer.
 
 ---
+
+<div class="page-break"></div>
 
 ## 4. Algorithms
 
@@ -250,6 +254,8 @@ Per sample, per channel: `y[n] = Σ h[k] · x[n-k]` for `k = 0..127`. We need 48
 
 ---
 
+<div class="page-break"></div>
+
 ## 5. Resource Budget
 
 | Resource       | Estimate   | Notes                                                      |
@@ -264,6 +270,8 @@ Per sample, per channel: `y[n] = Σ h[k] · x[n-k]` for `k = 0..127`. We need 48
 After calibration completes, the real-time audio path runs entirely inside the FPGA and needs no HPS involvement.
 
 ---
+
+<div class="page-break"></div>
 
 ## 6. Hardware / Software Interface
 
