@@ -1,32 +1,52 @@
-// Simple single-port BRAM — 256 entries x 24-bit wide.
-// Sized to match sine_lookup.sv: 8-bit address, 24-bit signed amplitude.
-// Synchronous write, synchronous read with 1-cycle registered output.
-// Both Xilinx and Intel tools infer a true BRAM from this pattern.
-
 // ==================== MODULE INTERFACE ====================
-// Inputs:
-// - clk: ...
-// - phase: 32-bit phase accumulator (Tells us where we are in the waveform cycle.)
+// True Dual-Port BRAM: 256 entries x 24-bit wide.
+// Port A: 50 MHz system clock — write-only (used for startup initialization).
+// Port B: 48 kHz sample clock — read-only (used during audio operation).
+// The FPGA BRAM primitive natively handles the two independent clock domains.
+//
+// CDC note: Port A writes must be fully complete before Port B begins reading.
+//           For one-time startup init this is guaranteed by system design
+//           (do not start the sweep until the LUT is loaded).
+//
+// Inputs (Port A — write, 50 MHz):
+// - clk_a:  50 MHz system clock.
+// - we_a:   Write enable (active high). Writes din_a into mem[addr_a].
+// - addr_a: 8-bit write address selecting one of 256 entries (0-255).
+// - din_a:  24-bit signed sine value to store.
+//
+// Inputs (Port B — read, 48 kHz):
+// - clk_b:  48 kHz sample clock (same clock driving sine_lookup).
+// - addr_b: 8-bit read address, driven by lut_index from sine_lookup.
 //
 // Outputs:
-// - amplitude: 24-bit signed output for the CODEC, representing the sine wave value
+// - dout_b: 24-bit sine value at mem[addr_b]. Registered — valid 1 cycle after addr_b.
 //
 // ===========================================================
 
 module sine_lut (
-    input  logic        clk,
-    input  logic        we,        // write enable (active high)
-    input  logic [7:0]  addr,      // address: 0–255
-    input  logic [23:0] din,       // data in  (write path)
-    output logic [23:0] dout       // data out (1-cycle read latency)
+    // Port A — write (50 MHz system clock)
+    input  logic        clk_a,
+    input  logic        we_a,
+    input  logic [7:0]  addr_a,
+    input  logic [23:0] din_a,
+
+    // Port B — read (48 kHz sample clock)
+    input  logic        clk_b,
+    input  logic [7:0]  addr_b,
+    output logic [23:0] dout_b
 );
 
     logic [23:0] mem [255:0];
 
-    always_ff @(posedge clk) begin
-        if (we)
-            mem[addr] <= din;
-        dout <= mem[addr];   // read-first: dout reflects mem before write on same cycle
+    // Port A: synchronous write
+    always_ff @(posedge clk_a) begin
+        if (we_a)
+            mem[addr_a] <= din_a;
+    end
+
+    // Port B: synchronous read (1-cycle latency)
+    always_ff @(posedge clk_b) begin
+        dout_b <= mem[addr_b];
     end
 
 endmodule
