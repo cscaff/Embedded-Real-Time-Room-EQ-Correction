@@ -1,2 +1,5 @@
 # MAC OS Meta File
 .DS_Store
+
+# Simulation Output
+sim_out/*
