@@ -9,11 +9,11 @@
 //
 // ===========================================================
 
-module sine_lut(
+module sine_lookup(
     clock, // 48kHz sample tick (Divided From 12.288MHz PLL Clock)
     reset, // Active High Reset
     phase, // Input: 32-bit phase accumulator
-    amplitude, // Input: amplitude control (Assuming 24 bit for the CODEC)
+    amplitude, // Output: amplitude control (Assuming 24 bit for the CODEC)
     );
 
     // Inputs and Outputs:
