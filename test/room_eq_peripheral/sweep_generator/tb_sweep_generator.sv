@@ -58,6 +58,30 @@ module tb_sweep_generator;
         reset = 0;
         repeat (2) @(posedge clock);
 
+        // ── T_DIV: clock divider rate ─────────────────────────
+        // Verify sample_en fires exactly every 256 clock cycles.
+        begin
+            integer div_count;
+
+            // Wait for a sample_en pulse to use as start reference
+            @(posedge clock);
+            while (!sample_en) @(posedge clock);
+
+            // Count clock edges until the next sample_en pulse
+            div_count = 0;
+            @(posedge clock);
+            while (!sample_en) begin
+                div_count++;
+                @(posedge clock);
+            end
+            div_count++; // include the edge where sample_en fires
+
+            if (div_count == 256)
+                $display("PASS [T_DIV] sample_en period = %0d clock cycles", div_count);
+            else
+                $display("FAIL [T_DIV] expected 256, got %0d", div_count);
+        end
+
         fd = $fopen("sim_out/sweep_amplitude.txt", "w");
         for (i = 0; i < N_SAMPLES; i++) begin
             @(posedge clock);
