@@ -53,3 +53,11 @@ module sweep_generator(
     );
 
 endmodule
+
+// Notes:
+// Design Choice Explanation Worth Explaining:
+// I used a clock divider to generate the 48 kHz sample enable signal
+// instead of directly using the 12.288 MHz clock for the phase accumulator and sine lookup. 
+// So instead of sending in a 48 KHz clock, we send in the PLL one and a enable signal.
+// LLM said that adding a clock conversion would be more complex for static timing analysis?
+// We can always change.

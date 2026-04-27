@@ -10,6 +10,7 @@ module tb_phase_accumulator;
     // ── Signals ─────────────────────────────────────────────
     logic        clk;
     logic        reset;
+    logic        sample_en;
     logic [31:0] phase;
 
     // ── DUT ─────────────────────────────────────────────────
@@ -19,9 +20,10 @@ module tb_phase_accumulator;
         .INCREMENT_START(PHASE_INC),
         .K_FRAC        (32'd0)
     ) dut (
-        .clock (clk),
-        .reset (reset),
-        .phase (phase)
+        .clock     (clk),
+        .reset     (reset),
+        .sample_en (sample_en),
+        .phase     (phase)
     );
 
     // ── MAC DUT (K_FRAC nonzero) ─────────────────────────────
@@ -38,9 +40,10 @@ module tb_phase_accumulator;
         .INCREMENT_START(MAC_INC_START),
         .K_FRAC        (MAC_K_FRAC)
     ) dut_mac (
-        .clock (clk),
-        .reset (mac_reset),
-        .phase (mac_phase)
+        .clock     (clk),
+        .reset     (mac_reset),
+        .sample_en (sample_en),
+        .phase     (mac_phase)
     );
 
     // ── Clock ────────────────────────────────────────────────
@@ -78,6 +81,7 @@ module tb_phase_accumulator;
 
     initial begin
         mac_reset = 1; // hold MAC DUT in reset until T7
+        sample_en = 1; // unit test: every clock edge is a sample tick
 
         // ── T1: Reset holds phase at 0 ───────────────────────
         reset = 1;
