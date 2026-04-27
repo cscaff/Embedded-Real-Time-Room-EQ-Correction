@@ -199,6 +199,48 @@ module tb_sine_lookup;
         $fclose(csv_fd);
         $display("T7 CSV written to sim_out/sine_wave.csv");
 
+        // ── T8: sample_en gating bug demonstration ───────────
+        // Shows that a single-cycle sample_en pulse (real divider behavior)
+        // does NOT update amplitude, because lut_out is only valid one cycle
+        // AFTER sample_en fires (BRAM 1-cycle read latency).
+        //
+        // Step 1 — reference: always-on sample_en (known-good path).
+        // Step 2 — pulsed:    sample_en high for exactly 1 cycle, then low.
+        //          Expected:  amplitude updates to ~+MAX_AMP.
+        //          Actual:    amplitude stays 0 (reset value) — BUG.
+        begin
+            logic [23:0] expected_amp, pulsed_amp;
+
+            // Step 1: always-on sample_en — get expected output for Q2 boundary
+            sample_en = 1;
+            reset = 1; @(posedge clock); #1; reset = 0;
+            repeat (2) @(posedge clock);
+            sample(32'h40000000, expected_amp); // Q2 boundary → ~+MAX_AMP
+            $display("T8 reference  (sample_en=1 always): amplitude=%0d  (expected ~+MAX_AMP)", $signed(expected_amp));
+
+            // Step 2: pulsed sample_en — 1 cycle high, then low
+            reset = 1; @(posedge clock); #1; reset = 0;
+            sample_en = 0;
+            repeat (4) @(posedge clock);
+
+            @(posedge clock); #1;
+            phase     = 32'h40000000;
+            sample_en = 1;              // pulse for exactly 1 cycle
+            @(posedge clock); #1;
+            sample_en = 0;
+            repeat (8) @(posedge clock); #1;
+            pulsed_amp = amplitude;
+
+            $display("T8 pulsed     (sample_en=1 for 1 cycle): amplitude=%0d", $signed(pulsed_amp));
+            if (pulsed_amp !== expected_amp)
+                $display("FAIL [T8 BUG CONFIRMED] amplitude=%0d, expected=%0d — lut_out not valid when sample_en fires",
+                         $signed(pulsed_amp), $signed(expected_amp));
+            else
+                $display("PASS [T8] amplitude updated correctly (bug not present)");
+
+            sample_en = 1; // restore for any tests that follow
+        end
+
         $display("\n=== All tests complete ===");
         $finish;
     end
