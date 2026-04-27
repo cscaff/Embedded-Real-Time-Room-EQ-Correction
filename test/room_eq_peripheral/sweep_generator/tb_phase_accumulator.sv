@@ -167,7 +167,7 @@ module tb_phase_accumulator;
         check_mac(32'd9,  "T8 MAC cycle 3");
 
         @(posedge clk); #1;
-        check_mac(32'd15,6 "T8 MAC cycle 4");
+        check_mac(32'd15, "T8 MAC cycle 4");
 
         @(posedge clk); #1;
         check_mac(32'd24, "T8 MAC cycle 5");
