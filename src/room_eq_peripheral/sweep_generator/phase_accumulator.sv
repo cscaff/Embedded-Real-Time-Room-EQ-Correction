@@ -1,8 +1,9 @@
 // The Following code was inspired by: https://github.com/samiyaalizaidi/Direct-Digital-Synthesizer/blob/main/phase_accumulator.v
 // ==================== MODULE INTERFACE ====================
 // Inputs:
-// - clock:     48kHz sample tick (Divided From 12.288MHz PLL Clock)
+// - clock:     12.288MHz PLL Generated Clock
 // - reset:     Active High
+// - sample_en: Fires every 48 kHz tick (Divided From 12.288MHz PLL Clock)
 //
 // Outputs:
 // - phase: 32-bit phase accumulator value. Wraps naturally on overflow.
@@ -10,14 +11,16 @@
 // ===========================================================
 
 module phase_accumulator(
-    clock,     // 48kHz sample tick (Divided From 12.288MHz PLL Clock)
+    clock,     // 12.288MHz PLL Generated Clock
     reset,     // Active high reset
+    sample_en, // Fires every 48 kHz tick (Divided From 12.288MHz PLL Clock)
     phase      // Output: current phase accumulator value
     );
 
     // Inputs and Outputs:
     input        clock;
     input        reset;
+    input        sample_en;
     output reg [31:0] phase;
 
     // Parameters
@@ -41,7 +44,7 @@ module phase_accumulator(
         if (reset) begin
             phase     <= 32'd0;
             increment <= {INCREMENT_START, 32'd0};
-        end else begin
+        end else if (sample_en) begin // Sample Enable Gate
             increment <= increment + delta; // Updates increment for next cycle.
             phase     <= phase + increment[63:32]; // 32-bit register wraps naturally on overflow.
         end
