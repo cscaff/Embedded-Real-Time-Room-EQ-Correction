@@ -1,35 +1,50 @@
 module sweep_generator(
-    clock,
-    reset,
-    start,
-    amplitude,
-    clk_sys,
-    we_lut,
-    addr_lut,
-    din_lut
+    clock, // 12.288 MHz PLL Generated Clock
+    reset, // Active High Reset
+    amplitude, // 24-bit Signed Output Amplitude
+    clk_sys, // 50 Mhz System Clock
+    we_lut, // LUT Write Enable
+    addr_lut, // LUT Write Address
+    din_lut // LUT Write Data
     );
 
+    // Inputs and outputs: 
     input          clock;
     input          reset;
-    input          start;
     output  [23:0] amplitude;
     input          clk_sys;
     input          we_lut;
     input    [7:0] addr_lut;
     input   [23:0] din_lut;
 
+    // Clock Division for Sweep Generation (Convert 12.288 MHz to 48 kHz)
+    logic [7:0] clk_div; // 8-bit Counter to divide 12.288 by 256 = 48 kHz
+    logic       sample_en; // Sample Enable goes high every wrap around.
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            clk_div   <= '0;
+            sample_en <= 1'b0;
+        end else begin
+            sample_en <= (clk_div == 8'd255); // Assert sample_en when counter wraps
+            clk_div   <= clk_div + 1'b1; // Increment clock divider 
+        end
+    end
+
     wire [31:0] phase;
 
     phase_accumulator mac (
-        .clock (clock),
-        .reset (reset),
-        .phase (phase)
+        .clock     (clock),
+        .reset     (reset),
+        .sample_en (sample_en),
+        .phase     (phase)
     );
 
     sine_lookup lookup (
-        .clock    (clock),
-        .reset    (reset),
-        .phase    (phase),
+        .clock     (clock),
+        .reset     (reset),
+        .sample_en (sample_en),
+        .phase     (phase),
         .amplitude(amplitude),
         .clk_sys  (clk_sys),
         .we_lut   (we_lut),

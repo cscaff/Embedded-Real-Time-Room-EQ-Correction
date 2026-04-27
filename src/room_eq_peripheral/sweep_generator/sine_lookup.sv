@@ -1,7 +1,8 @@
 // ==================== MODULE INTERFACE ====================
 // Inputs:
-// - clock:    48kHz sample clock (Divided from 12.288MHz PLL)
+// - clock:    12.288 MHz PLL Generated Clock
 // - reset:    Active high
+// - sample_en: Fires every 48 kHz tick (Divided From 12.288MHz PLL Clock)
 // - phase:    32-bit phase accumulator value
 //
 // LUT Initialization Inputs (Port A — 50 MHz system clock):
@@ -17,8 +18,9 @@
 // ===========================================================
 
 module sine_lookup(
-    clock, // 48 kHz sample clock
+    clock, // 12.288 MHz PLL Generated Clock
     reset,
+    sample_en, // Fires every 48 kHz tick (Divided From 12.288MHz PLL Clock)
     phase,
     amplitude,
     clk_sys, // System Clock - 50 MHz for LUT initialization
@@ -30,6 +32,7 @@ module sine_lookup(
     // Inputs and Outputs:
     input        clock;
     input        reset;
+    input        sample_en;
     input [31:0] phase;
     output reg [23:0] amplitude;
 
@@ -70,7 +73,7 @@ module sine_lookup(
     always @ (posedge clock or posedge reset) begin
         if (reset)
             quadrant_d <= 2'b00;
-        else
+        else if (sample_en)
             quadrant_d <= quadrant;
     end
 
@@ -78,7 +81,7 @@ module sine_lookup(
     always @ (posedge clock or posedge reset) begin
         if (reset) begin
             amplitude <= 24'd0;
-        end else begin
+        end else if (sample_en) begin // 48 kHz sample tick gate
             case (quadrant_d)
                 2'b00: amplitude <=  lut_out;  // Q1: forward,  positive
                 2'b01: amplitude <=  lut_out;  // Q2: backward, positive
