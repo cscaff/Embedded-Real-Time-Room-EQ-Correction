@@ -147,7 +147,6 @@ module tb_phase_accumulator;
         @(posedge clk); #1;
         check_mac(32'd0, "T7 MAC reset still held -> 0");
 
-        // TODO: VERIFY THESE GENERATED UNIT TESTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         // ── T8: Exact cycle trace with K_FRAC = 2^31 (K=1.5) ─
         // Hand-derived expected values (see script in repo for derivation):
         //   delta[n] = inc_int[n] * K_FRAC  (mult path under test)
@@ -168,7 +167,7 @@ module tb_phase_accumulator;
         check_mac(32'd9,  "T8 MAC cycle 3");
 
         @(posedge clk); #1;
-        check_mac(32'd15, "T8 MAC cycle 4");
+        check_mac(32'd15,6 "T8 MAC cycle 4");
 
         @(posedge clk); #1;
         check_mac(32'd24, "T8 MAC cycle 5");
