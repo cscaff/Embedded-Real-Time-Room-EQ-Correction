@@ -1,3 +1,19 @@
+// ==================== MODULE INTERFACE ====================
+// Inputs:
+// - clock:    12.288 MHz PLL Generated Clock
+// - reset:    Active high
+// - clk_sys: 50 MHz system clock, drives BRAM write port
+// - we_lut: Write enable (active high). Assert to write a sine value.
+// - addr_lut: 8-bit write address (0-255)
+// - din_lut: 24-bit signed sine value to store
+//
+// LUT Initialization Inputs (Port A — 50 MHz system clock):
+// Outputs:
+// - amplitude: 24-bit signed sine output for the CODEC.
+//
+// ===========================================================
+
+
 module sweep_generator(
     clock, // 12.288 MHz PLL Generated Clock
     reset, // Active High Reset
