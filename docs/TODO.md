@@ -16,6 +16,10 @@ FSM
 
 // FFT for now will be a black box to simulate IP Core
 
+# Up for Grabs
+
+Clock Gen PLL
+
 
 # Week 1:
 
