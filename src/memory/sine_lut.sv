@@ -1,7 +1,7 @@
 // ==================== MODULE INTERFACE ====================
 // True Dual-Port BRAM: 256 entries x 24-bit wide.
 // Port A: 50 MHz system clock — write-only (used for startup initialization).
-// Port B: 48 kHz sample clock — read-only (used during audio operation).
+// Port B: 12.288 MHz PLL Generated Clock
 // The FPGA BRAM primitive natively handles the two independent clock domains.
 //
 // CDC note: Port A writes must be fully complete before Port B begins reading.
@@ -14,8 +14,8 @@
 // - addr_a: 8-bit write address selecting one of 256 entries (0-255).
 // - din_a:  24-bit signed sine value to store.
 //
-// Inputs (Port B — read, 48 kHz):
-// - clk_b:  48 kHz sample clock (same clock driving sine_lookup).
+// Inputs (Port B — read, 12.288 MHz):
+// - clk_b:  12.288 MHz sample clock (same clock driving sine_lookup).
 // - addr_b: 8-bit read address, driven by lut_index from sine_lookup.
 //
 // Outputs:
@@ -30,7 +30,7 @@ module sine_lut (
     input  logic [7:0]  addr_a,
     input  logic [23:0] din_a,
 
-    // Port B — read (48 kHz sample clock)
+    // Port B — read (12.288 MHz sample clock)
     input  logic        clk_b,
     input  logic [7:0]  addr_b,
     output logic [23:0] dout_b
