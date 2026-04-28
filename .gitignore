@@ -3,3 +3,20 @@
 
 # Simulation Output
 sim_out/*
+
+# Quartus generated files
+quartus/db/
+quartus/incremental_db/
+quartus/output_files/
+quartus/*.rpt
+quartus/*.smsg
+quartus/*.pin
+quartus/*.sof
+quartus/*.pof
+quartus/*.jdi
+quartus/*.qws
+quartus/*.sopcinfo
+
+# Platform Designer generated synthesis output (keep the .qsys, ignore generated HDL)
+quartus/room_eq_system/synthesis/
+quartus/room_eq_system/simulation/
