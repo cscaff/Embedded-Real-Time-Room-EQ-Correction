@@ -58,7 +58,7 @@ module sample_fifo (
     end
 
     assign lrclk_neg_edge = lrclk_reg & ~lrclk; // Detect falling edge of lrclk
-    assign wreq = lrclk_neg_edge & ~wrfull; // Write request on falling edge of lrclk if FIFO is not full
+    assign wrreq = lrclk_neg_edge & ~wrfull; // Write request on falling edge of lrclk if FIFO is not full
 
 
     // Quartus Generated DCFIFO Instatnation
