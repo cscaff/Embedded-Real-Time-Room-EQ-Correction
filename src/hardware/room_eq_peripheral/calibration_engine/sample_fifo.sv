@@ -13,7 +13,7 @@
 // - data_valid: High when data_out is valid
 //
 // ===========================================================
-module capture_fifo (
+module sample_fifo (
     bclk, // I2S Bit Clock
     lrclk, // I2S Left-Right Clock 
     sdata, // I2s Serial Data (I am assuming this is just the left channel?)
