@@ -2,7 +2,7 @@
 // Inputs:
 // - bclk: I2S Bit Clock (3.072 MHz)
 // - lrclk: I2S Left-Right Clock (48 kHz)
-// - sdata: I2S Serial Data (assumed to be the left channel)
+// - left_chan: 24 bit I2S Serial Data (I am assuming this is just the left channel?)
 // - sysclk: System Clock (50 MHz)
 // - aclr: Active High Async Reset (Because we have dual clock domains)
 // - fft_ready: Input: FFT Backpressure Signal.
@@ -16,7 +16,7 @@
 module sample_fifo (
     bclk, // I2S Bit Clock
     lrclk, // I2S Left-Right Clock 
-    sdata, // I2s Serial Data (I am assuming this is just the left channel?)
+    left_chan, // 24 bit I2S Serial Data (I am assuming this is just the left channel?)
     sysclk, // System Clock (50 MHz)
     aclr, // Active High Async Reset (Because we have dual clock domains)
     data_out, // Output: 24-bit audio sample from FIFO
@@ -33,15 +33,15 @@ module sample_fifo (
     input aclr;
 
     // Data and Control
-    input sdata;
-    input data_valid; // Output: High when data_out is valid
+    input left_chan;
+    output reg data_valid; // Output: High when data_out is valid
     input fft_ready;  // Input: FFT Backpressure Signal.
     output reg [23:0] data_out; // Output: 24-bit audio sample from FIFO
 
 
     // Quartus Generated DCFIFO Instatnation
-    capture_fifo	capture_fifo_inst (
-	.data ( sdata ),
+    sample_fifo	sample_fifo_inst (
+	.data ( left_chan ),
 	.rdclk ( sysclk ),
 	.rdreq ( rdreq_sig ),
 	.wrclk ( bclk ),
