@@ -8,6 +8,8 @@ module tb_sample_fifo;
     // After a bclk-domain write, the gray-coded write pointer crosses to the
     // sysclk domain through rdsync_delaypipe=4 stages (~1 bclk + 4 sysclk
     // cycles). 30 sysclk cycles gives comfortable margin.
+    // Math: 1 bclk cycle = 326 ns + 4 sysclk cycles * 20 ns = 406 ns
+    // 30 sysclk cycles * 20 ns = 600 ns > 406 ns i.e. safe clock domain crossing margin.
     localparam CDC_WAIT = 30;
 
     // ── DUT ports ─────────────────────────────────────────────
@@ -41,6 +43,8 @@ module tb_sample_fifo;
     always #(BCLK_PERIOD   / 2) bclk   = ~bclk;
     initial sysclk = 0;
     always #(SYSCLK_PERIOD / 2) sysclk = ~sysclk;
+    // Note: Clock toggles every half period.
+    // This simulates the clocks for the DUT.
 
     // ── send_sample ───────────────────────────────────────────
     // Creates one lrclk falling edge with left_chan stable.
@@ -62,7 +66,8 @@ module tb_sample_fifo;
         d = data_out;
         fft_ready = 1;
         @(posedge sysclk); #1;   // FIFO advances on this sysclk posedge
-        fft_ready = 0;
+        fft_ready = 0; // In a real example, fft_ready might stay high for 
+        // multiple cycles. Testing for now will juts focus on a single transaction. 
     endtask
 
     // ── Test variables ────────────────────────────────────────
@@ -72,10 +77,10 @@ module tb_sample_fifo;
 
     // ── Test sequence ─────────────────────────────────────────
     initial begin
-        aclr_drv  = 1;
-        lrclk     = 1;
-        left_chan  = 24'h0;
-        fft_ready = 0;
+        aclr_drv  = 1; // Reset 
+        lrclk     = 1; // No falling edge just yet.
+        left_chan  = 24'h0; // Default sample
+        fft_ready = 0; // FFT not ready to consume data
 
         // ── T1: Async reset holds FIFO empty; data_valid=0 ────
         repeat (4) @(posedge bclk); #1;
@@ -85,7 +90,7 @@ module tb_sample_fifo;
             $display("FAIL [T1] expected data_valid=0 during reset, got %b", data_valid);
 
         @(posedge bclk); #1;
-        aclr_drv = 0;
+        aclr_drv = 0; // Release reset.
         repeat (4) @(posedge bclk);
 
         // ── T2: Single write; data_valid asserts after CDC ────
@@ -132,7 +137,7 @@ module tb_sample_fifo;
         expected[3] = 24'h444444;
         for (i = 0; i < 4; i++) begin
             send_sample(expected[i]);
-            repeat (8) @(posedge bclk);   // inter-sample gap
+            repeat (8) @(posedge bclk);   // inter-audio-sample gap
         end
         repeat (CDC_WAIT) @(posedge sysclk); #1;
         begin : t6_check
@@ -161,6 +166,53 @@ module tb_sample_fifo;
         else
             $display("FAIL [T7] expected data_valid=0 after reset, got %b", data_valid);
         aclr_drv = 0;
+        repeat (4) @(posedge sysclk); // let reset settle before next test
+
+        // ── T8: Burst write; back pressure mid-drain; ordering preserved ──
+        // Like T6 but fft_ready is withheld for 10 sysclk cycles after the
+        // first two reads to verify the FIFO holds remaining data correctly.
+        expected[0] = 24'hAABBCC;
+        expected[1] = 24'hDDEEFF;
+        expected[2] = 24'h112233;
+        expected[3] = 24'h445566;
+        for (i = 0; i < 4; i++) begin
+            send_sample(expected[i]);
+            repeat (8) @(posedge bclk);   // inter-audio-sample gap
+        end
+        repeat (CDC_WAIT) @(posedge sysclk); #1;
+        begin : t8_check
+            integer pass_count;
+            pass_count = 0;
+            // Drain first 2 samples without back pressure
+            for (i = 0; i < 2; i++) begin
+                read_sample(read_val);
+                if (read_val === expected[i])
+                    pass_count++;
+                else
+                    $display("FAIL [T8] sample[%0d] got 0x%06h, expected 0x%06h",
+                             i, read_val, expected[i]);
+                @(posedge sysclk); #1;
+            end
+            // Apply back pressure: hold fft_ready=0 for 10 sysclk cycles
+            repeat (10) @(posedge sysclk); #1;
+            if (data_valid === 1'b1)
+                $display("PASS [T8] data_valid stays 1 during mid-burst backpressure");
+            else
+                $display("FAIL [T8] data_valid dropped unexpectedly during backpressure, got %b",
+                         data_valid);
+            // Resume: drain remaining 2 samples and verify ordering preserved
+            for (i = 2; i < 4; i++) begin
+                read_sample(read_val);
+                if (read_val === expected[i])
+                    pass_count++;
+                else
+                    $display("FAIL [T8] sample[%0d] got 0x%06h, expected 0x%06h",
+                             i, read_val, expected[i]);
+                @(posedge sysclk); #1;
+            end
+            if (pass_count == 4)
+                $display("PASS [T8] all 4 samples correct across mid-burst backpressure");
+        end
 
         $display("\n=== All tests complete ===");
         $finish;
