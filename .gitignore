@@ -20,3 +20,4 @@ quartus/*.sopcinfo
 # Platform Designer generated synthesis output (keep the .qsys, ignore generated HDL)
 quartus/room_eq_system/synthesis/
 quartus/room_eq_system/simulation/
+db/*
