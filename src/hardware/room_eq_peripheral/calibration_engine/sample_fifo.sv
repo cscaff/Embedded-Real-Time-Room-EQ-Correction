@@ -24,7 +24,7 @@ module sample_fifo (
     fft_ready  // Input: FFT Backpressure Signal.
     );
 
-    // Inputs and Outputs:
+    // ==================== Wiring ====================
 
     // Clocks and Reset
     input bclk;
@@ -45,7 +45,8 @@ module sample_fifo (
     wire rdreq;
     wire lrclk_neg_edge;
 
-    // Write Request Logic:
+    // ==================== Write Request Logic ====================
+
     // Assert write request when new sample is available (Falling edge of lrclk) and FIFO is not full.
     reg lrclk_reg;
 
@@ -60,12 +61,12 @@ module sample_fifo (
     assign lrclk_neg_edge = lrclk_reg & ~lrclk; // Detect falling edge of lrclk
     assign wrreq = lrclk_neg_edge & ~wrfull; // Write request on falling edge of lrclk if FIFO is not full
 
-    // Read Request Logic:
+    // ==================== Read Request Logic ====================
+
     assign data_valid = ~rdempty;
     assign rdreq  = data_valid & fft_ready; // Read request when data is valid and FFT is ready to consume.
 
-
-    // Quartus Generated DCFIFO Instatnation
+    // ==================== Quartus Generated DCFIFO Instantiation ====================
     capture_fifo	capture_fifo_inst (
 	.aclr ( aclr ),
 	.data ( left_chan ),
