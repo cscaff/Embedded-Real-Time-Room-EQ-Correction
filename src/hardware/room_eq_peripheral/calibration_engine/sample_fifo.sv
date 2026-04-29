@@ -33,17 +33,17 @@ module sample_fifo (
     input aclr;
 
     // Data and Control
-    input left_chan;
-    output reg data_valid; // Output: High when data_out is valid
+    input [23:0] left_chan;
+    output data_valid; // Output: High when data_out is valid
     input fft_ready;  // Input: FFT Backpressure Signal.
-    output reg [23:0] data_out; // Output: 24-bit audio sample from FIFO
+    output [23:0] data_out; // Output: 24-bit audio sample from FIFO
 
     // Internal Signals
     wire wrfull;
     wire rdempty;
-    wire [23:0] q;
     wire wrreq;
     wire rdreq;
+    wire lrclk_neg_edge;
 
     // Write Request Logic:
     // Assert write request when new sample is available (Falling edge of lrclk) and FIFO is not full.
@@ -60,20 +60,23 @@ module sample_fifo (
     assign lrclk_neg_edge = lrclk_reg & ~lrclk; // Detect falling edge of lrclk
     assign wrreq = lrclk_neg_edge & ~wrfull; // Write request on falling edge of lrclk if FIFO is not full
 
+    // Read Request Logic:
+    assign data_valid = ~rdempty;
+    assign rdreq  = data_valid & fft_ready; // Read request when data is valid and FFT is ready to consume.
+
 
     // Quartus Generated DCFIFO Instatnation
-    sample_fifo	sample_fifo_inst (
+    capture_fifo	capture_fifo_inst (
+	.aclr ( aclr ),
 	.data ( left_chan ),
 	.rdclk ( sysclk ),
 	.rdreq ( rdreq ),
 	.wrclk ( bclk ),
 	.wrreq ( wrreq ),
-	.q ( q ),
+	.q ( data_out ),
 	.rdempty ( rdempty ),
 	.wrfull ( wrfull )
 	);
-
-
 
 
 endmodule
