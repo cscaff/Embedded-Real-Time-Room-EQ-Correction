@@ -1,8 +1,18 @@
 // ==================== MODULE INTERFACE ====================
 // Inputs:
+// - sysclk: 50 MHz system clock.
+// - reset_n: Active low reset signal.
+// - sink_real: 24-bit real part of the input sample to the FFT.
+// - sink_valid: Indicates when the input sample is valid and can be consumed by the FFT.
 // - TODO: FSM Control/Status Signals. 
 //
 // Outputs:
+// - source_real: 24-bit real part of the FFT output.
+// - source_imag: 24-bit imaginary part of the FFT output.
+// - source_valid: Indicates when the FFT output is valid and can be consumed by downstream logic.
+// - source_eop: End of Packet signal for the FFT output, indicating the last sample of the current FFT frame.
+// - source_sop: Start of Packet signal for the FFT output, indicating the first sample of the current FFT frame.//
+// - sink_ready: Backpressure signal from the FFT indicating it is ready to consume the input sample.
 //
 // ===========================================================
 module sample_fft (
