@@ -24,4 +24,21 @@ module capture_fifo (
     fft_ready  // Input: FFT Backpressure Signal.
     );
 
+    // Inputs and Outputs:
+
+    // Clocks and Reset
+    input bclk;
+    input lrclk;
+    input sysclk;
+    input aclr;
+
+    // Data and Control
+    input sdata;
+    input data_valid; // Output: High when data_out is valid
+    input fft_ready;  // Input: FFT Backpressure Signal.
+    output reg [23:0] data_out; // Output: 24-bit audio sample from FIFO
+
+
+
+
 endmodule
