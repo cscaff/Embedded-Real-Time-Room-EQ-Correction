@@ -39,6 +39,19 @@ module capture_fifo (
     output reg [23:0] data_out; // Output: 24-bit audio sample from FIFO
 
 
+    // Quartus Generated DCFIFO Instatnation
+    capture_fifo	capture_fifo_inst (
+	.data ( sdata ),
+	.rdclk ( sysclk ),
+	.rdreq ( rdreq_sig ),
+	.wrclk ( bclk ),
+	.wrreq ( wrreq_sig ),
+	.q ( q_sig ),
+	.rdempty ( rdempty_sig ),
+	.wrfull ( wrfull_sig )
+	);
+
+
 
 
 endmodule
