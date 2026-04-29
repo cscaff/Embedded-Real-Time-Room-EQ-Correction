@@ -45,6 +45,22 @@ module sample_fifo (
     wire wrreq;
     wire rdreq;
 
+    // Write Request Logic:
+    // Assert write request when new sample is available (Falling edge of lrclk) and FIFO is not full.
+    reg lrclk_reg;
+
+    always @ (posedge bclk or posedge aclr) begin
+        if (aclr) begin
+            lrclk_reg <= 1'b0;
+        end else begin
+            lrclk_reg <= lrclk; // Register lrclk to detect edges
+        end
+    end
+
+    assign lrclk_neg_edge = lrclk_reg & ~lrclk; // Detect falling edge of lrclk
+    assign wreq = lrclk_neg_edge & ~wrfull; // Write request on falling edge of lrclk if FIFO is not full
+
+
     // Quartus Generated DCFIFO Instatnation
     sample_fifo	sample_fifo_inst (
 	.data ( left_chan ),
