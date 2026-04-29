@@ -1,0 +1,42 @@
+Info: Starting: Create block symbol file (.bsf)
+Info: qsys-generate C:\Users\chris\OneDrive\Desktop\CSEE4840\Embedded-Real-Time-Room-EQ-Correction\quartus\ip\room_eq_peripheral\capture_fft\capture_fft.qsys --block-symbol-file --output-directory=C:\Users\chris\OneDrive\Desktop\CSEE4840\Embedded-Real-Time-Room-EQ-Correction\quartus\ip\room_eq_peripheral\capture_fft\capture_fft --family="Cyclone V" --part=5CEBA2F17A7
+Progress: Loading capture_fft/capture_fft.qsys
+Progress: Reading input file
+Progress: Adding fft_ii_0 [altera_fft_ii 25.1]
+Progress: Parameterizing module fft_ii_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Info: capture_fft.fft_ii_0: Radix-2 digit reverse implied
+Info: qsys-generate succeeded.
+Info: Finished: Create block symbol file (.bsf)
+Info: 
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate C:\Users\chris\OneDrive\Desktop\CSEE4840\Embedded-Real-Time-Room-EQ-Correction\quartus\ip\room_eq_peripheral\capture_fft\capture_fft.qsys --synthesis=VERILOG --output-directory=C:\Users\chris\OneDrive\Desktop\CSEE4840\Embedded-Real-Time-Room-EQ-Correction\quartus\ip\room_eq_peripheral\capture_fft\capture_fft\synthesis --family="Cyclone V" --part=5CEBA2F17A7
+Progress: Loading capture_fft/capture_fft.qsys
+Progress: Reading input file
+Progress: Adding fft_ii_0 [altera_fft_ii 25.1]
+Progress: Parameterizing module fft_ii_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Info: capture_fft.fft_ii_0: Radix-2 digit reverse implied
+Info: capture_fft: Generating "capture_fft" for QUARTUS_SYNTH
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twr5.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twi6.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twr6.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twi1.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twi2.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twr1.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twi3.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twr2.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twr3.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twi4.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twr4.hex
+Info: fft_ii_0: --- add file: capture_fft_fft_ii_0_opt_twi5.hex
+Info: fft_ii_0: "capture_fft" instantiated altera_fft_ii "fft_ii_0"
+Info: capture_fft: Done "capture_fft" with 2 modules, 54 files
+Info: qsys-generate succeeded.
+Info: Finished: Create HDL design files for synthesis
