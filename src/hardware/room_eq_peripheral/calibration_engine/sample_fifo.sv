@@ -38,17 +38,23 @@ module sample_fifo (
     input fft_ready;  // Input: FFT Backpressure Signal.
     output reg [23:0] data_out; // Output: 24-bit audio sample from FIFO
 
+    // Internal Signals
+    wire wrfull;
+    wire rdempty;
+    wire [23:0] q;
+    wire wrreq;
+    wire rdreq;
 
     // Quartus Generated DCFIFO Instatnation
     sample_fifo	sample_fifo_inst (
 	.data ( left_chan ),
 	.rdclk ( sysclk ),
-	.rdreq ( rdreq_sig ),
+	.rdreq ( rdreq ),
 	.wrclk ( bclk ),
-	.wrreq ( wrreq_sig ),
-	.q ( q_sig ),
-	.rdempty ( rdempty_sig ),
-	.wrfull ( wrfull_sig )
+	.wrreq ( wrreq ),
+	.q ( q ),
+	.rdempty ( rdempty ),
+	.wrfull ( wrfull )
 	);
 
 
