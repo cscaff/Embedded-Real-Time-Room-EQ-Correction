@@ -2,8 +2,8 @@ IVERILOG = iverilog
 VVP      = vvp
 FLAGS    = -g2012
 
-SRC_DIR  = src
-TEST_DIR = test
+SRC_DIR  = src/hardware
+TEST_DIR = test/hardware
 OUT_DIR  = sim_out
 
 # ── Targets ─────────────────────────────────────────────────────────────────
