@@ -46,7 +46,7 @@ module sample_fft (
     output source_sop; // Start of Packet for FFT output
 
     // Internal Signals
-    wire [12:0] fftpts_in = 13'd8192; // 8192 point FFT (13 bits: 8192 = 2^13).
+    wire [13:0] fftpts_in = 14'd8192; // 8192 point FFT (14 bits: 8192 < 2^14).
     wire inverse = 1'b0; // Set inverse to False. Only use Forward.
     wire source_ready = 1'b1; // BRAM never applies backpressure.
     wire [1:0] sink_error = 2'b00; // No error messages as of now.
@@ -54,7 +54,7 @@ module sample_fft (
 
     // Unused Wires
     wire [1:0] source_error_unused; // TODO - Connect to FSM for Error Handling.
-    wire [12:0] fftpts_out_unused;
+    wire [13:0] fftpts_out_unused;
 
     // ==================== SOP and EOP Signal Logic ====================
     reg [12:0] sample_count; // 13 Bit counter from 0 to 8191 (2^13 = 8192) to track 
