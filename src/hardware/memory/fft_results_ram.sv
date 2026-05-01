@@ -53,8 +53,35 @@ module fft_result_ram (
     reg [23:0] ram_imag [8191:0]; // RAM for imaginary parts of FFT output
 
     // ===================== Write Logic =====================
+    
+    // Establish write pointer that traverses the RAM as FFT output samples arrive.
+    reg [12:0] write_addr; // 13-bit pointer for 8192 entries
 
+    always @(posedge sysclk or negedge reset_n) begin
+        if (!reset_n) begin // Reset must be low to assert.
+            write_addr <= 0;
+            fft_done <= 0;
+        end else begin
+            // Start of Packet: Write Ptr = 0.
+            if (data_sop) begin
+                write_addr <= 0;
+                fft_done <= 0;
+            end
 
+            // Write FFT output to RAM when valid.
+            if (fft_valid) begin
+                ram_real[write_addr] <= fft_real;
+                ram_imag[write_addr] <= fft_imag;
+                write_addr <= write_addr + 1;
+            end
+
+            // End of Packet: Assert fft_done to indicate RAM is ready for reading.
+            if (data_eop) begin
+                fft_done <= 1;
+            end
+        end
+    end
+    
     // ===================== Read Logic =====================
 
 endmodule
