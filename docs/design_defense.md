@@ -47,8 +47,3 @@ Make sure HPS bus is fast enough and synchronized
 
 
 Add line in for audio input to blocker diagram.
-
-
-Fuck him. Here is how to do sine wave gen: 
-
-https://github.com/samiyaalizaidi/Direct-Digital-Synthesizer
