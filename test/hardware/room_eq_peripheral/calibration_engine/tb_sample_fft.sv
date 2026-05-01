@@ -1,10 +1,5 @@
 `timescale 1ns / 1ps
 
-// Note: sample_fft.sv wires fftpts_in as wire [12:0] = 13'd8192.
-// 8192 requires 14 bits, so the 13-bit wire truncates to 0 in simulation.
-// This does not affect these tests because sample_fft.sv drives SOP/EOP
-// from its own hardcoded counter, independent of fftpts_in.
-
 module tb_sample_fft;
 
     // ── Clock period ──────────────────────────────────────────
@@ -126,38 +121,47 @@ module tb_sample_fft;
             $display("FAIL [T6] sample_count=%0d sink_sop=%b (expected 0,1)",
                      dut.sample_count, dut.sink_sop);
 
-        // ── T7: source_valid and source_sop fire on first output ─
-        // The FFT stub starts streaming the buffered frame one cycle after
-        // the EOP handshake sets frame_ready.
-        @(posedge sysclk); #1;
-        if (source_valid === 1'b1 && source_sop === 1'b1)
-            $display("PASS [T7] source_valid=1, source_sop=1 on first output cycle");
-        else
-            $display("FAIL [T7] source_valid=%b source_sop=%b (expected 1,1)",
-                     source_valid, source_sop);
+        // ── T7: Real FFT II output framing ────────────────────
+        // The Intel R22SDF FFT II with natural-order output has two N-cycle
+        // stages: butterfly (N=8192) + bit-reversal (N=8192).  Total latency
+        // from first input SOP to first output valid is ~2N ≈ 16384 cycles.
+        // Poll for source_sop AND source_valid asserted simultaneously
+        // (both fire on the same posedge for the first valid output sample).
+        begin : t7_sop
+            integer cyc;
+            cyc = 0;
+            while (!(source_sop === 1'b1 && source_valid === 1'b1) && cyc < 20000) begin
+                @(posedge sysclk); #1;
+                cyc++;
+            end
+            if (source_sop === 1'b1 && source_valid === 1'b1)
+                $display("PASS [T7] source_sop=1, source_valid=1 after %0d cycles", cyc);
+            else
+                $display("FAIL [T7] source_sop=%b source_valid=%b after %0d cycles (timeout)",
+                         source_sop, source_valid, cyc);
+        end
 
-        // ── T7 (cont): source_eop asserts at end of output frame ─
         begin : t7_eop
             integer cyc;
             cyc = 0;
-            while (!source_eop && cyc < 10000) begin
+            while (source_eop !== 1'b1 && cyc < 10000) begin
                 @(posedge sysclk); #1;
                 cyc++;
             end
             if (source_eop === 1'b1 && source_valid === 1'b1)
-                $display("PASS [T7] source_eop=1 with source_valid=1 (cycle %0d)", cyc);
+                $display("PASS [T7] source_eop=1, source_valid=1 after %0d output cycles", cyc);
             else
-                $display("FAIL [T7] source_eop=%b source_valid=%b after %0d cycles",
+                $display("FAIL [T7] source_eop=%b source_valid=%b after %0d cycles (timeout)",
                          source_eop, source_valid, cyc);
         end
 
         // ── T8: Reset mid-frame resets counter ────────────────
-        // The stub re-enables sink_ready after its output phase completes.
-        // Wait one more cycle for sink_ready to propagate, then send 100
-        // samples to advance the counter deep into a second frame.
+        // send_n_samples respects sink_ready backpressure so this is safe
+        // even if the real FFT takes a cycle to re-assert sink_ready after
+        // source_eop.  The test validates sample_fft.sv's async counter
+        // reset, not FFT core internals.
         @(posedge sysclk); #1;
         send_n_samples(100, 24'hCAFE00);
-        // Assert async reset and check counter clears immediately
         reset_n = 0;
         #1;
         if (dut.sample_count === 13'd0 && dut.sink_sop === 1'b1)
@@ -172,8 +176,9 @@ module tb_sample_fft;
     end
 
     // ── Timeout watchdog ──────────────────────────────────────
+    // Real FFT: ~8200 input cycles + ~8192 compute + ~8192 output = ~25ms sim
     initial begin
-        #5_000_000;
+        #10_000_000;
         $display("TIMEOUT");
         $finish;
     end

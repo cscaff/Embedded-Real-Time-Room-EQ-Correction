@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="capture_fft" kind="capture_fft" version="1.0" fabric="QSYS">
  <!-- Format version 25.1 1129 (Future versions may contain additional information.) -->
- <!-- 2026.04.29.10:37:00 -->
+ <!-- 2026.04.30.21:43:38 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1777473420</value>
+  <value>1777599818</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>

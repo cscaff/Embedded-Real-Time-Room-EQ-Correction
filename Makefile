@@ -15,7 +15,7 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo sim_fft clean
 
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo
 
@@ -74,11 +74,17 @@ $(OUT_DIR)/tb_sample_fifo.vvp: \
 
 # ── Questa target ─────────────────────────────────────────────────────────────
 SIM_FIFO_TCL = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
+SIM_FFT_TCL  = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fft.tcl
 
 sim_fifo: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
 sim_fifo:
 	"$(QUESTA)" -c \
 	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_FIFO_TCL)}"
+
+sim_fft: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
+sim_fft:
+	"$(QUESTA)" -c \
+	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_FFT_TCL)}"
 
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
