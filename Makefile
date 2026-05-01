@@ -3,6 +3,10 @@ VVP           = vvp
 FLAGS         = -g2012
 ALTERA_SIM_LIB = C:/altera_lite/25.1std/quartus/eda/sim_lib
 
+QUESTA        = C:/altera_lite/25.1std/questa_fse/win64/vsim.exe
+LICENSE_DAT   = C:/licenses/flexlm/LR-163391_License.dat
+PROJ_ROOT    := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
 SRC_DIR   = src/hardware
 TEST_DIR  = test/hardware
 OUT_DIR   = sim_out
@@ -11,7 +15,7 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo clean
 
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo
 
@@ -67,6 +71,14 @@ $(OUT_DIR)/tb_sample_fifo.vvp: \
 		$(FIFO_TEST_DIR)/tb_sample_fifo.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -DALTERA_RESERVED_QIS -o $@ $^
+
+# ── Questa target ─────────────────────────────────────────────────────────────
+SIM_FIFO_TCL = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
+
+sim_fifo: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
+sim_fifo:
+	"$(QUESTA)" -c \
+	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_FIFO_TCL)}"
 
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)

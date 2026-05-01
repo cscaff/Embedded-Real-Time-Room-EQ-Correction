@@ -1,16 +1,29 @@
 # ── sim_fifo.tcl ──────────────────────────────────────────────────────────────
 # Questa FSE simulation for tb_sample_fifo.
 #
-# HOW TO RUN (from this script's directory):
-#   C:\altera_lite\25.1std\questa_fse\win64\vsim.exe -c -do sim_fifo.tcl
+# NOTE: Questa's -do engine does NOT set [info script] to the do-script path,
+# so PROJ_ROOT must be injected inline on the command line.
+#
+# HOW TO RUN (cmd.exe, one-liner):
+#
+#   set PR=C:\Users\chris\OneDrive\Desktop\CSEE4840\Embedded-Real-Time-Room-EQ-Correction
+#   set TS=%PR%\test\hardware\room_eq_peripheral\calibration_engine\sim_fifo.tcl
+#   C:\altera_lite\25.1std\questa_fse\win64\vsim.exe -c -do "set PROJ_ROOT {%PR%}; source {%TS%}"
 #
 # The -c flag runs in batch (console) mode so $finish exits cleanly.
 # Drop -c to open the Questa GUI instead.
 # ──────────────────────────────────────────────────────────────────────────────
 
 set QUESTA_HOME "C:/altera_lite/25.1std/questa_fse"
-set SCRIPT_DIR  [file normalize [file dirname [info script]]]
-set PROJ_ROOT   [file normalize "$SCRIPT_DIR/../../../../"]
+
+# PROJ_ROOT must be passed via the -do inline command (see HOW TO RUN above).
+if {![info exists PROJ_ROOT]} {
+    puts "ERROR: PROJ_ROOT is not set. Run vsim with:"
+    puts {  vsim -c -do "set PROJ_ROOT {<abs-path-to-repo>}; source {<abs-path-to-this-script>}"}
+    quit -f
+}
+set PROJ_ROOT  [file normalize $PROJ_ROOT]
+set SCRIPT_DIR [file normalize "$PROJ_ROOT/test/hardware/room_eq_peripheral/calibration_engine"]
 
 # ── Clean previous artifacts ──────────────────────────────────────────────────
 if {[file exists work]} { vdel -all -lib work }

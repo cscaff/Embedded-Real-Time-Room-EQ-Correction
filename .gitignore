@@ -22,3 +22,8 @@ quartus/room_eq_system/synthesis/
 quartus/room_eq_system/simulation/
 db/*
 greybox_tmp/*
+
+# Questa Simulation (generated per-run in any test directory)
+work/
+modelsim.ini
+transcript
