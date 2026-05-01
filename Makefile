@@ -33,7 +33,7 @@ sim_sine_lut: $(OUT_DIR)/tb_sine_lut.vvp
 
 $(OUT_DIR)/tb_sine_lut.vvp: \
 		$(SRC_DIR)/memory/sine_lut.sv \
-		$(TEST_DIR)/memory/sine_lut.sv \
+		$(TEST_DIR)/memory/tb_sine_lut.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
