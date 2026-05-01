@@ -25,5 +25,12 @@ greybox_tmp/*
 
 # Questa Simulation (generated per-run in any test directory)
 work/
+fft_ii_0/
 modelsim.ini
 transcript
+
+# Twiddle-factor hex files copied to CWD by sim_fft.tcl
+capture_fft_fft_ii_0_*.hex
+
+# qsys-generate simulation output under quartus/ip/
+quartus/ip/**/simulation/
