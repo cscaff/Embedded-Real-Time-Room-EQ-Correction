@@ -81,7 +81,13 @@ module fft_result_ram (
             end
         end
     end
-    
+
     // ===================== Read Logic =====================
+    // Synchhronous read from RAM based on rd_addr. (1 cycle latency)
+
+    always @(posedge sysclk) begin
+        rd_real <= ram_real[rd_addr];
+        rd_imag <= ram_imag[rd_addr];
+    end
 
 endmodule
