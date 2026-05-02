@@ -266,7 +266,13 @@ module soc_system_top(
      .hps_hps_io_gpio_inst_GPIO48  ( HPS_I2C_CONTROL ),
      .hps_hps_io_gpio_inst_GPIO53  ( HPS_LED ),
      .hps_hps_io_gpio_inst_GPIO54  ( HPS_KEY ),
-     .hps_hps_io_gpio_inst_GPIO61  ( HPS_GSENSOR_INT )
+     .hps_hps_io_gpio_inst_GPIO61  ( HPS_GSENSOR_INT ),
+
+     // Audio peripheral conduit
+     .audio_xck                    ( AUD_XCK ),
+     .audio_bclk                   ( AUD_BCLK ),
+     .audio_dacdat                 ( AUD_DACDAT ),
+     .audio_daclrck                ( AUD_DACLRCK )
   );
 
    // The following quiet the "no driver" warnings for output
@@ -276,11 +282,9 @@ module soc_system_top(
    assign ADC_DIN = SW[0];
    assign ADC_SCLK = SW[0];
    
-   assign AUD_ADCLRCK = SW[1] ? SW[0] : 1'bZ;
-   assign AUD_BCLK = SW[1] ? SW[0] : 1'bZ;
-   assign AUD_DACDAT = SW[0];
-   assign AUD_DACLRCK = SW[1] ? SW[0] : 1'bZ;
-   assign AUD_XCK = SW[0];      
+   // AUD_BCLK, AUD_DACDAT, AUD_DACLRCK, AUD_XCK driven by room_eq_peripheral
+   // AUD_ADCLRCK unused for now (will be driven by i2s_rx later)
+   assign AUD_ADCLRCK = 1'b0;
 
    assign DRAM_ADDR = { 13{ SW[0] } };
    assign DRAM_BA = { 2{ SW[0] } };
