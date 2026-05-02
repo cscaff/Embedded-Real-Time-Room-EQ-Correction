@@ -9,6 +9,14 @@
    categories="System" />
  <parameter name="bonusData"><![CDATA[bonusData 
 {
+   element audio_pll_0
+   {
+      datum _sortIndex
+      {
+         value = "2";
+         type = "int";
+      }
+   }
    element clk_0
    {
       datum _sortIndex
@@ -50,13 +58,25 @@
  <interface name="hps" internal="hps_0.hps_io" type="conduit" dir="end" />
  <interface name="hps_ddr3" internal="hps_0.memory" type="conduit" dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
- <module name="clk_0" kind="clock_source" version="21.1" enabled="1">
+ <interface name="rob" internal="audio_pll_0.audio_clk" type="clock" dir="start" />
+ <module
+   name="audio_pll_0"
+   kind="altera_up_avalon_audio_pll"
+   version="18.0"
+   enabled="1">
+  <parameter name="AUTO_DEVICE" value="5CSEMA5F31C6" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
+  <parameter name="audio_clk_freq" value="12.288" />
+  <parameter name="device_family" value="Cyclone V" />
+  <parameter name="gui_refclk" value="50.0" />
+ </module>
+ <module name="clk_0" kind="clock_source" version="24.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
   <parameter name="inputClockFrequency" value="0" />
   <parameter name="resetSynchronousEdges" value="NONE" />
  </module>
- <module name="hps_0" kind="altera_hps" version="21.1" enabled="1">
+ <module name="hps_0" kind="altera_hps" version="24.1" enabled="1">
   <parameter name="ABSTRACT_REAL_COMPARE_TEST" value="false" />
   <parameter name="ABS_RAM_MEM_INIT_FILENAME" value="meminit" />
   <parameter name="ACV_PHY_CLK_ADD_FR_PHASE" value="0.0" />
@@ -588,19 +608,29 @@
  </module>
  <connection
    kind="clock"
-   version="21.1"
+   version="24.1"
    start="clk_0.clk"
    end="hps_0.f2h_axi_clock" />
  <connection
    kind="clock"
-   version="21.1"
+   version="24.1"
    start="clk_0.clk"
    end="hps_0.h2f_axi_clock" />
  <connection
    kind="clock"
-   version="21.1"
+   version="24.1"
    start="clk_0.clk"
    end="hps_0.h2f_lw_axi_clock" />
+ <connection
+   kind="clock"
+   version="24.1"
+   start="clk_0.clk"
+   end="audio_pll_0.ref_clk" />
+ <connection
+   kind="reset"
+   version="24.1"
+   start="clk_0.clk_reset"
+   end="audio_pll_0.ref_reset" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.enableEccProtection" value="FALSE" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />
