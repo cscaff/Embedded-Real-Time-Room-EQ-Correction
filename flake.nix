@@ -17,7 +17,7 @@
       in {
         devShells.default = pkgs.mkShell {
           packages = [
-            pkgs.verilog        # Icarus Verilog (iverilog + vvp)
+            pkgs.iverilog
             pkgs.gtkwave
             python
           ];
