@@ -8,9 +8,9 @@ OUT_DIR  = sim_out
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx clean
 
-all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk
+all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx
 
 sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
 	$(VVP) $<
@@ -60,6 +60,26 @@ sim_i2s_clk: $(OUT_DIR)/tb_i2s_clock_gen.vvp
 $(OUT_DIR)/tb_i2s_clock_gen.vvp: \
 		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv \
 		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_i2s_clock_gen.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
+
+sim_i2s_shift: $(OUT_DIR)/tb_i2s_shift_register.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_i2s_shift_register.vvp: \
+		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_shift_register.sv \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_i2s_shift_register.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
+
+sim_i2s_tx: $(OUT_DIR)/tb_i2s_tx.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_i2s_tx.vvp: \
+		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv \
+		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_shift_register.sv \
+		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_tx.sv \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_i2s_tx.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
