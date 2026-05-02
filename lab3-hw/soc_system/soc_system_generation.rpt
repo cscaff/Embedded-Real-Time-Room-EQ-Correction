@@ -8,6 +8,8 @@ Progress: Adding clk_0 [clock_source 24.1]
 Progress: Parameterizing module clk_0
 Progress: Adding hps_0 [altera_hps 24.1]
 Progress: Parameterizing module hps_0
+Progress: Adding i2c_0 [altera_avalon_i2c 24.1]
+Progress: Parameterizing module i2c_0
 Progress: Adding room_eq_peripheral_0 [room_eq_peripheral 1.0]
 Progress: Parameterizing module room_eq_peripheral_0
 Progress: Building connections
@@ -17,6 +19,7 @@ Progress: Done reading input file
 Info: soc_system.hps_0: HPS Main PLL counter settings: n = 0  m = 73
 Info: soc_system.hps_0: HPS peripherial PLL counter settings: n = 0  m = 39
 Warning: soc_system.hps_0: HPS model no longer supports simulation for HPS FPGA Bridges.
+Warning: soc_system.i2c_0: Interrupt sender i2c_0.interrupt_sender is not connected to an interrupt receiver
 Info: qsys-generate succeeded.
 Info: Finished: Create block symbol file (.bsf)
 Info: 
@@ -30,6 +33,8 @@ Progress: Adding clk_0 [clock_source 24.1]
 Progress: Parameterizing module clk_0
 Progress: Adding hps_0 [altera_hps 24.1]
 Progress: Parameterizing module hps_0
+Progress: Adding i2c_0 [altera_avalon_i2c 24.1]
+Progress: Parameterizing module i2c_0
 Progress: Adding room_eq_peripheral_0 [room_eq_peripheral 1.0]
 Progress: Parameterizing module room_eq_peripheral_0
 Progress: Building connections
@@ -39,16 +44,18 @@ Progress: Done reading input file
 Info: soc_system.hps_0: HPS Main PLL counter settings: n = 0  m = 73
 Info: soc_system.hps_0: HPS peripherial PLL counter settings: n = 0  m = 39
 Warning: soc_system.hps_0: HPS model no longer supports simulation for HPS FPGA Bridges.
+Warning: soc_system.i2c_0: Interrupt sender i2c_0.interrupt_sender is not connected to an interrupt receiver
 Info: soc_system: Generating "soc_system" for QUARTUS_SYNTH
-Info: Interconnect is inserted between master hps_0.h2f_lw_axi_master and slave room_eq_peripheral_0.avalon_slave_0 because the master is of type axi and the slave is of type avalon.
 Info: audio_pll_0: "soc_system" instantiated altera_up_avalon_audio_pll "audio_pll_0"
 Info: hps_0: "Running  for module: hps_0"
 Info: hps_0: HPS Main PLL counter settings: n = 0  m = 73
 Info: hps_0: HPS peripherial PLL counter settings: n = 0  m = 39
 Warning: hps_0: HPS model no longer supports simulation for HPS FPGA Bridges.
 Info: hps_0: "soc_system" instantiated altera_hps "hps_0"
+Info: i2c_0: "soc_system" instantiated altera_avalon_i2c "i2c_0"
 Info: room_eq_peripheral_0: "soc_system" instantiated room_eq_peripheral "room_eq_peripheral_0"
 Info: avalon_st_adapter: Inserting error_adapter: error_adapter_0
+Info: avalon_st_adapter_001: Inserting error_adapter: error_adapter_0
 Info: mm_interconnect_0: "soc_system" instantiated altera_mm_interconnect "mm_interconnect_0"
 Info: rst_controller: "soc_system" instantiated altera_reset_controller "rst_controller"
 Info: audio_pll: "audio_pll_0" instantiated altera_pll "audio_pll"
@@ -61,8 +68,11 @@ Info: room_eq_peripheral_0_avalon_slave_0_agent: "mm_interconnect_0" instantiate
 Info: room_eq_peripheral_0_avalon_slave_0_agent_rsp_fifo: "mm_interconnect_0" instantiated altera_avalon_sc_fifo "room_eq_peripheral_0_avalon_slave_0_agent_rsp_fifo"
 Info: router: "mm_interconnect_0" instantiated altera_merlin_router "router"
 Info: router_002: "mm_interconnect_0" instantiated altera_merlin_router "router_002"
+Info: hps_0_h2f_lw_axi_master_wr_limiter: "mm_interconnect_0" instantiated altera_merlin_traffic_limiter "hps_0_h2f_lw_axi_master_wr_limiter"
+Info: Reusing file /home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system/synthesis/submodules/altera_avalon_sc_fifo.v
 Info: room_eq_peripheral_0_avalon_slave_0_burst_adapter: "mm_interconnect_0" instantiated altera_merlin_burst_adapter "room_eq_peripheral_0_avalon_slave_0_burst_adapter"
 Info: Reusing file /home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
+Info: Reusing file /home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system/synthesis/submodules/altera_avalon_st_pipeline_base.v
 Info: cmd_demux: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "cmd_demux"
 Info: cmd_mux: "mm_interconnect_0" instantiated altera_merlin_multiplexer "cmd_mux"
 Info: rsp_demux: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "rsp_demux"
@@ -71,6 +81,6 @@ Info: Reusing file /home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/la
 Info: avalon_st_adapter: "mm_interconnect_0" instantiated altera_avalon_st_adapter "avalon_st_adapter"
 Info: border: "hps_io" instantiated altera_interface_generator "border"
 Info: error_adapter_0: "avalon_st_adapter" instantiated error_adapter "error_adapter_0"
-Info: soc_system: Done "soc_system" with 24 modules, 89 files
+Info: soc_system: Done "soc_system" with 26 modules, 102 files
 Info: qsys-generate succeeded.
 Info: Finished: Create HDL design files for synthesis

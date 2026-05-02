@@ -9,6 +9,10 @@ module soc_system (
 		output wire        audio_daclrck,                //         .daclrck
 		output wire        audio_xck,                    //         .xck
 		input  wire        clk_clk,                      //      clk.clk
+		input  wire        fpga_i2c_sda_in,              // fpga_i2c.sda_in
+		input  wire        fpga_i2c_scl_in,              //         .scl_in
+		output wire        fpga_i2c_sda_oe,              //         .sda_oe
+		output wire        fpga_i2c_scl_oe,              //         .scl_oe
 		output wire        hps_hps_io_emac1_inst_TX_CLK, //      hps.hps_io_emac1_inst_TX_CLK
 		output wire        hps_hps_io_emac1_inst_TXD0,   //         .hps_io_emac1_inst_TXD0
 		output wire        hps_hps_io_emac1_inst_TXD1,   //         .hps_io_emac1_inst_TXD1
@@ -120,7 +124,12 @@ module soc_system (
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_read;       // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_read -> room_eq_peripheral_0:read
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_write;      // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_write -> room_eq_peripheral_0:write
 	wire  [31:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_writedata;  // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_writedata -> room_eq_peripheral_0:writedata
-	wire         rst_controller_reset_out_reset;                                   // rst_controller:reset_out -> [mm_interconnect_0:room_eq_peripheral_0_reset_reset_bridge_in_reset_reset, room_eq_peripheral_0:reset]
+	wire  [31:0] mm_interconnect_0_i2c_0_csr_readdata;                             // i2c_0:readdata -> mm_interconnect_0:i2c_0_csr_readdata
+	wire   [3:0] mm_interconnect_0_i2c_0_csr_address;                              // mm_interconnect_0:i2c_0_csr_address -> i2c_0:addr
+	wire         mm_interconnect_0_i2c_0_csr_read;                                 // mm_interconnect_0:i2c_0_csr_read -> i2c_0:read
+	wire         mm_interconnect_0_i2c_0_csr_write;                                // mm_interconnect_0:i2c_0_csr_write -> i2c_0:write
+	wire  [31:0] mm_interconnect_0_i2c_0_csr_writedata;                            // mm_interconnect_0:i2c_0_csr_writedata -> i2c_0:writedata
+	wire         rst_controller_reset_out_reset;                                   // rst_controller:reset_out -> [i2c_0:rst_n, mm_interconnect_0:room_eq_peripheral_0_reset_reset_bridge_in_reset_reset, room_eq_peripheral_0:reset]
 	wire         rst_controller_001_reset_out_reset;                               // rst_controller_001:reset_out -> mm_interconnect_0:hps_0_h2f_lw_axi_master_agent_clk_reset_reset_bridge_in_reset_reset
 	wire         hps_0_h2f_reset_reset;                                            // hps_0:h2f_rst_n -> rst_controller_001:reset_in0
 
@@ -317,6 +326,31 @@ module soc_system (
 		.h2f_lw_RREADY            (hps_0_h2f_lw_axi_master_rready)   //                  .rready
 	);
 
+	altera_avalon_i2c #(
+		.USE_AV_ST       (0),
+		.FIFO_DEPTH      (4),
+		.FIFO_DEPTH_LOG2 (2)
+	) i2c_0 (
+		.clk       (clk_clk),                               //            clock.clk
+		.rst_n     (~rst_controller_reset_out_reset),       //       reset_sink.reset_n
+		.intr      (),                                      // interrupt_sender.irq
+		.addr      (mm_interconnect_0_i2c_0_csr_address),   //              csr.address
+		.read      (mm_interconnect_0_i2c_0_csr_read),      //                 .read
+		.write     (mm_interconnect_0_i2c_0_csr_write),     //                 .write
+		.writedata (mm_interconnect_0_i2c_0_csr_writedata), //                 .writedata
+		.readdata  (mm_interconnect_0_i2c_0_csr_readdata),  //                 .readdata
+		.sda_in    (fpga_i2c_sda_in),                       //       i2c_serial.sda_in
+		.scl_in    (fpga_i2c_scl_in),                       //                 .scl_in
+		.sda_oe    (fpga_i2c_sda_oe),                       //                 .sda_oe
+		.scl_oe    (fpga_i2c_scl_oe),                       //                 .scl_oe
+		.src_data  (),                                      //      (terminated)
+		.src_valid (),                                      //      (terminated)
+		.src_ready (1'b0),                                  //      (terminated)
+		.snk_data  (16'b0000000000000000),                  //      (terminated)
+		.snk_valid (1'b0),                                  //      (terminated)
+		.snk_ready ()                                       //      (terminated)
+	);
+
 	room_eq_peripheral room_eq_peripheral_0 (
 		.clk         (clk_clk),                                                          //          clock.clk
 		.reset       (rst_controller_reset_out_reset),                                   //          reset.reset
@@ -373,6 +407,11 @@ module soc_system (
 		.clk_0_clk_clk                                                       (clk_clk),                                                          //                                                     clk_0_clk.clk
 		.hps_0_h2f_lw_axi_master_agent_clk_reset_reset_bridge_in_reset_reset (rst_controller_001_reset_out_reset),                               // hps_0_h2f_lw_axi_master_agent_clk_reset_reset_bridge_in_reset.reset
 		.room_eq_peripheral_0_reset_reset_bridge_in_reset_reset              (rst_controller_reset_out_reset),                                   //              room_eq_peripheral_0_reset_reset_bridge_in_reset.reset
+		.i2c_0_csr_address                                                   (mm_interconnect_0_i2c_0_csr_address),                              //                                                     i2c_0_csr.address
+		.i2c_0_csr_write                                                     (mm_interconnect_0_i2c_0_csr_write),                                //                                                              .write
+		.i2c_0_csr_read                                                      (mm_interconnect_0_i2c_0_csr_read),                                 //                                                              .read
+		.i2c_0_csr_readdata                                                  (mm_interconnect_0_i2c_0_csr_readdata),                             //                                                              .readdata
+		.i2c_0_csr_writedata                                                 (mm_interconnect_0_i2c_0_csr_writedata),                            //                                                              .writedata
 		.room_eq_peripheral_0_avalon_slave_0_address                         (mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_address),    //                           room_eq_peripheral_0_avalon_slave_0.address
 		.room_eq_peripheral_0_avalon_slave_0_write                           (mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_write),      //                                                              .write
 		.room_eq_peripheral_0_avalon_slave_0_read                            (mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_read),       //                                                              .read

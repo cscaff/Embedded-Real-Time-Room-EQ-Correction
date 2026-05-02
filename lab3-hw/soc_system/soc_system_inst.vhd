@@ -70,7 +70,11 @@
 			audio_bclk                   : out   std_logic;                                        -- bclk
 			audio_dacdat                 : out   std_logic;                                        -- dacdat
 			audio_daclrck                : out   std_logic;                                        -- daclrck
-			audio_xck                    : out   std_logic                                         -- xck
+			audio_xck                    : out   std_logic;                                        -- xck
+			fpga_i2c_sda_in              : in    std_logic                     := 'X';             -- sda_in
+			fpga_i2c_scl_in              : in    std_logic                     := 'X';             -- scl_in
+			fpga_i2c_sda_oe              : out   std_logic;                                        -- sda_oe
+			fpga_i2c_scl_oe              : out   std_logic                                         -- scl_oe
 		);
 	end component soc_system;
 
@@ -146,6 +150,10 @@
 			audio_bclk                   => CONNECTED_TO_audio_bclk,                   --    audio.bclk
 			audio_dacdat                 => CONNECTED_TO_audio_dacdat,                 --         .dacdat
 			audio_daclrck                => CONNECTED_TO_audio_daclrck,                --         .daclrck
-			audio_xck                    => CONNECTED_TO_audio_xck                     --         .xck
+			audio_xck                    => CONNECTED_TO_audio_xck,                    --         .xck
+			fpga_i2c_sda_in              => CONNECTED_TO_fpga_i2c_sda_in,              -- fpga_i2c.sda_in
+			fpga_i2c_scl_in              => CONNECTED_TO_fpga_i2c_scl_in,              --         .scl_in
+			fpga_i2c_sda_oe              => CONNECTED_TO_fpga_i2c_sda_oe,              --         .sda_oe
+			fpga_i2c_scl_oe              => CONNECTED_TO_fpga_i2c_scl_oe               --         .scl_oe
 		);
 
