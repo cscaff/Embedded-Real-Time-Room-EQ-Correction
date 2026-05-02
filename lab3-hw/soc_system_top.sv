@@ -272,8 +272,19 @@ module soc_system_top(
      .audio_xck                    ( AUD_XCK ),
      .audio_bclk                   ( AUD_BCLK ),
      .audio_dacdat                 ( AUD_DACDAT ),
-     .audio_daclrck                ( AUD_DACLRCK )
+     .audio_daclrck                ( AUD_DACLRCK ),
+
+     // FPGA I2C master (active-low open drain to codec)
+     .fpga_i2c_sda_in              ( FPGA_I2C_SDAT ),
+     .fpga_i2c_scl_in              ( FPGA_I2C_SCLK ),
+     .fpga_i2c_sda_oe              ( fpga_i2c_sda_oe ),
+     .fpga_i2c_scl_oe              ( fpga_i2c_scl_oe )
   );
+
+   // I2C open-drain driving: when oe=1, drive low; when oe=0, tri-state (pulled high)
+   logic fpga_i2c_sda_oe, fpga_i2c_scl_oe;
+   assign FPGA_I2C_SDAT = fpga_i2c_sda_oe ? 1'b0 : 1'bZ;
+   assign FPGA_I2C_SCLK = fpga_i2c_scl_oe ? 1'b0 : 1'bZ;
 
    // The following quiet the "no driver" warnings for output
    // pins and should be removed if you use any of these peripherals
@@ -294,8 +305,7 @@ module soc_system_top(
 
    assign FAN_CTRL = SW[0];
 
-   assign FPGA_I2C_SCLK = SW[0];
-   assign FPGA_I2C_SDAT = SW[1] ? SW[0] : 1'bZ;
+   // FPGA_I2C_SCLK and FPGA_I2C_SDAT driven by I2C master above
 
    assign GPIO_0 = SW[1] ? { 36{ SW[0] } } : { 36{ 1'bZ } };
    assign GPIO_1 = SW[1] ? { 36{ SW[0] } } : { 36{ 1'bZ } };   
