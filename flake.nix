@@ -19,6 +19,7 @@
           packages = [
             pkgs.iverilog
             pkgs.gtkwave
+	    pkgs.surfer
             python
           ];
 

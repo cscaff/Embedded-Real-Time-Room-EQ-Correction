@@ -8,7 +8,7 @@ OUT_DIR  = sim_out
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s clean
 
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx
 
@@ -82,6 +82,58 @@ $(OUT_DIR)/tb_i2s_tx.vvp: \
 		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_i2s_tx.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
+
+# Sweep sources shared by both integration targets
+SWEEP_SRCS = \
+	$(SRC_DIR)/memory/sine_lut.sv \
+	$(SRC_DIR)/room_eq_peripheral/sweep_generator/phase_accumulator.sv \
+	$(SRC_DIR)/room_eq_peripheral/sweep_generator/sine_lookup.sv \
+	$(SRC_DIR)/room_eq_peripheral/sweep_generator/sweep_generator.sv
+
+I2S_SRCS = \
+	$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv \
+	$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_shift_register.sv \
+	$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_tx.sv
+
+sim_sweep_i2s: $(OUT_DIR)/tb_sweep_i2s.vvp
+	$(VVP) $<
+	python3 $(TEST_DIR)/room_eq_peripheral/i2s_tx/scripts/play_sweep.py
+
+sim_sweep_i2s_long: $(OUT_DIR)/tb_sweep_i2s_long.vvp
+	$(VVP) $<
+	python3 $(TEST_DIR)/room_eq_peripheral/i2s_tx/scripts/play_sweep.py
+
+$(OUT_DIR)/tb_sweep_i2s.vvp: \
+		$(SWEEP_SRCS) $(I2S_SRCS) \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_sweep_i2s.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
+
+$(OUT_DIR)/tb_sweep_i2s_long.vvp: \
+		$(SWEEP_SRCS) $(I2S_SRCS) \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_sweep_i2s.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -DN_SAMPLES=120000 -o $@ $^
+
+sim_sweep_i2s_full: $(OUT_DIR)/tb_sweep_i2s_full.vvp
+	$(VVP) $<
+	python3 $(TEST_DIR)/room_eq_peripheral/i2s_tx/scripts/play_sweep.py
+
+$(OUT_DIR)/tb_sweep_i2s_full.vvp: \
+		$(SWEEP_SRCS) $(I2S_SRCS) \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_sweep_i2s.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -DN_SAMPLES=240000 -o $@ $^
+
+sim_sweep_i2s_10s: $(OUT_DIR)/tb_sweep_i2s_10s.vvp
+	$(VVP) $<
+	python3 $(TEST_DIR)/room_eq_peripheral/i2s_tx/scripts/play_sweep.py
+
+$(OUT_DIR)/tb_sweep_i2s_10s.vvp: \
+		$(SWEEP_SRCS) $(I2S_SRCS) \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_sweep_i2s.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -DN_SAMPLES=480000 -o $@ $^
 
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
