@@ -67,7 +67,10 @@
 			hps_ddr3_mem_dm              : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			hps_ddr3_oct_rzqin           : in    std_logic                     := 'X';             -- oct_rzqin
 			reset_reset_n                : in    std_logic                     := 'X';             -- reset_n
-			rob_clk                      : out   std_logic                                         -- clk
+			audio_bclk                   : out   std_logic;                                        -- bclk
+			audio_dacdat                 : out   std_logic;                                        -- dacdat
+			audio_daclrck                : out   std_logic;                                        -- daclrck
+			audio_xck                    : out   std_logic                                         -- xck
 		);
 	end component soc_system;
 
@@ -140,6 +143,9 @@
 			hps_ddr3_mem_dm              => CONNECTED_TO_hps_ddr3_mem_dm,              --         .mem_dm
 			hps_ddr3_oct_rzqin           => CONNECTED_TO_hps_ddr3_oct_rzqin,           --         .oct_rzqin
 			reset_reset_n                => CONNECTED_TO_reset_reset_n,                --    reset.reset_n
-			rob_clk                      => CONNECTED_TO_rob_clk                       --      rob.clk
+			audio_bclk                   => CONNECTED_TO_audio_bclk,                   --    audio.bclk
+			audio_dacdat                 => CONNECTED_TO_audio_dacdat,                 --         .dacdat
+			audio_daclrck                => CONNECTED_TO_audio_daclrck,                --         .daclrck
+			audio_xck                    => CONNECTED_TO_audio_xck                     --         .xck
 		);
 

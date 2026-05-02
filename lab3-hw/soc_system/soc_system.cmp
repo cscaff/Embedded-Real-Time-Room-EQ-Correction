@@ -1,5 +1,9 @@
 	component soc_system is
 		port (
+			audio_bclk                   : out   std_logic;                                        -- bclk
+			audio_dacdat                 : out   std_logic;                                        -- dacdat
+			audio_daclrck                : out   std_logic;                                        -- daclrck
+			audio_xck                    : out   std_logic;                                        -- xck
 			clk_clk                      : in    std_logic                     := 'X';             -- clk
 			hps_hps_io_emac1_inst_TX_CLK : out   std_logic;                                        -- hps_io_emac1_inst_TX_CLK
 			hps_hps_io_emac1_inst_TXD0   : out   std_logic;                                        -- hps_io_emac1_inst_TXD0
@@ -66,8 +70,7 @@
 			hps_ddr3_mem_odt             : out   std_logic;                                        -- mem_odt
 			hps_ddr3_mem_dm              : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			hps_ddr3_oct_rzqin           : in    std_logic                     := 'X';             -- oct_rzqin
-			reset_reset_n                : in    std_logic                     := 'X';             -- reset_n
-			rob_clk                      : out   std_logic                                         -- clk
+			reset_reset_n                : in    std_logic                     := 'X'              -- reset_n
 		);
 	end component soc_system;
 
