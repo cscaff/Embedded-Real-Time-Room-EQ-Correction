@@ -8,9 +8,9 @@ OUT_DIR  = sim_out
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk clean
 
-all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep
+all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk
 
 sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
 	$(VVP) $<
@@ -51,6 +51,15 @@ $(OUT_DIR)/tb_sweep_generator.vvp: \
 		$(SRC_DIR)/room_eq_peripheral/sweep_generator/sine_lookup.sv \
 		$(SRC_DIR)/room_eq_peripheral/sweep_generator/sweep_generator.sv \
 		$(TEST_DIR)/room_eq_peripheral/sweep_generator/tb_sweep_generator.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
+
+sim_i2s_clk: $(OUT_DIR)/tb_i2s_clock_gen.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_i2s_clock_gen.vvp: \
+		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv \
+		$(TEST_DIR)/room_eq_peripheral/i2s_tx/tb_i2s_clock_gen.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
