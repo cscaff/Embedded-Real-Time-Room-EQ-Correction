@@ -66,6 +66,9 @@
 		.hps_ddr3_mem_dm              (<connected-to-hps_ddr3_mem_dm>),              //         .mem_dm
 		.hps_ddr3_oct_rzqin           (<connected-to-hps_ddr3_oct_rzqin>),           //         .oct_rzqin
 		.reset_reset_n                (<connected-to-reset_reset_n>),                //    reset.reset_n
-		.rob_clk                      (<connected-to-rob_clk>)                       //      rob.clk
+		.audio_bclk                   (<connected-to-audio_bclk>),                   //    audio.bclk
+		.audio_dacdat                 (<connected-to-audio_dacdat>),                 //         .dacdat
+		.audio_daclrck                (<connected-to-audio_daclrck>),                //         .daclrck
+		.audio_xck                    (<connected-to-audio_xck>)                     //         .xck
 	);
 
