@@ -33,12 +33,36 @@
          type = "int";
       }
    }
+   element i2c_0
+   {
+      datum _sortIndex
+      {
+         value = "4";
+         type = "int";
+      }
+   }
+   element i2c_0.csr
+   {
+      datum baseAddress
+      {
+         value = "0";
+         type = "String";
+      }
+   }
    element room_eq_peripheral_0
    {
       datum _sortIndex
       {
          value = "3";
          type = "int";
+      }
+   }
+   element room_eq_peripheral_0.avalon_slave_0
+   {
+      datum baseAddress
+      {
+         value = "64";
+         type = "String";
       }
    }
 }
@@ -68,6 +92,7 @@
    type="conduit"
    dir="end" />
  <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
+ <interface name="fpga_i2c" internal="i2c_0.i2c_serial" type="conduit" dir="end" />
  <interface name="hps" internal="hps_0.hps_io" type="conduit" dir="end" />
  <interface name="hps_ddr3" internal="hps_0.memory" type="conduit" dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
@@ -618,6 +643,11 @@
   <parameter name="usb_mp_clk_div" value="0" />
   <parameter name="use_default_mpu_clk" value="true" />
  </module>
+ <module name="i2c_0" kind="altera_avalon_i2c" version="24.1" enabled="1">
+  <parameter name="FIFO_DEPTH" value="4" />
+  <parameter name="USE_AV_ST" value="0" />
+  <parameter name="clockRate" value="50000000" />
+ </module>
  <module
    name="room_eq_peripheral_0"
    kind="room_eq_peripheral"
@@ -628,6 +658,15 @@
    version="24.1"
    start="hps_0.h2f_lw_axi_master"
    end="room_eq_peripheral_0.avalon_slave_0">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0040" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="24.1"
+   start="hps_0.h2f_lw_axi_master"
+   end="i2c_0.csr">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -642,6 +681,7 @@
    version="24.1"
    start="clk_0.clk"
    end="room_eq_peripheral_0.clock" />
+ <connection kind="clock" version="24.1" start="clk_0.clk" end="i2c_0.clock" />
  <connection
    kind="clock"
    version="24.1"
@@ -672,6 +712,11 @@
    version="24.1"
    start="clk_0.clk_reset"
    end="room_eq_peripheral_0.reset" />
+ <connection
+   kind="reset"
+   version="24.1"
+   start="clk_0.clk_reset"
+   end="i2c_0.reset_sink" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.enableEccProtection" value="FALSE" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />

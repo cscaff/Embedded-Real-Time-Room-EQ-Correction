@@ -70,7 +70,11 @@ module soc_system (
 	audio_bclk,
 	audio_dacdat,
 	audio_daclrck,
-	audio_xck);	
+	audio_xck,
+	fpga_i2c_sda_in,
+	fpga_i2c_scl_in,
+	fpga_i2c_sda_oe,
+	fpga_i2c_scl_oe);	
 
 	input		clk_clk;
 	output		hps_hps_io_emac1_inst_TX_CLK;
@@ -143,4 +147,8 @@ module soc_system (
 	output		audio_dacdat;
 	output		audio_daclrck;
 	output		audio_xck;
+	input		fpga_i2c_sda_in;
+	input		fpga_i2c_scl_in;
+	output		fpga_i2c_sda_oe;
+	output		fpga_i2c_scl_oe;
 endmodule
