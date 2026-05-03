@@ -15,9 +15,9 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo sim_fft clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo sim_fft sim_fft_ram clean
 
-all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo
+all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fft_ram
 
 sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
 	$(VVP) $<
@@ -71,6 +71,15 @@ $(OUT_DIR)/tb_sample_fifo.vvp: \
 		$(FIFO_TEST_DIR)/tb_sample_fifo.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -DALTERA_RESERVED_QIS -o $@ $^
+
+sim_fft_ram: $(OUT_DIR)/tb_fft_result_ram.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_fft_result_ram.vvp: \
+		$(SRC_DIR)/memory/fft_results_ram.sv \
+		$(TEST_DIR)/memory/tb_fft_result_ram.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
 
 # ── Questa target ─────────────────────────────────────────────────────────────
 SIM_FIFO_TCL = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
