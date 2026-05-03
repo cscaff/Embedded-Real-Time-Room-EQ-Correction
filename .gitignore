@@ -37,6 +37,7 @@ quartus/ip/**/simulation/
 
 # Quartus PLL IP generated files (not needed for synthesis or Questa sim)
 quartus/ip/PLL/*.bsf
+quartus/ip/PLL/*.cmp
 quartus/ip/PLL/*.ppf
 quartus/ip/PLL/pll_sim.f
 quartus/ip/PLL/pll_sim/aldec/
