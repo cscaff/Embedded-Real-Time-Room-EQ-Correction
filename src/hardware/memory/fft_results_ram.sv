@@ -62,15 +62,19 @@ module fft_result_ram (
             write_addr <= 0;
             fft_done <= 0;
         end else begin
-            // Start of Packet: Write Ptr = 0.
-            if (data_sop) begin
-                write_addr <= 0;
-                fft_done <= 0;
-            // Write FFT output to RAM when valid.
-            end else if (fft_valid) begin
-                ram_real[write_addr] <= fft_real;
-                ram_imag[write_addr] <= fft_imag;
-                write_addr <= write_addr + 1;
+            if (fft_valid) begin
+                if (data_sop) begin
+                    // Start of Packet: reset write pointer and store first sample at addr 0.
+                    // data_sop is only meaningful when fft_valid is high (Avalon-ST).
+                    ram_real[0] <= fft_real;
+                    ram_imag[0] <= fft_imag;
+                    write_addr  <= 1;
+                    fft_done    <= 0;
+                end else begin
+                    ram_real[write_addr] <= fft_real;
+                    ram_imag[write_addr] <= fft_imag;
+                    write_addr           <= write_addr + 1;
+                end
             end
 
             // End of Packet: Assert fft_done to indicate RAM is ready for reading.
