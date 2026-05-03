@@ -76,7 +76,7 @@ module fft_result_ram (
             end
 
             // End of Packet: Assert fft_done to indicate RAM is ready for reading.
-            if (data_eop) begin
+            if (data_eop && fft_valid) begin
                 fft_done <= 1;
             end
         end
