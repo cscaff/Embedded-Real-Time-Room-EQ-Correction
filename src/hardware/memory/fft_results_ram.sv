@@ -22,8 +22,8 @@ module fft_result_ram (
     fft_imag, // Imaginary part of FFT output
     fft_valid, // FFT output valid signal
     data_eop, // End of Packet for FFT output
-    data_sop  // Start of Packet for FFT output
-    rd_addr, // Read address for RAM
+    data_sop, // Start of Packet for FFT output
+    rd_addr,  // Read address for RAM
     rd_real, // Real part of RAM output
     rd_imag, // Imaginary part of RAM output
     fft_done // Signal indicating FFT processing is complete. RAM can be read.
@@ -66,10 +66,8 @@ module fft_result_ram (
             if (data_sop) begin
                 write_addr <= 0;
                 fft_done <= 0;
-            end
-
             // Write FFT output to RAM when valid.
-            if (fft_valid) begin
+            end else if (fft_valid) begin
                 ram_real[write_addr] <= fft_real;
                 ram_imag[write_addr] <= fft_imag;
                 write_addr <= write_addr + 1;
