@@ -15,7 +15,7 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo sim_fft sim_fft_ram clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft clean
 
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_sample_fifo sim_fft_ram
 
@@ -81,9 +81,25 @@ $(OUT_DIR)/tb_fft_result_ram.vvp: \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
-# ── Questa target ─────────────────────────────────────────────────────────────
-SIM_FIFO_TCL = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
-SIM_FFT_TCL  = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fft.tcl
+sim_calibration_engine: $(OUT_DIR)/tb_calibration_engine.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_calibration_engine.vvp: \
+		$(ALTERA_SIM_LIB)/altera_mf.v \
+		quartus/ip/room_eq_peripheral/capture_fifo/capture_fifo.v \
+		quartus/ip/room_eq_peripheral/capture_fft/capture_fft_sim.v \
+		$(SRC_DIR)/room_eq_peripheral/calibration_engine/sample_fifo.sv \
+		$(SRC_DIR)/room_eq_peripheral/calibration_engine/sample_fft.sv \
+		$(SRC_DIR)/memory/fft_results_ram.sv \
+		$(SRC_DIR)/room_eq_peripheral/calibration_engine/calibration_engine.sv \
+		$(FIFO_TEST_DIR)/tb_calibration_engine.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -DALTERA_RESERVED_QIS -o $@ $^
+
+# ── Questa targets ────────────────────────────────────────────────────────────
+SIM_FIFO_TCL           = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
+SIM_FFT_TCL            = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fft.tcl
+SIM_CAL_ENGINE_TCL     = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_calibration_engine.tcl
 
 sim_fifo: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
 sim_fifo:
@@ -94,6 +110,12 @@ sim_fft: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
 sim_fft:
 	"$(QUESTA)" -c \
 	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_FFT_TCL)}"
+
+sim_calibration_engine_fft: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
+sim_calibration_engine_fft: | $(OUT_DIR)
+	python3 $(FIFO_TEST_DIR)/gen_golden_fft.py
+	"$(QUESTA)" -c \
+	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_CAL_ENGINE_TCL)}"
 
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
