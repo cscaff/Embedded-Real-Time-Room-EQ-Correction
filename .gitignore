@@ -34,3 +34,9 @@ capture_fft_fft_ii_0_*.hex
 
 # qsys-generate simulation output under quartus/ip/
 quartus/ip/**/simulation/
+
+# Quartus PLL IP generated files (not needed for synthesis or Questa sim)
+quartus/ip/PLL/*.bsf
+quartus/ip/PLL/*.ppf
+quartus/ip/PLL/pll_sim.f
+quartus/ip/PLL/pll_sim/aldec/

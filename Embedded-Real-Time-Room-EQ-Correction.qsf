@@ -58,3 +58,5 @@ set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name QIP_FILE quartus/ip/room_eq_peripheral/capture_fifo/capture_fifo.qip
 set_global_assignment -name QIP_FILE quartus/ip/room_eq_peripheral/capture_fft/capture_fft/synthesis/capture_fft.qip
+set_global_assignment -name QIP_FILE quartus/ip/PLL/pll.qip
+set_global_assignment -name SIP_FILE quartus/ip/PLL/pll.sip
