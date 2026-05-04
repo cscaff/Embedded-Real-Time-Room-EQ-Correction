@@ -13,7 +13,12 @@
  *   1      [31:0]    R        STATUS: reserved for future use
  *   2      [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s)
  *   3      [31:0]    R        VERSION: 32'h0001_0000
- *
+ *   4      [7:0]     W        LUT_ADDR: address for LUT initialization
+ *   5      [23:0]    W        LUT_DATA: data for LUT initialization
+ *   6      [12:0]    R/W      FFT_ADDR: read address for calibration engine results
+ *   7      [23:0]    R        FFT_RDATA: read data for calibration engine results (Real Part)
+ *   8      [23:0]    R        FFT_IDATA: read data for calibration engine results (Imaginary Part)
+ * 
  * Audio conduit signals connect to the WM8731 codec on the DE1-SoC.
  * The PLL-generated 12.288 MHz audio clock is received from Platform Designer.
  */
@@ -27,7 +32,7 @@ module room_eq_peripheral(
     input  logic        write,        // write strobe
     input  logic        read,         // read strobe
     input  logic        chipselect,   // peripheral selected
-    input  logic [2:0]  address,      // register address (word offset)
+    input  logic [3:0]  address,      // register address (word offset)
 
     // Audio clock from PLL (active)
     input  logic        audio_clk,    // 12.288 MHz from audio PLL
@@ -46,6 +51,15 @@ module room_eq_peripheral(
     logic        sweep_start;     // pulse from HPS to start sweep
     logic        sweep_running;   // 1 while sweep is active
     logic [31:0] sweep_len;       // sweep length in samples
+    
+    // Lut Init
+    logic [7:0] lut_addr;
+    logic [23:0] lut_data;
+
+    // Resulting FFT Values
+    logic [12:0] fft_rd_addr;
+    logic [23:0] fft_rd_real;
+    logic [23:0] fft_rd_imag;
 
     // ── Register read ───────────────────────────────────────
     always_comb begin
@@ -56,6 +70,9 @@ module room_eq_peripheral(
                 3'd1: readdata = 32'd0;            // STATUS: reserved
                 3'd2: readdata = sweep_len;
                 3'd3: readdata = 32'h0001_0000;    // VERSION
+                3'd6: readdata = {20'd0, fft_rd_addr};
+                3'd7: readdata = {9'd0, fft_rd_real};
+                3'd8: readdata = {9'd0, fft_rd_imag};
                 default: readdata = 32'd0;
             endcase
     end
@@ -69,6 +86,8 @@ module room_eq_peripheral(
             case (address)
                 3'd0: sweep_start <= writedata[0];
                 3'd2: sweep_len   <= writedata;
+                3'd4: lut_addr    <= writedata[7:0];
+                3'd5: lut_data    <= writedata[23:0];
                 default: ;
             endcase
         end else begin
