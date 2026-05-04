@@ -66,13 +66,13 @@ module room_eq_peripheral(
         readdata = 32'd0;
         if (chipselect && read)
             case (address)
-                3'd0: readdata = {30'd0, sweep_running, 1'b0};
-                3'd1: readdata = 32'd0;            // STATUS: reserved
-                3'd2: readdata = sweep_len;
-                3'd3: readdata = 32'h0001_0000;    // VERSION
-                3'd6: readdata = {19'd0, fft_rd_addr};
-                3'd7: readdata = {8'd0, fft_rd_real};
-                3'd8: readdata = {8'd0, fft_rd_imag};
+                4'd0: readdata = {30'd0, sweep_running, 1'b0};
+                4'd1: readdata = 32'd0;            // STATUS: reserved
+                4'd2: readdata = sweep_len;
+                4'd3: readdata = 32'h0001_0000;    // VERSION
+                4'd6: readdata = {19'd0, fft_rd_addr};
+                4'd7: readdata = {8'd0, fft_rd_real};
+                4'd8: readdata = {8'd0, fft_rd_imag};
                 default: readdata = 32'd0;
             endcase
     end
@@ -82,12 +82,15 @@ module room_eq_peripheral(
         if (reset) begin
             sweep_start <= 1'b0;
             sweep_len   <= 32'd480_000;  // default: 10 seconds at 48 kHz
+            lut_addr    <= 8'd0;
+            fft_rd_addr <= 13'd0;
         end else if (chipselect && write) begin
             case (address)
-                3'd0: sweep_start <= writedata[0];
-                3'd2: sweep_len   <= writedata;
-                3'd4: lut_addr    <= writedata[7:0];
-                3'd5: lut_data    <= writedata[23:0];
+                4'd0: sweep_start <= writedata[0];
+                4'd2: sweep_len   <= writedata;
+                4'd4: lut_addr    <= writedata[7:0];
+                4'd5: lut_data    <= writedata[23:0];
+                4'd6: fft_rd_addr <= writedata[12:0];
                 default: ;
             endcase
         end else begin
