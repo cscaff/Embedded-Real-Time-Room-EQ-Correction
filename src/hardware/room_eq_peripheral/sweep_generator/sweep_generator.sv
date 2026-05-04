@@ -65,7 +65,8 @@ module sweep_generator(
         .clock     (clock),
         .reset     (reset),
         .sample_en (sample_en),
-        .phase     (phase)
+        .phase     (phase),
+        .done      (done)
     );
 
     sine_lookup lookup (
