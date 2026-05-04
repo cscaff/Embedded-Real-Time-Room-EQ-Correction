@@ -70,9 +70,9 @@ module room_eq_peripheral(
                 3'd1: readdata = 32'd0;            // STATUS: reserved
                 3'd2: readdata = sweep_len;
                 3'd3: readdata = 32'h0001_0000;    // VERSION
-                3'd6: readdata = {20'd0, fft_rd_addr};
-                3'd7: readdata = {9'd0, fft_rd_real};
-                3'd8: readdata = {9'd0, fft_rd_imag};
+                3'd6: readdata = {19'd0, fft_rd_addr};
+                3'd7: readdata = {8'd0, fft_rd_real};
+                3'd8: readdata = {8'd0, fft_rd_imag};
                 default: readdata = 32'd0;
             endcase
     end
