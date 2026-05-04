@@ -12,6 +12,8 @@ module tb_sweep_generator;
     logic        we_lut;
     logic  [7:0] addr_lut;
     logic [23:0] din_lut;
+    logic        start;
+    logic        done;
 
     // Hierarchical reference to internal sample_en for capture gating
     logic sample_en;
@@ -24,7 +26,9 @@ module tb_sweep_generator;
         .clk_sys  (clk_sys),
         .we_lut   (we_lut),
         .addr_lut (addr_lut),
-        .din_lut  (din_lut)
+        .din_lut  (din_lut),
+        .start    (start),
+        .done     (done)
     );
 
     initial clk_sys = 0;
@@ -46,7 +50,7 @@ module tb_sweep_generator;
     localparam real PI      = 3.14159265358979;
 
     initial begin
-        reset = 1; we_lut = 0; addr_lut = 0; din_lut = 0;
+        reset = 1; we_lut = 0; addr_lut = 0; din_lut = 0; start = 0;
 
         for (i = 0; i < 256; i++) begin
             sv = $sin(i * PI / 512.0) * MAX_AMP;
@@ -56,7 +60,11 @@ module tb_sweep_generator;
 
         @(posedge clock); #1;
         reset = 0;
-        repeat (2) @(posedge clock);
+        @(posedge clock); #1;
+        start = 1;           // one-cycle pulse to start the sweep
+        @(posedge clock); #1;
+        start = 0;
+        @(posedge clock);
 
         // ── T_DIV: clock divider rate ─────────────────────────
         // Verify sample_en fires exactly every 256 clock cycles.
@@ -83,15 +91,25 @@ module tb_sweep_generator;
         end
 
         fd = $fopen("sim_out/sweep_amplitude.txt", "w");
-        for (i = 0; i < N_SAMPLES; i++) begin
+        i = 0;
+        while (i < N_SAMPLES && !done) begin
             @(posedge clock);
-            while (!sample_en) @(posedge clock); // wait for 48 kHz sample tick
-            #1;
-            $fdisplay(fd, "%0d", $signed(amplitude));
+            while (!sample_en && !done) @(posedge clock); // guard against done freezing sample_en
+            if (!done) begin
+                #1;
+                $fdisplay(fd, "%0d", $signed(amplitude));
+                i++;
+            end
         end
         $fclose(fd);
+        $display("Wrote %0d samples to sim_out/sweep_amplitude.txt", i);
 
-        $display("Wrote %0d samples to sim_out/sweep_amplitude.txt", N_SAMPLES);
+        // ── T_DONE: verify done asserted at end of sweep ─────
+        if (done)
+            $display("PASS [T_DONE] done asserted after ~%0d samples  (expect ~240000)", i);
+        else
+            $display("WARN [T_DONE] done not asserted after %0d samples", i);
+
         $finish;
     end
 
