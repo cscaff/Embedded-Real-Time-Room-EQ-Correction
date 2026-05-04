@@ -110,6 +110,32 @@ module tb_sweep_generator;
         else
             $display("WARN [T_DONE] done not asserted after %0d samples", i);
 
+        // ── T_AMP_ZERO: amplitude cuts to zero and stays zero after done ──
+        begin
+            integer zero_violations;
+
+            // Immediate check: amplitude is combinatorially gated by done, so it
+            // must already be zero at this point.
+            #1;
+            if (amplitude === 24'd0)
+                $display("PASS [T_AMP_ZERO immediate] amplitude=0 on done assertion");
+            else
+                $display("FAIL [T_AMP_ZERO immediate] amplitude=%0d  expected 0", $signed(amplitude));
+
+            // Sustained check: verify amplitude holds zero over 512 clock cycles
+            // (covers at least 2 full clk_div periods worth of would-be sample ticks).
+            zero_violations = 0;
+            repeat (512) begin
+                @(posedge clock); #1;
+                if (amplitude !== 24'd0) zero_violations++;
+            end
+
+            if (zero_violations == 0)
+                $display("PASS [T_AMP_ZERO sustained] amplitude held 0 for 512 cycles after done");
+            else
+                $display("FAIL [T_AMP_ZERO sustained] amplitude was nonzero in %0d of 512 cycles after done", zero_violations);
+        end
+
         $finish;
     end
 

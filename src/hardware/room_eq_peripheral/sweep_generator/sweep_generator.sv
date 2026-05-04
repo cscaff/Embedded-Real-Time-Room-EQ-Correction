@@ -61,6 +61,10 @@ module sweep_generator(
 
     wire [31:0] phase;
 
+    // Internal Amplitude from sine lookup
+    wire [23:0] amplitude_internal;
+    assign amplitude = done ? 24'd0 : amplitude_internal; // Ampltitude cuts to zero when done is asserted. "Cut Audio When Generator is Done."
+
     phase_accumulator mac (
         .clock     (clock),
         .reset     (reset),
@@ -74,7 +78,7 @@ module sweep_generator(
         .reset     (reset),
         .sample_en (sample_en),
         .phase     (phase),
-        .amplitude(amplitude),
+        .amplitude(amplitude_internal),
         .clk_sys  (clk_sys),
         .we_lut   (we_lut),
         .addr_lut (addr_lut),
