@@ -112,54 +112,6 @@ module room_eq_peripheral(
     logic  [7:0] addr_lut;
     logic [23:0] din_lut;
 
-    // LUT init state machine
-    logic [8:0]  lut_init_cnt;  // 0-256 (256 = done)
-
-    // Precomputed quarter-wave sine values (256 entries)
-    // sin(i * pi / 512) * 8388607 for i = 0..255
-    // We compute this combinationally from the counter.
-    // NOTE: For synthesis, we use a ROM-style init.
-    // iverilog supports $sin but Quartus doesn't in synthesis.
-    // For now, we use a simple linear approximation init that
-    // will be replaced with a proper ROM or init from HPS.
-    //
-    // Actually, the cleanest approach: have the HPS write the
-    // LUT values through registers after boot. This avoids
-    // needing $sin in synthesis. For the initial hardware test,
-    // we'll init the LUT from a generate block with hard-coded values.
-
-    // For initial bring-up: use a MIF file or HPS init.
-    // For now, flag as not done and let the sweep run with
-    // whatever is in BRAM (zeros until HPS writes it).
-    //
-    // TODO: Add registers for HPS to write LUT values, or
-    //       use a .mif file for BRAM initialization.
-
-    // Temporary: simple init from a counter-based approach
-    // that produces a rough sine. Will be replaced.
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            lut_init_cnt  <= 9'd0;
-            lut_init_done <= 1'b0;
-            we_lut        <= 1'b0;
-        end else if (!lut_init_done) begin
-            if (lut_init_cnt < 9'd256) begin
-                we_lut   <= 1'b1;
-                addr_lut <= lut_init_cnt[7:0];
-                // Approximate quarter-wave sine using a parabolic
-                // approximation: sin(x) ≈ x*(256-x)*2/256^2 * MAX
-                // where x = lut_init_cnt, MAX = 8388607
-                // This gives a reasonable sine shape for bring-up.
-                din_lut <= (lut_init_cnt[7:0] * (8'd255 - lut_init_cnt[7:0])) << 7;
-                lut_init_cnt <= lut_init_cnt + 9'd1;
-            end else begin
-                we_lut        <= 1'b0;
-                lut_init_done <= 1'b1;
-            end
-        end else begin
-            we_lut <= 1'b0;
-        end
-    end
 
     // ── Sweep generator ─────────────────────────────────────
     logic [23:0] amplitude;
@@ -173,6 +125,20 @@ module room_eq_peripheral(
         .addr_lut (addr_lut),
         .din_lut  (din_lut)
     );
+
+    // ── Calibration engine ────────────────────────────────────
+    calibration_engine calib_inst (
+        .sysclk(sysclk),
+        .bclk(AUD_BCLK),
+        .lrclk(AUD_DACLRCK),
+        .aclr(/*RESET*/),
+        .left_chan(amplitude), // feed the sweep output into the calibration engine
+        .rd_addr(13'd0), // For now, hardcode read address (will be used by HPS to read results)
+        .rd_real(), // Unconnected for now
+        .rd_imag(), // Unconnected for now
+        .fft_done() // Unconnected for now
+    );
+
 
     // ── I2S transmitter ─────────────────────────────────────
     // Mono output: same sample on both channels.
