@@ -6,6 +6,7 @@
 // - we_lut: Write enable (active high). Assert to write a sine value.
 // - addr_lut: 8-bit write address (0-255)
 // - din_lut: 24-bit signed sine value to store
+// - start: Trigger to start the sweep.
 //
 // LUT Initialization Inputs (Port A — 50 MHz system clock):
 // Outputs:
@@ -22,6 +23,7 @@ module sweep_generator(
     we_lut, // LUT Write Enable
     addr_lut, // LUT Write Address
     din_lut // LUT Write Data
+    start // Start Trigger
     );
 
     // Inputs and outputs: 
@@ -32,17 +34,24 @@ module sweep_generator(
     input          we_lut;
     input    [7:0] addr_lut;
     input   [23:0] din_lut;
+    input          start; 
 
     // Clock Division for Sweep Generation (Convert 12.288 MHz to 48 kHz)
     logic [7:0] clk_div; // 8-bit Counter to divide 12.288 by 256 = 48 kHz
     logic       sample_en; // Sample Enable goes high every wrap around.
 
+    // Register to hold the current state of the sweep generator
+    logic sweep_active;
+
     always_ff @(posedge clock) begin
         if (reset) begin
             clk_div   <= '0;
             sample_en <= 1'b0;
+            sweep_active <= 1'b0; // Sweep is not active on reset.
+        end else if (start) begin
+            sweep_active <= 1'b1; // Sweep becomes active when start signal is asserted.
         end else begin
-            sample_en <= (clk_div == 8'd255); // Assert sample_en when counter wraps
+            sample_en <= (clk_div == 8'd255) & sweep_active; // Assert sample_en when counter wraps. (Sweep must be active). 
             clk_div   <= clk_div + 1'b1; // Increment clock divider 
         end
     end
