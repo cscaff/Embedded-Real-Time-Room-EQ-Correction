@@ -38,6 +38,7 @@ module tb_calibration_engine;
     logic [23:0] rd_real;
     logic [23:0] rd_imag;
     logic        fft_done;
+    logic        start;
 
     // ── DUT ───────────────────────────────────────────────────
     calibration_engine dut (
@@ -45,6 +46,7 @@ module tb_calibration_engine;
         .bclk     (bclk),
         .lrclk    (lrclk),
         .aclr     (aclr),
+        .start    (start),
         .left_chan (left_chan),
         .rd_addr  (rd_addr),
         .rd_real  (rd_real),
@@ -119,6 +121,7 @@ module tb_calibration_engine;
     // ── Test sequence ─────────────────────────────────────────
     initial begin
         aclr_drv  = 1;
+        start     = 0;
         lrclk     = 1;
         left_chan  = 24'h0;
         rd_addr   = 13'd0;
@@ -138,6 +141,10 @@ module tb_calibration_engine;
         else
             $display("FAIL [T1] reset_n_ff2=%b 4 cycles after aclr released", dut.reset_n_ff2);
 
+        // Arm the pipeline so T2 genuinely tests partial-frame behavior.
+        @(posedge sysclk); #1; start = 1;
+        @(posedge sysclk); #1; start = 0;
+
         // ── T2: fft_done stays 0 during a partial frame ───────
         // Send 32 samples (far fewer than 8192) — fft_done must not fire.
         for (i = 0; i < 32; i++)
@@ -153,6 +160,8 @@ module tb_calibration_engine;
         // verify fft_done drops immediately.
         aclr_drv = 1; repeat (4) @(posedge sysclk); #1;
         aclr_drv = 0; repeat (4) @(posedge sysclk);
+        @(posedge sysclk); #1; start = 1;
+        @(posedge sysclk); #1; start = 0;
         for (i = 0; i < 8192; i++)
             send_sample(24'hCC0000 | (i[23:0] & 24'h0000FF));
         timeout_cnt = 0;
@@ -179,6 +188,8 @@ module tb_calibration_engine;
         // unchanged (rd_real[i] == input[i]) and zeroes imaginary (rd_imag == 0).
         aclr_drv = 1; repeat (4) @(posedge sysclk); #1;
         aclr_drv = 0; repeat (4) @(posedge sysclk);
+        @(posedge sysclk); #1; start = 1;
+        @(posedge sysclk); #1; start = 0;
         for (i = 0; i < 8192; i++)
             send_sample(24'h700000 | i[23:0]);
 
@@ -277,6 +288,8 @@ module tb_calibration_engine;
 
             aclr_drv = 1; repeat (4) @(posedge sysclk); #1;
             aclr_drv = 0; repeat (4) @(posedge sysclk);
+            @(posedge sysclk); #1; start = 1;
+            @(posedge sysclk); #1; start = 0;
 
             for (i = 0; i < 8192; i++)
                 send_sample(fft_input_data[i]);
@@ -319,18 +332,49 @@ module tb_calibration_engine;
         end
 `endif
 
+        // ── T_START: start gate blocks FFT until start is asserted ──
+        // Part A: send a full frame WITHOUT pulsing start — fft_done must stay 0.
+        // Part B: pulse start, send a fresh frame — fft_done must assert.
+        begin
+            aclr_drv = 1; repeat (4) @(posedge sysclk); #1;
+            aclr_drv = 0; repeat (4) @(posedge sysclk); #1;
+            // Deliberately skip start pulse here.
+            for (i = 0; i < 8192; i++)
+                send_sample(24'hEE0000 | i[23:0]);
+            repeat (CDC_WAIT * 5) @(posedge sysclk); #1;
+            if (fft_done === 1'b0)
+                $display("PASS [T_START-A] fft_done=0: full frame blocked without start");
+            else
+                $display("FAIL [T_START-A] fft_done asserted without start being pulsed");
+
+            // Part B: arm the pipeline and send a fresh frame.
+            @(posedge sysclk); #1; start = 1;
+            @(posedge sysclk); #1; start = 0;
+            for (i = 0; i < 8192; i++)
+                send_sample(24'hAA0000 | i[23:0]);
+            timeout_cnt = 0;
+            while (fft_done !== 1'b1 && timeout_cnt < 60000) begin
+                @(posedge sysclk); #1;
+                timeout_cnt++;
+            end
+            if (fft_done === 1'b1)
+                $display("PASS [T_START-B] fft_done=1 after start pulsed and full frame received");
+            else
+                $display("FAIL [T_START-B] fft_done never asserted after start (timeout)");
+        end
+
         $display("\n=== All tests complete ===");
         $finish;
     end
 
     // ── Timeout watchdog ──────────────────────────────────────
-    // IVerilog: 3 frames x ~1.8 ms + margin = 20 ms
-    // Questa:   add ~0.35 ms real FFT compute latency = 30 ms
+    // IVerilog: 5 frames x ~1.8 ms + margin = 30 ms  (T_START adds 2 frames)
+    // Questa:   add ~0.35 ms real FFT compute latency = 40 ms
     initial begin
 `ifdef QUESTA_FFT
-        #30_000_000;
+        #40_000_000;
 `else
-        #20_000_000;
+        #30_000_000;
 `endif
         $display("TIMEOUT — simulation limit reached");
         $finish;
