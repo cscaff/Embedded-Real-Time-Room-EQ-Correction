@@ -7,9 +7,7 @@
  * Register map (32-bit words):
  *
  * Offset   Bits      Access   Meaning
- *   0      [0]       R/W      CTRL: bit 0 = sweep_start (write 1 to trigger,
- *                                          self-clears when sweep begins)
- *                              bit 1 = sweep_running (read-only, 1 while sweep active)
+ *   0      [0]       W        CTRL: bit 0 = sweep_start (write 1 to trigger, self-clears next cycle)
  *   1      [3:0]     R        STATUS: FSM state — 0=IDLE, 1=SWEEP, 2=CAPTURE, 3=DONE
  *   2      [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s) TODO: I would remove. I think our sweep length is hardcoded.
  *   3      [31:0]    R        VERSION: 32'h0001_0000
@@ -49,7 +47,6 @@ module room_eq_peripheral(
 
     // ── Registers ───────────────────────────────────────────
     logic        sweep_start;     // pulse from HPS to start sweep
-    logic        sweep_running;   // 1 while sweep is active
     logic [31:0] sweep_len;       // sweep length in samples
     
     // Lut Init
@@ -66,7 +63,7 @@ module room_eq_peripheral(
         readdata = 32'd0;
         if (chipselect && read)
             case (address)
-                4'd0: readdata = {30'd0, sweep_running, 1'b0};
+                4'd0: readdata = 32'd0; // CTRL is write-only; reads return 0
                 4'd1: readdata = {28'd0, state};   // STATUS: FSM state
                 4'd2: readdata = sweep_len;
                 4'd3: readdata = 32'h0001_0000;    // VERSION
@@ -86,6 +83,7 @@ module room_eq_peripheral(
             we_lut      <= 1'b0;
             fft_rd_addr <= 13'd0;
         end else if (chipselect && write) begin
+            we_lut <= 1'b0; // default off — only address 5 overrides this
             case (address)
                 4'd0: sweep_start <= writedata[0];
                 4'd2: sweep_len   <= writedata;
@@ -104,18 +102,33 @@ module room_eq_peripheral(
     end
 
     // Internal Signals
-    logic        we_lut; // LUT write enable (self-clearing pulse - Pulses when address 5 is written to.)
+    logic        we_lut;          // LUT write enable (self-clearing pulse - Pulses when address 5 is written to.)
     logic        calibrate_start; // Signal to start the calibration engine (synchronized to System Clock)
-    logic        fft_done; // Signal from calibration engine indicating FFT processing is complete. RAM can be read.
+    logic        fft_done;        // Signal from calibration engine indicating FFT processing is complete. RAM can be read.
+    logic        sweep_done;      // Latched high in audio domain when sweep reaches 20 kHz.
+    logic        sweep_reset;     // Active-high reset for sweep_generator and i2s_tx (audio clock domain).
+    logic [23:0] left_chan_tb;    // Temporary: testbench drives via hierarchical ref (dut.left_chan_tb).
+                                  // Replace with I2S RX output when RX is wired up.
 
 
     // ── Synchronization ───────────────────────────────────────
-    // Synchronize sweep_start into the audio clock domain
-    logic sweep_start_sync1, sweep_start_sync2;
-    always_ff @(posedge audio_clk) begin
-        sweep_start_sync1 <= sweep_start;
-        sweep_start_sync2 <= sweep_start_sync1;
+    // Toggle synchronizer: converts the one-cycle sweep_start pulse (50 MHz) into
+    // a safe crossing to the 12.288 MHz audio domain, then reconstructs a clean
+    // one-cycle pulse via XOR edge detection.
+    logic sweep_start_toggle;
+    always_ff @(posedge clk) begin
+        if (reset)            sweep_start_toggle <= 1'b0;
+        else if (sweep_start) sweep_start_toggle <= ~sweep_start_toggle;
     end
+
+    logic tog_sync1, tog_sync2, tog_sync3;
+    always_ff @(posedge audio_clk) begin
+        tog_sync1 <= sweep_start_toggle;
+        tog_sync2 <= tog_sync1;
+        tog_sync3 <= tog_sync2;
+    end
+
+    wire sweep_start_audio = tog_sync2 ^ tog_sync3; // one-cycle pulse in audio domain
 
     // Synchronize sweep_done from the audio clock domain back to the system clock domain
     logic done_sync1, done_sync2;
@@ -123,6 +136,8 @@ module room_eq_peripheral(
         done_sync1 <= sweep_done; 
         done_sync2 <= done_sync1;
     end
+
+    assign sweep_reset = rst_sync2; // sweep_generator and i2s_tx share the audio-domain reset.
 
     // Asycnhronous reset for calibration engine
     logic rst_sync1, rst_sync2;
@@ -173,8 +188,8 @@ module room_eq_peripheral(
                     end
                 end
                 DONE: begin
-                    // Return to Idle
-                    state <= IDLE;
+                    // Sticky until sweep_start fires again. HPS reads FFT results via registers.
+                    if (sweep_start) state <= SWEEP;
                 end
             endcase
         end
@@ -192,17 +207,17 @@ module room_eq_peripheral(
         .we_lut   (we_lut),
         .addr_lut (lut_addr),
         .din_lut  (lut_data),
-        .start    (sweep_start_sync2), // Start signal synchronized to audio clock domain
+        .start    (sweep_start_audio), // One-cycle pulse reconstructed in audio clock domain
         .done     (sweep_done) // Unconnected for now, will connect to FSM when done signal is
     );
 
     // ── Calibration engine ────────────────────────────────────
     calibration_engine calib_inst (
-        .sysclk(sysclk),
+        .sysclk(clk),
         .bclk(AUD_BCLK),
         .lrclk(AUD_DACLRCK),
         .aclr(rst_sync2),
-        .left_chan(amplitude), // feed the sweep output into the calibration engine
+        .left_chan(left_chan_tb), // TODO: Replace with I2S RX output when RX is wired up.
         .rd_addr(fft_rd_addr),
         .rd_real(fft_rd_real), 
         .rd_imag(fft_rd_imag),
@@ -224,5 +239,7 @@ module room_eq_peripheral(
     );
 
     // ── TODO: I2S reciever ─────────────────────────────────────
+    // mic_sample is a placeholder port driven by the testbench until I2S RX is wired.
+    // When I2S RX is live, connect this port to the RX left-channel output in the top-level.
 
 endmodule
