@@ -4,6 +4,7 @@
 // - bclk: I2S Bit Clock
 // - lrclk: I2S Left-Right Clock
 // - aclr: Active High Async Reset (Because we have dual clock domains)
+// - start: One-cycle pulse to begin accepting samples into the FFT pipeline.
 // - left_chan: 24 bit I2S Serial Data (I am assuming this is just the left channel?)
 // - rd_addr: 13-bit read address for RAM (0 to 8191).
 //
@@ -19,6 +20,7 @@ module calibration_engine(
     bclk, // I2S Bit Clock
     lrclk, // I2S Left-Right Clock
     aclr, // Active High Async Reset (Because we have dual clock domains)
+    start, // One-cycle pulse to begin accepting samples into the FFT pipeline.
     left_chan, // 24 bit I2S Serial Data (I am assuming this is just the left channel?)
     rd_addr,  // Read address for RAM
     rd_real, // Real part of RAM output
@@ -32,6 +34,7 @@ module calibration_engine(
     input bclk; // I2S Bit Clock
     input lrclk; // I2S Left-Right Clock
     input aclr; // Active High Async Reset (Because we have dual clock domains)
+    input start; // One-cycle pulse to begin accepting samples into the FFT pipeline.
 
     // Input Data
     input [23:0] left_chan; // 24 bit I2S Serial Data (I am assuming this is just the left channel?)
@@ -48,6 +51,15 @@ module calibration_engine(
     wire [23:0] fifo_to_fft_data;
     wire        fifo_to_fft_valid;
     wire        fft_to_fifo_ready;  // backpressure
+
+    // Start latch: arms the FFT pipeline on the first cycle start is asserted.
+    reg running;
+    always @(posedge sysclk or posedge aclr) begin
+        if (aclr)       running <= 1'b0;
+        else if (start) running <= 1'b1;
+    end
+
+    wire fifo_to_fft_valid_gated = fifo_to_fft_valid & running;
 
     // sample_fft -> fft_result_ram
     wire [23:0] fft_to_ram_real;
@@ -88,7 +100,7 @@ module calibration_engine(
         .sysclk(sysclk), // System Clock (50 MHz)
         .reset_n(reset_n), // Active low reset
         .sink_real(fifo_to_fft_data), // Real part of input sample
-        .sink_valid(fifo_to_fft_valid), // Input sample valid signal
+        .sink_valid(fifo_to_fft_valid_gated), // Input sample valid signal
         .sink_ready(fft_to_fifo_ready), // FFT Ready Signal (Backpressure)
         .source_real(fft_to_ram_real), // Real part of FFT output
         .source_imag(fft_to_ram_imag), // Imaginary part of FFT output
