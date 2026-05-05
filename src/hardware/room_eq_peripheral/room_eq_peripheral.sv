@@ -53,7 +53,7 @@ module room_eq_peripheral(
     logic [31:0] sweep_len;       // sweep length in samples
     
     // Lut Init
-    logic [7:0] lut_addr;
+    logic [7:0]  lut_addr;
     logic [23:0] lut_data;
 
     // Resulting FFT Values
@@ -83,56 +83,77 @@ module room_eq_peripheral(
             sweep_start <= 1'b0;
             sweep_len   <= 32'd480_000;  // default: 10 seconds at 48 kHz
             lut_addr    <= 8'd0;
+            we_lut      <= 1'b0;
             fft_rd_addr <= 13'd0;
         end else if (chipselect && write) begin
             case (address)
                 4'd0: sweep_start <= writedata[0];
                 4'd2: sweep_len   <= writedata;
                 4'd4: lut_addr    <= writedata[7:0];
-                4'd5: lut_data    <= writedata[23:0];
+                4'd5: begin
+                    we_lut   <= 1'b1;
+                    lut_data <= writedata[23:0];
+                end
                 4'd6: fft_rd_addr <= writedata[12:0];
                 default: ;
             endcase
         end else begin
+            we_lut      <= 1'b0;  // self-clear LUT write enable
             sweep_start <= 1'b0;  // self-clear
         end
     end
 
-    // ── Sweep control ───────────────────────────────────────
-    // For now: sweep runs continuously after start, resets on
-    // reset.  The sweep_running signal will eventually gate
-    // the sweep_generator and count samples.
-    //
-    // Simple approach: reset the sweep generator when not running.
-    logic sweep_reset;
-    logic sweep_active;
+    // Internal Signals
+    logic        we_lut; // LUT write enable (self-clearing pulse - Pulses when address 5 is written to.)
+
+
+    // ── Synchronization ───────────────────────────────────────
+    // Synchronize sweep_start into the audio clock domain
+    logic sweep_start_sync1, sweep_start_sync2;
+    always_ff @(posedge audio_clk) begin
+        sweep_start_sync1 <= sweep_start;
+        sweep_start_sync2 <= sweep_start_sync1;
+    end
+
+    // Synchronize sweep_done from the audio clock domain back to the system clock domain
+    logic done_sync1, done_sync2;
+    always_ff @(posedge clk) begin
+        done_sync1 <= sweep_done; 
+        done_sync2 <= done_sync1;
+    end
+  
+  
+    // ── FSM ─────────────────────────────────────
+    typedef enum logic [3:0] {
+        IDLE,
+        SWEEP,
+        CAPTURE,
+        DONE
+    } state_t;
+
+    state_t state;
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            sweep_active <= 1'b0;
-        end else if (sweep_start) begin
-            sweep_active <= 1'b1;
+            state <= IDLE; // Start in IDLE State
+        end else begin
+            case (state)
+                IDLE: begin
+                    if (sweep_start) begin
+                        state <= SWEEP;
+                    end
+                end
+                SWEEP: begin 
+                    //  Wait until the sweep is done (Sweep programmed to run for 5 seconds from 20 Hz to 20 kHz.)
+                    if (done_sync2) begin
+                        state <= CAPTURE;
+                    end
+                end
+                CAPTURE: ;
+                DONE: ;
+            endcase
         end
     end
-
-    assign sweep_running = sweep_active;
-
-    // Synchronize sweep_active into the audio clock domain
-    logic sweep_active_sync1, sweep_active_sync2;
-    always_ff @(posedge audio_clk) begin
-        sweep_active_sync1 <= sweep_active;
-        sweep_active_sync2 <= sweep_active_sync1;
-    end
-
-    assign sweep_reset = !sweep_active_sync2;
-
-    // ── Sine LUT initialization ─────────────────────────────
-    // Load the quarter-wave sine table at startup from the
-    // 50 MHz clock domain.
-    logic        lut_init_done;
-    logic        we_lut;
-    logic  [7:0] addr_lut;
-    logic [23:0] din_lut;
 
 
     // ── Sweep generator ─────────────────────────────────────
@@ -144,8 +165,10 @@ module room_eq_peripheral(
         .amplitude(amplitude),
         .clk_sys  (clk),
         .we_lut   (we_lut),
-        .addr_lut (addr_lut),
-        .din_lut  (din_lut)
+        .addr_lut (lut_addr),
+        .din_lut  (lut_data)
+        .start    (sweep_start_sync2), // Start signal synchronized to audio clock domain
+        .done     (sweep_done) // Unconnected for now, will connect to FSM when done signal is
     );
 
     // ── Calibration engine ────────────────────────────────────
@@ -155,12 +178,12 @@ module room_eq_peripheral(
         .lrclk(AUD_DACLRCK),
         .aclr(/*RESET*/),
         .left_chan(amplitude), // feed the sweep output into the calibration engine
-        .rd_addr(13'd0), // For now, hardcode read address (will be used by HPS to read results)
-        .rd_real(), // Unconnected for now
-        .rd_imag(), // Unconnected for now
+        .rd_addr(fft_rd_addr),
+        .rd_real(fft_rd_real), 
+        .rd_imag(fft_rd_imag),
         .fft_done() // Unconnected for now
     );
-
+  
 
     // ── I2S transmitter ─────────────────────────────────────
     // Mono output: same sample on both channels.
