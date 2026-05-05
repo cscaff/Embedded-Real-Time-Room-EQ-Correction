@@ -223,4 +223,6 @@ module room_eq_peripheral(
         .dacdat       (AUD_DACDAT)
     );
 
+    // ── TODO: I2S reciever ─────────────────────────────────────
+
 endmodule
