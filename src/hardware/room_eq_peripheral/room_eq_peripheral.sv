@@ -10,8 +10,8 @@
  *   0      [0]       R/W      CTRL: bit 0 = sweep_start (write 1 to trigger,
  *                                          self-clears when sweep begins)
  *                              bit 1 = sweep_running (read-only, 1 while sweep active)
- *   1      [31:0]    R        STATUS: reserved for future use
- *   2      [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s)
+ *   1      [3:0]     R        STATUS: FSM state — 0=IDLE, 1=SWEEP, 2=CAPTURE, 3=DONE
+ *   2      [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s) TODO: I would remove. I think our sweep length is hardcoded.
  *   3      [31:0]    R        VERSION: 32'h0001_0000
  *   4      [7:0]     W        LUT_ADDR: address for LUT initialization
  *   5      [23:0]    W        LUT_DATA: data for LUT initialization
@@ -67,7 +67,7 @@ module room_eq_peripheral(
         if (chipselect && read)
             case (address)
                 4'd0: readdata = {30'd0, sweep_running, 1'b0};
-                4'd1: readdata = 32'd0;            // STATUS: reserved
+                4'd1: readdata = {28'd0, state};   // STATUS: FSM state
                 4'd2: readdata = sweep_len;
                 4'd3: readdata = 32'h0001_0000;    // VERSION
                 4'd6: readdata = {19'd0, fft_rd_addr};
@@ -105,6 +105,7 @@ module room_eq_peripheral(
 
     // Internal Signals
     logic        we_lut; // LUT write enable (self-clearing pulse - Pulses when address 5 is written to.)
+    logic        calibrate_start; // Signal to start the calibration engine (synchronized to System Clock)
     logic        fft_done; // Signal from calibration engine indicating FFT processing is complete. RAM can be read.
 
 
@@ -149,7 +150,10 @@ module room_eq_peripheral(
     always_ff @(posedge clk) begin
         if (reset) begin
             state <= IDLE; // Start in IDLE State
+            calibrate_start <= 1'b0; // Calibration engine is not started until we enter the CAPTURE state
         end else begin
+            // Default Values
+            calibrate_start <= 1'b0;
             case (state)
                 IDLE: begin
                     if (sweep_start) begin
@@ -160,6 +164,7 @@ module room_eq_peripheral(
                     //  Wait until the sweep is done (Sweep programmed to run for 5 seconds from 20 Hz to 20 kHz.)
                     if (done_sync2) begin
                         state <= CAPTURE;
+                        calibrate_start <= 1'b1;
                     end
                 end
                 CAPTURE: begin
@@ -168,7 +173,8 @@ module room_eq_peripheral(
                     end
                 end
                 DONE: begin
-                    // Stay in DONE state. User can read FFT results via registers. Reset to start new sweep and capture.
+                    // Return to Idle
+                    state <= IDLE;
                 end
             endcase
         end
@@ -185,7 +191,7 @@ module room_eq_peripheral(
         .clk_sys  (clk),
         .we_lut   (we_lut),
         .addr_lut (lut_addr),
-        .din_lut  (lut_data)
+        .din_lut  (lut_data),
         .start    (sweep_start_sync2), // Start signal synchronized to audio clock domain
         .done     (sweep_done) // Unconnected for now, will connect to FSM when done signal is
     );
@@ -200,7 +206,7 @@ module room_eq_peripheral(
         .rd_addr(fft_rd_addr),
         .rd_real(fft_rd_real), 
         .rd_imag(fft_rd_imag),
-        // TODO: Add Start Signal to trigger capture in calibration engine when sweep is done.
+        .start(calibrate_start), // Start signal for calibration engine. Exists in clock domain. No need to synchronize.
         .fft_done(fft_done)
     );
   
