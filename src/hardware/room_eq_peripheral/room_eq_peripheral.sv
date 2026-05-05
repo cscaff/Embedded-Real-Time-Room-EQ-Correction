@@ -105,6 +105,7 @@ module room_eq_peripheral(
 
     // Internal Signals
     logic        we_lut; // LUT write enable (self-clearing pulse - Pulses when address 5 is written to.)
+    logic        fft_done; // Signal from calibration engine indicating FFT processing is complete. RAM can be read.
 
 
     // ── Synchronization ───────────────────────────────────────
@@ -120,6 +121,18 @@ module room_eq_peripheral(
     always_ff @(posedge clk) begin
         done_sync1 <= sweep_done; 
         done_sync2 <= done_sync1;
+    end
+
+    // Asycnhronous reset for calibration engine
+    logic rst_sync1, rst_sync2;
+    always_ff @(posedge audio_clk or posedge reset) begin
+        if (reset) begin
+            rst_sync1 <= 1'b1; // Reset goes high right on reset assertion (Async)
+            rst_sync2 <= 1'b1;
+        end else begin
+            rst_sync1 <= 1'b0; // Reset deasserts after two audio clock cycles (Synchronized to audio clock domain) to avoid metastability.
+            rst_sync2 <= rst_sync1;
+        end
     end
   
   
@@ -149,8 +162,14 @@ module room_eq_peripheral(
                         state <= CAPTURE;
                     end
                 end
-                CAPTURE: ;
-                DONE: ;
+                CAPTURE: begin
+                    if (fft_done) begin
+                        state <= DONE;
+                    end
+                end
+                DONE: begin
+                    // Stay in DONE state. User can read FFT results via registers. Reset to start new sweep and capture.
+                end
             endcase
         end
     end
@@ -176,12 +195,13 @@ module room_eq_peripheral(
         .sysclk(sysclk),
         .bclk(AUD_BCLK),
         .lrclk(AUD_DACLRCK),
-        .aclr(/*RESET*/),
+        .aclr(rst_sync2),
         .left_chan(amplitude), // feed the sweep output into the calibration engine
         .rd_addr(fft_rd_addr),
         .rd_real(fft_rd_real), 
         .rd_imag(fft_rd_imag),
-        .fft_done() // Unconnected for now
+        // TODO: Add Start Signal to trigger capture in calibration engine when sweep is done.
+        .fft_done(fft_done)
     );
   
 
