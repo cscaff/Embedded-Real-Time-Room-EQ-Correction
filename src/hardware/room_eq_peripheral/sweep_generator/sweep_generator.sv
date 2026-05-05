@@ -11,7 +11,7 @@
 // LUT Initialization Inputs (Port A — 50 MHz system clock):
 // Outputs:
 // - amplitude: 24-bit signed sine output for the CODEC.
-// - done:      Asserts and latches when sweep reaches 20 kHz.
+// - done:      Asserts and latches when sweep reaches 20 kHz. (Might need a synchronizer as well.)
 //
 // ===========================================================
 
