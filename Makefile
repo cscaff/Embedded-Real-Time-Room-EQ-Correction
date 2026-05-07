@@ -15,7 +15,7 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft sim_room_eq_peripheral clean
 
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sample_fifo sim_fft_ram
 
@@ -100,6 +100,7 @@ $(OUT_DIR)/tb_calibration_engine.vvp: \
 SIM_FIFO_TCL           = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
 SIM_FFT_TCL            = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fft.tcl
 SIM_CAL_ENGINE_TCL     = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_calibration_engine.tcl
+SIM_ROOM_EQ_TCL        = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/sim_room_eq_peripheral.tcl
 
 sim_fifo: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
 sim_fifo:
@@ -116,6 +117,13 @@ sim_calibration_engine_fft: | $(OUT_DIR)
 	python3 $(FIFO_TEST_DIR)/gen_golden_fft.py
 	"$(QUESTA)" -c \
 	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_CAL_ENGINE_TCL)}"
+
+sim_room_eq_peripheral: export SALT_LICENSE_SERVER = $(LICENSE_DAT)
+sim_room_eq_peripheral: | $(OUT_DIR)
+	python3 $(FIFO_TEST_DIR)/gen_golden_fft.py
+	"$(QUESTA)" -c \
+	    -do "set PROJ_ROOT {$(PROJ_ROOT)}; source {$(SIM_ROOM_EQ_TCL)}"
+
 sim_i2s_clk: $(OUT_DIR)/tb_i2s_clock_gen.vvp
 	$(VVP) $<
 
