@@ -35,6 +35,17 @@ capture_fft_fft_ii_0_*.hex
 # qsys-generate simulation output under quartus/ip/
 quartus/ip/**/simulation/
 
+# lab3-hw Quartus build artifacts
+lab3-hw/db/
+lab3-hw/incremental_db/
+lab3-hw/output_files/
+lab3-hw/.qsys_edit/
+lab3-hw/hps_isw_handoff/
+lab3-hw/c5_pin_model_dump.txt
+lab3-hw/hps_sdram_p0_all_pins.txt
+lab3-hw/hps_sdram_p0_summary.csv
+lab3-hw/soc_system.sopcinfo
+lab3-hw/soc_system.srf
 # Quartus PLL IP generated files (not needed for synthesis or Questa sim)
 quartus/ip/PLL/*.bsf
 quartus/ip/PLL/*.cmp

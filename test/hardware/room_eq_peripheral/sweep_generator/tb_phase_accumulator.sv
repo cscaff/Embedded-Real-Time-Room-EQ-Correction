@@ -12,6 +12,7 @@ module tb_phase_accumulator;
     logic        reset;
     logic        sample_en;
     logic [31:0] phase;
+    logic        done;
 
     // ── DUT ─────────────────────────────────────────────────
     // K_FRAC=0 disables exponential growth (delta=0), giving fixed-increment
@@ -23,7 +24,8 @@ module tb_phase_accumulator;
         .clock     (clk),
         .reset     (reset),
         .sample_en (sample_en),
-        .phase     (phase)
+        .phase     (phase),
+        .done      (done)
     );
 
     // ── MAC DUT (K_FRAC nonzero) ─────────────────────────────
@@ -35,6 +37,7 @@ module tb_phase_accumulator;
 
     logic        mac_reset;
     logic [31:0] mac_phase;
+    logic        mac_done;
 
     phase_accumulator #(
         .INCREMENT_START(MAC_INC_START),
@@ -43,7 +46,27 @@ module tb_phase_accumulator;
         .clock     (clk),
         .reset     (mac_reset),
         .sample_en (sample_en),
-        .phase     (mac_phase)
+        .phase     (mac_phase),
+        .done      (mac_done)
+    );
+
+    // ── T11 DUT (real parameters, done fed back to gate sample_en) ──
+    logic        t11_reset;
+    logic [31:0] t11_phase;
+    logic        t11_done;
+    logic        t11_sample_en;
+
+    assign t11_sample_en = ~t11_done; // mirrors sweep_generator: freezes on done
+
+    phase_accumulator #(
+        .INCREMENT_START(32'd1_789_570),
+        .K_FRAC        (32'd123_621)
+    ) dut_t11 (
+        .clock     (clk),
+        .reset     (t11_reset),
+        .sample_en (t11_sample_en),
+        .phase     (t11_phase),
+        .done      (t11_done)
     );
 
     // ── Clock ────────────────────────────────────────────────
@@ -80,8 +103,9 @@ module tb_phase_accumulator;
     logic [31:0] mac_diff_early, mac_diff_late;
 
     initial begin
-        mac_reset = 1; // hold MAC DUT in reset until T7
-        sample_en = 1; // unit test: every clock edge is a sample tick
+        mac_reset  = 1; // hold MAC DUT in reset until T7
+        t11_reset  = 1; // hold T11 DUT in reset until T11
+        sample_en  = 1; // unit test: every clock edge is a sample tick
 
         // ── T1: Reset holds phase at 0 ───────────────────────
         reset = 1;
@@ -211,6 +235,37 @@ module tb_phase_accumulator;
         else
             $display("FAIL [T10 MAC total > fixed]  mac_phase=%0d  fixed_would_be=%0d",
                      mac_phase, 10 * MAC_INC_START);
+
+        // ── T11: done asserts near 20 kHz threshold, phase then freezes ─
+        begin
+            integer      tick_count;
+            logic [31:0] frozen;
+
+            t11_reset  = 1;
+            @(posedge clk); #1;
+            t11_reset  = 0;
+            tick_count = 0;
+
+            while (!t11_done && tick_count < 250_000) begin
+                @(posedge clk); #1;
+                tick_count++;
+            end
+
+            if (t11_done && tick_count >= 235_000 && tick_count <= 245_000)
+                $display("PASS [T11 done asserted]  ticks=%0d  (expect ~240000)", tick_count);
+            else if (t11_done)
+                $display("WARN [T11 done asserted at unexpected tick count]  ticks=%0d", tick_count);
+            else
+                $display("FAIL [T11 done never asserted within 250000 ticks]");
+
+            // Verify phase no longer changes once done is latched
+            frozen = t11_phase;
+            repeat (10) @(posedge clk); #1;
+            if (t11_phase === frozen)
+                $display("PASS [T11 phase frozen after done]  phase=%0d", t11_phase);
+            else
+                $display("FAIL [T11 phase changed after done]  was=%0d  now=%0d", frozen, t11_phase);
+        end
 
         $display("\n=== All tests complete ===");
         $finish;
