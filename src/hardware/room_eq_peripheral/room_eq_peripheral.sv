@@ -9,7 +9,7 @@
  * Offset   Bits      Access   Meaning
  *   0      [0]       W        CTRL: bit 0 = sweep_start (write 1 to trigger, self-clears next cycle)
  *   1      [3:0]     R        STATUS: FSM state — 0=IDLE, 1=SWEEP, 2=CAPTURE, 3=DONE
- *   2      [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s) TODO: I would remove. I think our sweep length is hardcoded.
+ *   2      —         —        (reserved)
  *   3      [31:0]    R        VERSION: 32'h0001_0000
  *   4      [7:0]     W        LUT_ADDR: address for LUT initialization
  *   5      [23:0]    W        LUT_DATA: data for LUT initialization
@@ -50,7 +50,6 @@ module room_eq_peripheral(
 
     // Register file
     logic        sweep_start;
-    logic [31:0] sweep_len;
     logic [7:0]  lut_addr;
     logic [23:0] lut_data;
     logic [12:0] fft_rd_addr;
@@ -92,7 +91,6 @@ module room_eq_peripheral(
             case (address)
                 4'd0: readdata = 32'd0;                    // CTRL is write-only
                 4'd1: readdata = {28'd0, state};           // STATUS: FSM state
-                4'd2: readdata = sweep_len;
                 4'd3: readdata = 32'h0001_0000;            // VERSION
                 4'd6: readdata = {19'd0, fft_rd_addr};
                 4'd7: readdata = {8'd0, fft_rd_real};
@@ -105,7 +103,6 @@ module room_eq_peripheral(
     always_ff @(posedge clk) begin
         if (reset) begin
             sweep_start <= 1'b0;
-            sweep_len   <= 32'd2_400_000;  // default: 5 second sweep at 48 kHz
             lut_addr    <= 8'd0;
             we_lut      <= 1'b0;
             fft_rd_addr <= 13'd0;
@@ -113,7 +110,6 @@ module room_eq_peripheral(
             we_lut <= 1'b0; // default off — only address 5 overrides this
             case (address)
                 4'd0: sweep_start <= writedata[0];
-                4'd2: sweep_len   <= writedata;
                 4'd4: lut_addr    <= writedata[7:0];
                 4'd5: begin
                     we_lut   <= 1'b1;

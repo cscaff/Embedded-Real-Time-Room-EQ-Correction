@@ -199,7 +199,6 @@ module tb_room_eq_peripheral;
         chk1(AUD_XCK === audio_clk,       1'b1, "T1 AUD_XCK=audio_clk");
 
         // Register defaults under reset
-        av_read(4'd2, rdata); chk32(rdata, 32'd2_400_000,    "T1 SWEEP_LEN default");
         av_read(4'd3, rdata); chk32(rdata, 32'h0001_0000,  "T1 VERSION");
         av_read(4'd1, rdata); chk32(rdata[3:0], ST_IDLE,   "T1 STATUS=IDLE");
 
@@ -478,10 +477,8 @@ module tb_room_eq_peripheral;
         force dut.state = ST_IDLE;   // pull FSM back for clean further tests
         @(posedge clk); #1;
 
-        // SWEEP_LEN addr 2: R/W
-        av_write(4'd2, 32'd12345);
-        av_read(4'd2, rdata); chk32(rdata, 32'd12345, "T9 SWEEP_LEN R/W");
-        av_write(4'd2, 32'd480_000);  // restore default
+        // addr 2 reserved — reads must return 0
+        av_read(4'd2, rdata); chk32(rdata, 32'd0, "T9 addr=2 reserved → 0");
 
         // VERSION addr 3: read-only; writes silently ignored
         av_read(4'd3, rdata); chk32(rdata, 32'h0001_0000, "T9 VERSION read");
@@ -561,13 +558,13 @@ module tb_room_eq_peripheral;
         read = 1'b0;
 
         // Write with chipselect=0 must not alter register state
-        av_write(4'd2, 32'd999_999);      // set SWEEP_LEN with cs=1
-        av_read(4'd2, rdata); chk32(rdata, 32'd999_999, "T11 SWEEP_LEN before cs=0 write");
+        av_write(4'd6, 32'd1234);         // set FFT_ADDR with cs=1
+        av_read(4'd6, rdata); chk32(rdata[12:0], 13'd1234, "T11 FFT_ADDR before cs=0 write");
         @(posedge clk); #1;
-        chipselect = 1'b0; write = 1'b1; address = 4'd2; writedata = 32'd1;
+        chipselect = 1'b0; write = 1'b1; address = 4'd6; writedata = 32'd1;
         @(posedge clk); #1;
         chipselect = 1'b0; write = 1'b0;
-        av_read(4'd2, rdata); chk32(rdata, 32'd999_999, "T11 SWEEP_LEN unchanged (cs=0 write)");
+        av_read(4'd6, rdata); chk32(rdata[12:0], 13'd1234, "T11 FFT_ADDR unchanged (cs=0 write)");
         $display("--- T11 complete ---");
 
         // ═════════════════════════════════════════════════════
