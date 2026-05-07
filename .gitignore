@@ -46,3 +46,9 @@ lab3-hw/hps_sdram_p0_all_pins.txt
 lab3-hw/hps_sdram_p0_summary.csv
 lab3-hw/soc_system.sopcinfo
 lab3-hw/soc_system.srf
+# Quartus PLL IP generated files (not needed for synthesis or Questa sim)
+quartus/ip/PLL/*.bsf
+quartus/ip/PLL/*.cmp
+quartus/ip/PLL/*.ppf
+quartus/ip/PLL/pll_sim.f
+quartus/ip/PLL/pll_sim/aldec/
