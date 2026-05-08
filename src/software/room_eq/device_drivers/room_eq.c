@@ -2,8 +2,8 @@
 //
 // A Platform device implemented using the misc subsystem.
 //
-// CSEE W4840 — Embedded Systems
 // Jacob Boxerman, Roland List, Christian Scaff
+// CSEE 4840 Spring 2026
 //
 // On probe the driver:
 //   1. Maps the Avalon I2C master (device tree reg index 0)
@@ -29,32 +29,35 @@
 #include <linux/of_address.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
-#include <linux/delay.h>
+#include <linux/delay.h> // New 
 #include "room_eq.h"
 
 #define DRIVER_NAME "room_eq"
 
 /* ── Avalon I2C master register byte offsets ─────────────── */
-#define I2C_TFR_CMD           0x00
-#define I2C_RX_DATA           0x04
-#define I2C_CTRL              0x08
-#define I2C_ISR               0x10
-#define I2C_STATUS            0x14
-#define I2C_SCL_LOW           0x20
-#define I2C_SCL_HIGH          0x24
-#define I2C_SDA_HOLD          0x28
+/* See Intel Avalon I2C Master Core User Guide */
+#define I2C_TFR_CMD           0x00 /* Transfer Command FIFO */
+#define I2C_RX_DATA           0x04 /* Receive Data FIFO */
+#define I2C_CTRL              0x08 /* Control register */
+#define I2C_ISR               0x10 /* Interrupt Status */
+#define I2C_STATUS            0x14 /* Status register */
+#define I2C_SCL_LOW           0x20 /* SCL Low Count */
+#define I2C_SCL_HIGH          0x24 /* SCL High Count */
+#define I2C_SDA_HOLD          0x28 /* SDA Hold Count */
 
-#define TFR_CMD_STA  (1u << 9)  /* generate START before byte */
-#define TFR_CMD_STO  (1u << 8)  /* generate STOP  after  byte */
-#define I2C_BUSY     (1u << 0)  /* STATUS bit 0: core busy    */
-#define I2C_CTRL_EN  (1u << 0)  /* CTRL  bit 0: core enable   */
-#define I2C_NACK     (1u << 2)  /* ISR   bit 2: NACK received */
+// Using unsigned constants for bit masks.
+#define TFR_CMD_STA  (1u << 9)  /* START condition. */
+#define TFR_CMD_STO  (1u << 8)  /* STOP condition */
+#define I2C_BUSY     (1u << 0)  /* STATUS bit 0: core busy    */ // TODO: understand
+#define I2C_CTRL_EN  (1u << 0)  /* CTRL  bit 0: core enable   */ // TODO: understand
+#define I2C_NACK     (1u << 2)  /* ISR   bit 2: NACK received */ // TODO: understand
 
 #define WM8731_ADDR  0x1A       /* 7-bit I2C address          */
 
 /* ── room_eq_peripheral register byte offsets ────────────── */
 #define REG_CTRL      0x00   /* W    bit 0 = sweep_start      */
 #define REG_STATUS    0x04   /* R    [3:0] FSM state          */
+#define REG_RESERVED  0x08   /* -    reserved for future use (Was Sweep Length) */
 #define REG_VERSION   0x0C   /* R    32'h0001_0000            */
 #define REG_LUT_ADDR  0x10   /* W    [7:0]  LUT write address */
 #define REG_LUT_DATA  0x14   /* W    [23:0] LUT write data    */
