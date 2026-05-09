@@ -14,6 +14,7 @@
 //   0x20  FFT_IDATA R     [23:0] FFT imag  part at FFT_ADDR
 //
 // ==========================================================================
+// TODO: MAKE SURE DEVICE TREE MATCHES THIS DRIVER (compatible = "csee4840,room_eq-1.0") !!!!!!!!!!
 
 #ifndef ROOM_EQ_H
 #define ROOM_EQ_H
