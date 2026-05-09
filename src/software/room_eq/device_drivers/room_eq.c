@@ -48,9 +48,9 @@
 // Using unsigned constants for bit masks.
 #define TFR_CMD_STA  (1u << 9)  /* START condition. */
 #define TFR_CMD_STO  (1u << 8)  /* STOP condition */
-#define I2C_BUSY     (1u << 0)  /* STATUS bit 0: core busy    */ // TODO: understand
+#define I2C_BUSY     (1u << 0)  /* STATUS bit 0: 1 = busy  */ 
 #define I2C_CTRL_EN  (1u << 0)  /* CTRL  bit 0: core enable   */ // TODO: understand
-#define I2C_NACK     (1u << 2)  /* ISR   bit 2: NACK received */ // TODO: understand
+#define I2C_NACK     (1u << 2)  /* ISR   bit 2: NACK received */
 
 #define WM8731_ADDR  0x1A       /* 7-bit I2C address          */
 
@@ -65,11 +65,14 @@
 #define REG_FFT_RDATA 0x1C   /* R    [23:0] FFT real part     */
 #define REG_FFT_IDATA 0x20   /* R    [23:0] FFT imag part     */
 
+/*
+ * Information about our device
+ */
 struct room_eq_dev {
-    struct resource  i2c_res;
-    struct resource  eq_res;
-    void __iomem    *i2c_base;
-    void __iomem    *eq_base;
+    struct resource  i2c_res; /* Resource: our registers (I2C) */
+    struct resource  eq_res; /* Resource: our registers (room_eq) */
+    void __iomem    *i2c_base; /* Where registers can be accessed in memory (I2C) */
+    void __iomem    *eq_base; /* Where registers can be accessed in memory (room_eq) */
 } dev;
 
 /* ── I2C helpers ──────────────────────────────────────────── */
@@ -77,17 +80,24 @@ struct room_eq_dev {
 static inline void i2c_wr(u32 offset, u32 val)
 {
     iowrite32(val, dev.i2c_base + offset);
+    // Using u32 kernel linux type for val and offsets.
+    // dev.i2c_base: base address pointer in memory for I2C registers.
+    // Offset: byte offset for the specific register we want to write to.
+    // iowrite32 writes 32-bit "val".
 }
 
 static inline u32 i2c_rd(u32 offset)
 {
     return ioread32(dev.i2c_base + offset);
+    // Reads 32-bit value from I2C at base address + byte offset.
 }
 
+// Wait until I2C core is idle.
 static int i2c_wait_idle(void)
 {
     int timeout = 100000;
 
+    // Wait until STATUS bit is 0 (not busy) or timeout expires.
     while ((i2c_rd(I2C_STATUS) & I2C_BUSY) && --timeout > 0)
         udelay(1);
     if (timeout == 0) {
@@ -99,16 +109,24 @@ static int i2c_wait_idle(void)
 
 static void i2c_init(void)
 {
-    i2c_wr(I2C_CTRL, 0);           /* disable during setup                   */
-    i2c_wr(I2C_SCL_LOW,  250);     /* 50 MHz / 100 kHz: low  half = 250 cnt  */
-    i2c_wr(I2C_SCL_HIGH, 250);     /*                   high half = 250 cnt  */
+    /* disable I2C during setup   */
+    i2c_wr(I2C_CTRL, 0);      
+
+    /* Set SCL timing for ~100 kHz
+       50 MHz / 100 kHz = 500 total counts
+       Low = 250, High = 250 */
+    i2c_wr(I2C_SCL_LOW,  250);
+    i2c_wr(I2C_SCL_HIGH, 250);    
     i2c_wr(I2C_SDA_HOLD,  30);
+
+    /* Enable core */
     i2c_wr(I2C_CTRL, I2C_CTRL_EN);
     udelay(1000);
 }
 
 /*
- * Write one WM8731 register: 7-bit reg addr + 9-bit data packed as two bytes.
+ * WM8731 register write: 7-bit register + 9-bit data
+ * I2C transaction: START, addr+W, byte1, byte2, STOP
  *   byte1 = {reg[6:0], data[8]}
  *   byte2 = data[7:0]
  */
@@ -116,26 +134,33 @@ static int wm8731_write(u8 reg, u16 data)
 {
     u8  byte1 = (reg << 1) | ((data >> 8) & 0x01);
     u8  byte2 = data & 0xFF;
-    u32 isr;
     int ret;
 
+    // Bubbles up error if waiting for idle times out.
     ret = i2c_wait_idle();
     if (ret)
         return ret;
 
-    i2c_wr(I2C_TFR_CMD, TFR_CMD_STA | (WM8731_ADDR << 1) | 0); /* START + addr */
+    /* START + slave address + W */
+    i2c_wr(I2C_TFR_CMD, TFR_CMD_STA | (WM8731_ADDR << 1) | 0);
+
+    /* Data byte 1 */
     i2c_wr(I2C_TFR_CMD, byte1);
-    i2c_wr(I2C_TFR_CMD, TFR_CMD_STO | byte2);                   /* data + STOP  */
+
+    /* Data byte 2 + STOP */
+    i2c_wr(I2C_TFR_CMD, TFR_CMD_STO | byte2);               
 
     ret = i2c_wait_idle();
     if (ret)
         return ret;
 
-    isr = i2c_rd(I2C_ISR);
+    /* Check for NACK — read ISR */
+    u32 isr = i2c_rd(I2C_ISR);
     if (isr & I2C_NACK) {
-        i2c_wr(I2C_ISR, isr);   /* clear NACK flag */
+        /* clear NACK flag */
+        i2c_wr(I2C_ISR, isr);   
         pr_err(DRIVER_NAME ": NACK on WM8731 reg 0x%02x\n", reg);
-        return -EIO;
+        return -EIO; // I/O error for NACK.
     }
     return 0;
 }
@@ -147,21 +172,22 @@ static int codec_init(void)
     pr_info(DRIVER_NAME ": initializing Avalon I2C master\n");
     i2c_init();
 
-    pr_info(DRIVER_NAME ": configuring WM8731\n");
+    pr_info(DRIVER_NAME ": configuring WM8731 codec...\n");
 
-    err |= wm8731_write(0x0F, 0x000);  /* Reset                        */
-    msleep(10);
-    err |= wm8731_write(0x00, 0x017);  /* Left  Line In: 0 dB, unmuted */
-    err |= wm8731_write(0x01, 0x017);  /* Right Line In: 0 dB, unmuted */
-    err |= wm8731_write(0x02, 0x079);  /* Left  HP Out:  near-max vol  */
-    err |= wm8731_write(0x03, 0x079);  /* Right HP Out:  near-max vol  */
-    err |= wm8731_write(0x04, 0x012);  /* Analog path:   DAC, line in  */
-    err |= wm8731_write(0x05, 0x000);  /* Digital path:  no mute       */
-    err |= wm8731_write(0x06, 0x000);  /* Power:         all on        */
-    err |= wm8731_write(0x07, 0x00A);  /* Format: I2S, 24-bit, slave   */
-    err |= wm8731_write(0x08, 0x000);  /* Sampling: normal, 48 kHz     */
-    err |= wm8731_write(0x09, 0x001);  /* Active                       */
+    err |= wm8731_write(0x0F, 0x000);  /* Reset */
+    msleep(10); /* Wait after reset (Kernel Style10 millisecond sleep) */
 
+    err |= wm8731_write(0x00, 0x017);  /* Left Line In: 0dB, no mute */
+    err |= wm8731_write(0x01, 0x017);  /* Right Line In: 0dB, no mute */
+    err |= wm8731_write(0x02, 0x079);  /* Left HP Out: near max */
+    err |= wm8731_write(0x03, 0x079);  /* Right HP Out: near max */
+    err |= wm8731_write(0x04, 0x012);  /* Analog: DAC, line in */
+    err |= wm8731_write(0x05, 0x000);  /* Digital: no mute */
+    err |= wm8731_write(0x06, 0x000);  /* Power: all on */
+    err |= wm8731_write(0x07, 0x00A);  /* Format: I2S, 24-bit, slave */
+    err |= wm8731_write(0x08, 0x000);  /* Sampling: normal, 48kHz */
+    err |= wm8731_write(0x09, 0x001);  /* Active */
+    
     if (err)
         pr_warn(DRIVER_NAME ": codec init had one or more errors\n");
     else
