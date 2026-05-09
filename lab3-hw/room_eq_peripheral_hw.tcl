@@ -61,6 +61,7 @@ add_fileset_file i2s_rx.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_periphera
 #
 set_module_assignment embeddedsw.dts.compatible "csee4840,room_eq-1.0"
 set_module_assignment embeddedsw.dts.group "room_eq"
+set_module_assignment embeddedsw.dts.vendor "csee4840"
 
 
 #
