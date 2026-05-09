@@ -51,13 +51,21 @@ add_fileset_file fft_results_ram.sv SYSTEM_VERILOG PATH ../src/hardware/memory/f
 add_fileset_file sample_fifo.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv
 add_fileset_file sample_fft.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv
 add_fileset_file calibration_engine.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv
-add_fileset_file capture_fifo.qip QIP PATH ../quartus/ip/room_eq_peripheral/capture_fifo/capture_fifo.qip
-add_fileset_file capture_fft.qip QIP PATH ../quartus/ip/room_eq_peripheral/capture_fft/capture_fft/synthesis/capture_fft.qip
+add_fileset_file i2s_rx.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv
+# capture_fifo and capture_fft source files are in soc_system.qsf
+# (they are instantiated by Verilog, not by Platform Designer)
 
 
-# 
+#
+# device tree
+#
+set_module_assignment embeddedsw.dts.compatible "csee4840,room_eq-1.0"
+set_module_assignment embeddedsw.dts.group "room_eq"
+
+
+#
 # parameters
-# 
+#
 
 
 # 
@@ -148,6 +156,8 @@ add_interface_port audio AUD_BCLK bclk Output 1
 add_interface_port audio AUD_DACDAT dacdat Output 1
 add_interface_port audio AUD_DACLRCK daclrck Output 1
 add_interface_port audio AUD_XCK xck Output 1
+add_interface_port audio AUD_ADCDAT adcdat Input 1
+add_interface_port audio AUD_ADCLRCK adclrck Output 1
 
 
 # 

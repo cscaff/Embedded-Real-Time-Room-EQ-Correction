@@ -15,12 +15,12 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft sim_room_eq_peripheral clean test test_eq test_fir test_fir_e2e plot_eq
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_i2s_rx sim_i2s_loopback sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft sim_room_eq_peripheral clean test test_eq test_fir test_fir_e2e plot_eq
 
 ifeq ($(OS),Windows_NT)
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sample_fifo sim_fft_ram
 else
-all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_fft_ram
+all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_i2s_rx sim_i2s_loopback sim_fft_ram
 endif
 
 sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
@@ -172,6 +172,30 @@ I2S_SRCS = \
 	$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv \
 	$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_shift_register.sv \
 	$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_tx.sv
+
+I2S_RX_SRCS = \
+	$(SRC_DIR)/room_eq_peripheral/i2s_rx/i2s_rx.sv
+
+# ── I2S RX tests ─────────────────────────────────────────────────────────────
+
+sim_i2s_rx: $(OUT_DIR)/tb_i2s_rx.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_i2s_rx.vvp: \
+		$(SRC_DIR)/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv \
+		$(I2S_RX_SRCS) \
+		$(TEST_DIR)/room_eq_peripheral/i2s_rx/tb_i2s_rx.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
+
+sim_i2s_loopback: $(OUT_DIR)/tb_i2s_loopback.vvp
+	$(VVP) $<
+
+$(OUT_DIR)/tb_i2s_loopback.vvp: \
+		$(I2S_SRCS) $(I2S_RX_SRCS) \
+		$(TEST_DIR)/room_eq_peripheral/i2s_rx/tb_i2s_loopback.sv \
+		| $(OUT_DIR)
+	$(IVERILOG) $(FLAGS) -o $@ $^
 
 sim_sweep_i2s: $(OUT_DIR)/tb_sweep_i2s.vvp
 	$(VVP) $<

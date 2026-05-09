@@ -273,6 +273,8 @@ module soc_system_top(
      .audio_bclk                   ( AUD_BCLK ),
      .audio_dacdat                 ( AUD_DACDAT ),
      .audio_daclrck                ( AUD_DACLRCK ),
+     .audio_adcdat                 ( AUD_ADCDAT ),
+     .audio_adclrck                ( AUD_ADCLRCK ),
 
      // FPGA I2C master (active-low open drain to codec)
      .fpga_i2c_sda_in              ( FPGA_I2C_SDAT ),
@@ -293,9 +295,8 @@ module soc_system_top(
    assign ADC_DIN = SW[0];
    assign ADC_SCLK = SW[0];
    
-   // AUD_BCLK, AUD_DACDAT, AUD_DACLRCK, AUD_XCK driven by room_eq_peripheral
-   // AUD_ADCLRCK unused for now (will be driven by i2s_rx later)
-   assign AUD_ADCLRCK = 1'b0;
+   // AUD_BCLK, AUD_DACDAT, AUD_DACLRCK, AUD_XCK, AUD_ADCLRCK driven by room_eq_peripheral
+   // AUD_ADCDAT is an input from the codec ADC
 
    assign DRAM_ADDR = { 13{ SW[0] } };
    assign DRAM_BA = { 2{ SW[0] } };

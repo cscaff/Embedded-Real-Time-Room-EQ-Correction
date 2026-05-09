@@ -1,6 +1,10 @@
 
 module soc_system (
 	clk_clk,
+	fpga_i2c_sda_in,
+	fpga_i2c_scl_in,
+	fpga_i2c_sda_oe,
+	fpga_i2c_scl_oe,
 	hps_hps_io_emac1_inst_TX_CLK,
 	hps_hps_io_emac1_inst_TXD0,
 	hps_hps_io_emac1_inst_TXD1,
@@ -66,17 +70,13 @@ module soc_system (
 	hps_ddr3_mem_odt,
 	hps_ddr3_mem_dm,
 	hps_ddr3_oct_rzqin,
-	reset_reset_n,
-	audio_bclk,
-	audio_dacdat,
-	audio_daclrck,
-	audio_xck,
-	fpga_i2c_sda_in,
-	fpga_i2c_scl_in,
-	fpga_i2c_sda_oe,
-	fpga_i2c_scl_oe);	
+	reset_reset_n);	
 
 	input		clk_clk;
+	input		fpga_i2c_sda_in;
+	input		fpga_i2c_scl_in;
+	output		fpga_i2c_sda_oe;
+	output		fpga_i2c_scl_oe;
 	output		hps_hps_io_emac1_inst_TX_CLK;
 	output		hps_hps_io_emac1_inst_TXD0;
 	output		hps_hps_io_emac1_inst_TXD1;
@@ -143,12 +143,4 @@ module soc_system (
 	output	[3:0]	hps_ddr3_mem_dm;
 	input		hps_ddr3_oct_rzqin;
 	input		reset_reset_n;
-	output		audio_bclk;
-	output		audio_dacdat;
-	output		audio_daclrck;
-	output		audio_xck;
-	input		fpga_i2c_sda_in;
-	input		fpga_i2c_scl_in;
-	output		fpga_i2c_sda_oe;
-	output		fpga_i2c_scl_oe;
 endmodule

@@ -9,9 +9,15 @@
 
 #include <stdint.h>
 
-#define N_FFT   8192
-#define N_HALF  (N_FFT / 2 + 1)   /* 4097 unique bins for a real-input FFT */
-#define N_LUT   256                /* one quadrant of sine, 256 entries     */
+#define N_FFT       8192
+#define N_HALF      (N_FFT / 2 + 1)   /* 4097 unique bins for a real-input FFT */
+#define N_LUT       256                /* one quadrant of sine, 256 entries     */
+#define FS          48000              /* sample rate (Hz)                      */
+#define F_START     20.0               /* sweep start frequency (Hz)            */
+#define F_END       20000.0            /* sweep end frequency (Hz)              */
+#define SWEEP_SAMPS (FS * 5)           /* 240000 samples = 5 s sweep            */
+#define N_CHUNKS    (SWEEP_SAMPS / N_FFT)  /* 29 chunks                        */
+#define BIN_WIDTH   ((double)FS / N_FFT)   /* 5.859375 Hz per bin              */
 
 /*
  * generate_sine_lut — fill lut[0..n-1] with Q1.23 sine values for one quadrant.

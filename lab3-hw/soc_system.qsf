@@ -19,7 +19,7 @@
 #
 # Quartus Prime
 # Version 24.1std.0 Build 1077 03/04/2025 SC Lite Edition
-# Date created = 18:09:27  May 02, 2026
+# Date created = 18:39:19  May 02, 2026
 #
 # -------------------------------------------------------------------------- #
 #
@@ -41,13 +41,70 @@ set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEMA5F31C6
 set_global_assignment -name TOP_LEVEL_ENTITY soc_system_top
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 24.1STD.0
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "18:09:27  MAY 02, 2026"
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "18:39:19  MAY 02, 2026"
 set_global_assignment -name LAST_QUARTUS_VERSION "24.1std.0 Lite Edition"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
 set_global_assignment -name SYSTEMVERILOG_FILE soc_system_top.sv
 set_global_assignment -name QIP_FILE soc_system/synthesis/soc_system.qip
+
+# ── capture_fifo (raw DCFIFO) and capture_fft (FFT II) IP sources ──
+# These are instantiated by Verilog (sample_fifo.sv, sample_fft.sv), not by Platform Designer.
+set_global_assignment -name VERILOG_FILE ip/capture_fifo/capture_fifo.v
+set_global_assignment -name VERILOG_FILE ip/capture_fft/capture_fft/synthesis/capture_fft.v
+set_global_assignment -name SYSTEMVERILOG_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0.sv -library capture_fft
+set_global_assignment -name SYSTEMVERILOG_FILE ip/capture_fft/capture_fft/synthesis/submodules/counter_module.sv -library capture_fft
+set_global_assignment -name VERILOG_FILE ip/capture_fft/capture_fft/synthesis/submodules/apn_fft_mult_cpx_1825.v -library capture_fft
+set_global_assignment -name VERILOG_FILE ip/capture_fft/capture_fft/synthesis/submodules/hyper_pipeline_interface.v -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_text_pkg.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_math_pkg.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_lib_pkg.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_avalon_streaming_block_sink.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_avalon_streaming_block_source.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_roundsat.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/apn_fft_mult_can.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/apn_fft_mult_cpx.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/hyper_opt_OFF_pkg.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/altera_fft_dual_port_ram.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/altera_fft_dual_port_rom.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/altera_fft_mult_add.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/altera_fft_single_port_rom.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_fft_pkg.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_lib_pkg.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_bit_reverse_addr_control.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_bit_reverse_core.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_bit_reverse_reverse_carry_adder.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_adder_fp.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_addsub.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_bfi.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_bfii.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_bf_control.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_cma.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_cma_adder_fp.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_cma_bfi_fp.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_cma_fp.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_core.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_counter.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_delay.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_enable_control.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_stage.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_stg_out_pipe.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_stg_pipe.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_top.vhd -library capture_fft
+set_global_assignment -name VHDL_FILE ip/capture_fft/capture_fft/synthesis/submodules/auk_dspip_r22sdf_twrom.vhd -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twr1.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twi1.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twr2.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twi2.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twr3.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twi3.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twr4.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twi4.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twr5.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twi5.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twr6.hex -library capture_fft
+set_global_assignment -name SOURCE_FILE ip/capture_fft/capture_fft/synthesis/submodules/capture_fft_fft_ii_0_opt_twi6.hex -library capture_fft
 set_location_assignment PIN_AJ4 -to ADC_CS_N
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ADC_CS_N
 set_location_assignment PIN_AK4 -to ADC_DIN
@@ -856,3 +913,7 @@ set_global_assignment -name USE_DLL_FREQUENCY_FOR_DQS_DELAY_CHAIN ON
 set_global_assignment -name UNIPHY_SEQUENCER_DQS_CONFIG_ENABLE ON
 set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
 set_global_assignment -name ECO_REGENERATE_REPORT ON
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top

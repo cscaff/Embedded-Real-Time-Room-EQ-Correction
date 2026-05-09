@@ -1,5 +1,9 @@
 	soc_system u0 (
 		.clk_clk                      (<connected-to-clk_clk>),                      //      clk.clk
+		.fpga_i2c_sda_in              (<connected-to-fpga_i2c_sda_in>),              // fpga_i2c.sda_in
+		.fpga_i2c_scl_in              (<connected-to-fpga_i2c_scl_in>),              //         .scl_in
+		.fpga_i2c_sda_oe              (<connected-to-fpga_i2c_sda_oe>),              //         .sda_oe
+		.fpga_i2c_scl_oe              (<connected-to-fpga_i2c_scl_oe>),              //         .scl_oe
 		.hps_hps_io_emac1_inst_TX_CLK (<connected-to-hps_hps_io_emac1_inst_TX_CLK>), //      hps.hps_io_emac1_inst_TX_CLK
 		.hps_hps_io_emac1_inst_TXD0   (<connected-to-hps_hps_io_emac1_inst_TXD0>),   //         .hps_io_emac1_inst_TXD0
 		.hps_hps_io_emac1_inst_TXD1   (<connected-to-hps_hps_io_emac1_inst_TXD1>),   //         .hps_io_emac1_inst_TXD1
@@ -65,14 +69,6 @@
 		.hps_ddr3_mem_odt             (<connected-to-hps_ddr3_mem_odt>),             //         .mem_odt
 		.hps_ddr3_mem_dm              (<connected-to-hps_ddr3_mem_dm>),              //         .mem_dm
 		.hps_ddr3_oct_rzqin           (<connected-to-hps_ddr3_oct_rzqin>),           //         .oct_rzqin
-		.reset_reset_n                (<connected-to-reset_reset_n>),                //    reset.reset_n
-		.audio_bclk                   (<connected-to-audio_bclk>),                   //    audio.bclk
-		.audio_dacdat                 (<connected-to-audio_dacdat>),                 //         .dacdat
-		.audio_daclrck                (<connected-to-audio_daclrck>),                //         .daclrck
-		.audio_xck                    (<connected-to-audio_xck>),                    //         .xck
-		.fpga_i2c_sda_in              (<connected-to-fpga_i2c_sda_in>),              // fpga_i2c.sda_in
-		.fpga_i2c_scl_in              (<connected-to-fpga_i2c_scl_in>),              //         .scl_in
-		.fpga_i2c_sda_oe              (<connected-to-fpga_i2c_sda_oe>),              //         .sda_oe
-		.fpga_i2c_scl_oe              (<connected-to-fpga_i2c_scl_oe>)               //         .scl_oe
+		.reset_reset_n                (<connected-to-reset_reset_n>)                 //    reset.reset_n
 	);
 

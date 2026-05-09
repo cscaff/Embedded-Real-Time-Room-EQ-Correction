@@ -55,10 +55,10 @@
 #define WM8731_ADDR  0x1A       /* 7-bit I2C address          */
 
 /* ── room_eq_peripheral register byte offsets ────────────── */
-#define REG_CTRL      0x00   /* W    bit 0 = sweep_start      */
-#define REG_STATUS    0x04   /* R    [3:0] FSM state          */
-#define REG_RESERVED  0x08   /* -    reserved for future use (Was Sweep Length) */
-#define REG_VERSION   0x0C   /* R    32'h0001_0000            */
+#define REG_CTRL        0x00   /* W    bit 0 = sweep_start      */
+#define REG_STATUS      0x04   /* R    [3:0] FSM state          */
+#define REG_CHUNK_COUNT 0x08   /* R    [7:0] completed FFT chunks */
+#define REG_VERSION     0x0C   /* R    32'h0002_0000            */
 #define REG_LUT_ADDR  0x10   /* W    [7:0]  LUT write address */
 #define REG_LUT_DATA  0x14   /* W    [23:0] LUT write data    */
 #define REG_FFT_ADDR  0x18   /* R/W  [12:0] FFT read address  */
@@ -275,6 +275,14 @@ static long room_eq_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
         if (copy_to_user((room_eq_fft_data_t *)arg, &fft_data, sizeof(fft_data)))
             return -EACCES;
         break;
+
+    case ROOM_EQ_READ_CHUNK_COUNT: {
+        room_eq_chunk_count_t cc;
+        cc.count = eq_rd(REG_CHUNK_COUNT) & 0xFFu;
+        if (copy_to_user((room_eq_chunk_count_t *)arg, &cc, sizeof(cc)))
+            return -EACCES;
+        break;
+    }
 
     default:
         return -EINVAL;

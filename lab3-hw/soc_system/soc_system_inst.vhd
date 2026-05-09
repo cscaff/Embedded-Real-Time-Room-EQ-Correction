@@ -1,6 +1,10 @@
 	component soc_system is
 		port (
 			clk_clk                      : in    std_logic                     := 'X';             -- clk
+			fpga_i2c_sda_in              : in    std_logic                     := 'X';             -- sda_in
+			fpga_i2c_scl_in              : in    std_logic                     := 'X';             -- scl_in
+			fpga_i2c_sda_oe              : out   std_logic;                                        -- sda_oe
+			fpga_i2c_scl_oe              : out   std_logic;                                        -- scl_oe
 			hps_hps_io_emac1_inst_TX_CLK : out   std_logic;                                        -- hps_io_emac1_inst_TX_CLK
 			hps_hps_io_emac1_inst_TXD0   : out   std_logic;                                        -- hps_io_emac1_inst_TXD0
 			hps_hps_io_emac1_inst_TXD1   : out   std_logic;                                        -- hps_io_emac1_inst_TXD1
@@ -66,21 +70,17 @@
 			hps_ddr3_mem_odt             : out   std_logic;                                        -- mem_odt
 			hps_ddr3_mem_dm              : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			hps_ddr3_oct_rzqin           : in    std_logic                     := 'X';             -- oct_rzqin
-			reset_reset_n                : in    std_logic                     := 'X';             -- reset_n
-			audio_bclk                   : out   std_logic;                                        -- bclk
-			audio_dacdat                 : out   std_logic;                                        -- dacdat
-			audio_daclrck                : out   std_logic;                                        -- daclrck
-			audio_xck                    : out   std_logic;                                        -- xck
-			fpga_i2c_sda_in              : in    std_logic                     := 'X';             -- sda_in
-			fpga_i2c_scl_in              : in    std_logic                     := 'X';             -- scl_in
-			fpga_i2c_sda_oe              : out   std_logic;                                        -- sda_oe
-			fpga_i2c_scl_oe              : out   std_logic                                         -- scl_oe
+			reset_reset_n                : in    std_logic                     := 'X'              -- reset_n
 		);
 	end component soc_system;
 
 	u0 : component soc_system
 		port map (
 			clk_clk                      => CONNECTED_TO_clk_clk,                      --      clk.clk
+			fpga_i2c_sda_in              => CONNECTED_TO_fpga_i2c_sda_in,              -- fpga_i2c.sda_in
+			fpga_i2c_scl_in              => CONNECTED_TO_fpga_i2c_scl_in,              --         .scl_in
+			fpga_i2c_sda_oe              => CONNECTED_TO_fpga_i2c_sda_oe,              --         .sda_oe
+			fpga_i2c_scl_oe              => CONNECTED_TO_fpga_i2c_scl_oe,              --         .scl_oe
 			hps_hps_io_emac1_inst_TX_CLK => CONNECTED_TO_hps_hps_io_emac1_inst_TX_CLK, --      hps.hps_io_emac1_inst_TX_CLK
 			hps_hps_io_emac1_inst_TXD0   => CONNECTED_TO_hps_hps_io_emac1_inst_TXD0,   --         .hps_io_emac1_inst_TXD0
 			hps_hps_io_emac1_inst_TXD1   => CONNECTED_TO_hps_hps_io_emac1_inst_TXD1,   --         .hps_io_emac1_inst_TXD1
@@ -146,14 +146,6 @@
 			hps_ddr3_mem_odt             => CONNECTED_TO_hps_ddr3_mem_odt,             --         .mem_odt
 			hps_ddr3_mem_dm              => CONNECTED_TO_hps_ddr3_mem_dm,              --         .mem_dm
 			hps_ddr3_oct_rzqin           => CONNECTED_TO_hps_ddr3_oct_rzqin,           --         .oct_rzqin
-			reset_reset_n                => CONNECTED_TO_reset_reset_n,                --    reset.reset_n
-			audio_bclk                   => CONNECTED_TO_audio_bclk,                   --    audio.bclk
-			audio_dacdat                 => CONNECTED_TO_audio_dacdat,                 --         .dacdat
-			audio_daclrck                => CONNECTED_TO_audio_daclrck,                --         .daclrck
-			audio_xck                    => CONNECTED_TO_audio_xck,                    --         .xck
-			fpga_i2c_sda_in              => CONNECTED_TO_fpga_i2c_sda_in,              -- fpga_i2c.sda_in
-			fpga_i2c_scl_in              => CONNECTED_TO_fpga_i2c_scl_in,              --         .scl_in
-			fpga_i2c_sda_oe              => CONNECTED_TO_fpga_i2c_sda_oe,              --         .sda_oe
-			fpga_i2c_scl_oe              => CONNECTED_TO_fpga_i2c_scl_oe               --         .scl_oe
+			reset_reset_n                => CONNECTED_TO_reset_reset_n                 --    reset.reset_n
 		);
 

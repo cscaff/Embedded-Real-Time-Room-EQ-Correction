@@ -297,3 +297,34 @@ int fir_design(const int32_t *fft_real, const int32_t *fft_imag,
     free(mag); free(smoothed); free(c_mag); free(c_full); free(h); free(taps_d);
     return 0;
 }
+
+/* ── Entry point for pre-computed magnitude spectrum ───────────────────────
+ *
+ * Used by the chunked calibration path: eq.c assembles magnitudes from
+ * multiple FFT chunks, then calls this (skipping compute_magnitudes).
+ */
+int fir_design_from_spectrum(const double *mag_in, int n_bins,
+                             int32_t *taps_out)
+{
+    int n_full = 2 * (n_bins - 1);   /* 8192 for n_bins=4097 */
+
+    double *smoothed = malloc(n_bins * sizeof(double));
+    double *c_mag    = malloc(n_bins * sizeof(double));
+    double *c_full   = malloc(n_full * sizeof(double));
+    double *h        = malloc(n_full * sizeof(double));
+    double *taps_d   = malloc(N_TAPS * sizeof(double));
+    if (!smoothed || !c_mag || !c_full || !h || !taps_d) {
+        free(smoothed); free(c_mag); free(c_full); free(h); free(taps_d);
+        return -1;
+    }
+
+    octave_smooth(mag_in, n_bins, 1.0 / 3.0, smoothed);
+    compute_inverse(smoothed, n_bins, 1.0, c_mag);
+    hermitian_extend(c_mag, n_bins, n_full, c_full);
+    real_ifft(c_full, n_full, h);
+    window_taps(h, n_full, N_TAPS, taps_d);
+    quantise_taps(taps_d, N_TAPS, taps_out);
+
+    free(smoothed); free(c_mag); free(c_full); free(h); free(taps_d);
+    return 0;
+}

@@ -5,9 +5,8 @@
  *   1. generate_sine_lut()  — compute 256 Q1.23 sine values for one quadrant
  *   2. load_lut()           — write them to the peripheral via ROOM_EQ_WRITE_LUT
  *   3. trigger_sweep()      — assert sweep_start via ROOM_EQ_WRITE_CTRL
- *   4. poll_done()          — poll ROOM_EQ_READ_STATUS until state == DONE
- *   5. read_fft_bins()      — read 4097 complex bins via ROOM_EQ_READ_FFT_DATA
- *   6. fir_design()         — compute 128 correction taps (see room_eq/FIR/)
+ *   4. chunked read loop    — poll CHUNK_COUNT, read active FFT bins per chunk
+ *   5. fir_design_from_spectrum() — compute 128 correction taps from assembled spectrum
  *
  * Build (on DE1-SoC):
  *   arm-linux-gnueabihf-gcc -O2 -Wall -lm \
@@ -34,14 +33,13 @@
 #endif
 
 #define DEVICE_PATH       "/dev/room_eq"
-#define POLL_INTERVAL_US  100000   /* 100 ms between status polls          */
+#define POLL_INTERVAL_US  1000     /* 1 ms between chunk polls             */
 #define POLL_TIMEOUT_S    30       /* give up after 30 s (sweep is ~5 s)   */
 
 /* FSM state values from room_eq_peripheral.sv */
-#define STATE_IDLE    0u
-#define STATE_SWEEP   1u
-#define STATE_CAPTURE 2u
-#define STATE_DONE    3u
+#define STATE_IDLE        0u
+#define STATE_CALIBRATING 1u
+#define STATE_DONE        3u
 
 /* ── Step 1: sine LUT generation ────────────────────────────────────────────
  *
@@ -96,82 +94,28 @@ static int trigger_sweep(int fd)
     return 0;
 }
 
-/* ── Step 4: status polling ──────────────────────────────────────────────── */
-
-static const char *state_name(unsigned int s)
-{
-    switch (s) {
-    case STATE_IDLE:    return "IDLE";
-    case STATE_SWEEP:   return "SWEEP";
-    case STATE_CAPTURE: return "CAPTURE";
-    case STATE_DONE:    return "DONE";
-    default:            return "UNKNOWN";
-    }
-}
-
-static int poll_done(int fd)
-{
-    int max_polls = (POLL_TIMEOUT_S * 1000000) / POLL_INTERVAL_US;
-    unsigned int last_state = 0xFF;
-    room_eq_status_t status;
-
-    for (int i = 0; i < max_polls; i++) {
-        if (ioctl(fd, ROOM_EQ_READ_STATUS, &status) < 0) {
-            perror("eq: ROOM_EQ_READ_STATUS");
-            return -1;
-        }
-
-        /* Print a line only when the FSM state changes */
-        if (status.state != last_state) {
-            printf("eq: status → %s\n", state_name(status.state));
-            last_state = status.state;
-        }
-
-        if (status.state == STATE_DONE)
-            return 0;
-
-        usleep(POLL_INTERVAL_US);
-    }
-
-    fprintf(stderr, "eq: timeout waiting for DONE after %d s\n", POLL_TIMEOUT_S);
-    return -1;
-}
-
-/* ── Step 5: FFT bin readout ─────────────────────────────────────────────── */
-/*
- * The FFT result RAM stores 8192 bins but only 0..4096 are unique for a real
- * input (Hermitian symmetry).  We read N_HALF = 4097 bins.
+/* ── Sweep frequency mapping ─────────────────────────────────────────────
  *
- * Each bin is 24-bit two's-complement Q1.23.  The driver masks to 24 bits
- * with & 0xFFFFFF; sign_extend_24() restores the sign before storing.
+ * The sweep generator (phase_accumulator.sv) produces an exponential sweep
+ * from F_START to F_END over SWEEP_SAMPS samples:
+ *   f(n) = F_START * (F_END/F_START)^(n/SWEEP_SAMPS)
  *
- * Latency note: write FFT_ADDR ioctl, then read FFT_DATA ioctl.  The RAM has
- * a 1-cycle synchronous read latency, but the kernel syscall boundary between
- * the two ioctls takes thousands of 50 MHz cycles — the data is always ready.
+ * For each 8192-sample chunk, we compute which FFT bins correspond to
+ * the sweep's frequency range during that chunk.
  */
-static int read_fft_bins(int fd, int32_t *real_out, int32_t *imag_out, int n_bins)
+static double sweep_freq(int sample_n)
 {
-    for (int k = 0; k < n_bins; k++) {
-        room_eq_fft_addr_t addr = { .addr = (unsigned short)k };
-        if (ioctl(fd, ROOM_EQ_WRITE_FFT_ADDR, &addr) < 0) {
-            fprintf(stderr, "eq: FFT_ADDR write failed at bin %d: %s\n",
-                    k, strerror(errno));
-            return -1;
-        }
+    return F_START * pow(F_END / F_START, (double)sample_n / SWEEP_SAMPS);
+}
 
-        room_eq_fft_data_t data;
-        if (ioctl(fd, ROOM_EQ_READ_FFT_DATA, &data) < 0) {
-            fprintf(stderr, "eq: FFT_DATA read failed at bin %d: %s\n",
-                    k, strerror(errno));
-            return -1;
-        }
-
-        real_out[k] = sign_extend_24(data.rdata);
-        imag_out[k] = sign_extend_24(data.idata);
-    }
-
-    printf("eq: read %d FFT bins\n", n_bins);
-    return 0;
+static void chunk_bin_range(int chunk, int *k_lo, int *k_hi)
+{
+    double f_lo = sweep_freq(chunk * N_FFT);
+    double f_hi = sweep_freq((chunk + 1) * N_FFT - 1);
+    *k_lo = (int)floor(f_lo / BIN_WIDTH);
+    *k_hi = (int)ceil(f_hi / BIN_WIDTH);
+    if (*k_lo < 1)        *k_lo = 1;          /* skip DC */
+    if (*k_hi >= N_HALF)  *k_hi = N_HALF - 1;
 }
 
 /* ── main ────────────────────────────────────────────────────────────────── */
@@ -191,39 +135,91 @@ int main(void)
     generate_sine_lut(lut, N_LUT);
     if (load_lut(fd, lut, N_LUT) < 0) { ret = 1; goto done; }
 
-    /* 2. Trigger sweep and wait for DONE */
+    /* 2. Trigger sweep */
     if (trigger_sweep(fd) < 0) { ret = 1; goto done; }
-    if (poll_done(fd)     < 0) { ret = 1; goto done; }
 
-    /* 3. Read the half-spectrum FFT bins */
-    int32_t *fft_real = malloc(N_HALF * sizeof(int32_t));
-    int32_t *fft_imag = malloc(N_HALF * sizeof(int32_t));
-    if (!fft_real || !fft_imag) {
-        perror("eq: malloc");
-        free(fft_real);
-        free(fft_imag);
-        ret = 1;
-        goto done;
+    /* 3. Chunked spectrum assembly */
+    double *spectrum = calloc(N_HALF, sizeof(double));
+    int    *filled   = calloc(N_HALF, sizeof(int));
+    if (!spectrum || !filled) {
+        perror("eq: calloc");
+        free(spectrum); free(filled);
+        ret = 1; goto done;
     }
 
-    if (read_fft_bins(fd, fft_real, fft_imag, N_HALF) < 0) {
-        free(fft_real);
-        free(fft_imag);
-        ret = 1;
-        goto done;
+    int last_chunk = -1;
+    int running = 1;
+    int max_polls = (POLL_TIMEOUT_S * 1000000) / POLL_INTERVAL_US;
+    int poll_count = 0;
+
+    while (running && poll_count < max_polls) {
+        room_eq_status_t status;
+        ioctl(fd, ROOM_EQ_READ_STATUS, &status);
+
+        room_eq_chunk_count_t cc;
+        ioctl(fd, ROOM_EQ_READ_CHUNK_COUNT, &cc);
+        int current_chunk = (int)cc.count;
+
+        /* Process all new chunks since last poll */
+        while (last_chunk + 1 < current_chunk && last_chunk + 1 < N_CHUNKS) {
+            int c = last_chunk + 1;
+            int k_lo, k_hi;
+            chunk_bin_range(c, &k_lo, &k_hi);
+
+            for (int k = k_lo; k <= k_hi; k++) {
+                room_eq_fft_addr_t addr = { .addr = (unsigned short)k };
+                ioctl(fd, ROOM_EQ_WRITE_FFT_ADDR, &addr);
+
+                room_eq_fft_data_t data;
+                ioctl(fd, ROOM_EQ_READ_FFT_DATA, &data);
+
+                int32_t re = sign_extend_24(data.rdata);
+                int32_t im = sign_extend_24(data.idata);
+                double r = re / (double)(1 << 23);
+                double i = im / (double)(1 << 23);
+                spectrum[k] = sqrt(r * r + i * i);
+                filled[k] = 1;
+            }
+
+            printf("eq: chunk %2d  bins %4d-%4d  (%.0f-%.0f Hz)\n",
+                   c, k_lo, k_hi,
+                   k_lo * BIN_WIDTH, k_hi * BIN_WIDTH);
+            last_chunk = c;
+        }
+
+        if (status.state == STATE_DONE)
+            running = 0;
+        else
+            usleep(POLL_INTERVAL_US);
+
+        poll_count++;
     }
 
-    /* 4. Design the correction FIR filter */
+    if (poll_count >= max_polls) {
+        fprintf(stderr, "eq: timeout waiting for calibration after %d s\n",
+                POLL_TIMEOUT_S);
+        free(spectrum); free(filled);
+        ret = 1; goto done;
+    }
+
+    /* Fill unfilled bins with 1.0 (no correction needed) */
+    int n_filled = 0;
+    for (int k = 0; k < N_HALF; k++) {
+        if (filled[k]) n_filled++;
+        else spectrum[k] = 1.0;
+    }
+    printf("eq: %d of %d bins filled across %d chunks\n",
+           n_filled, N_HALF, last_chunk + 1);
+
+    /* 4. Design correction filter */
     int32_t taps[N_TAPS];
-    if (fir_design(fft_real, fft_imag, N_HALF, taps) < 0) {
+    if (fir_design_from_spectrum(spectrum, N_HALF, taps) < 0) {
         fprintf(stderr, "eq: fir_design failed\n");
-        free(fft_real);
-        free(fft_imag);
-        ret = 1;
-        goto done;
+        free(spectrum); free(filled);
+        ret = 1; goto done;
     }
 
-    /* 5. Write taps to file for use downstream */
+    /* 5. Write taps to file */
     FILE *f = fopen("fir_taps.bin", "wb");
     if (f) {
         fwrite(taps, sizeof(int32_t), N_TAPS, f);
@@ -233,8 +229,17 @@ int main(void)
         perror("eq: fopen fir_taps.bin");
     }
 
-    free(fft_real);
-    free(fft_imag);
+    /* 6. Write spectrum to file (for plotting) */
+    FILE *sf = fopen("room_spectrum.txt", "w");
+    if (sf) {
+        for (int k = 0; k < N_HALF; k++)
+            fprintf(sf, "%.10f\n", spectrum[k]);
+        fclose(sf);
+        printf("eq: spectrum written to room_spectrum.txt\n");
+    }
+
+    free(spectrum);
+    free(filled);
 
 done:
     close(fd);

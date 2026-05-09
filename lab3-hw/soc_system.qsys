@@ -57,14 +57,6 @@
          type = "int";
       }
    }
-   element room_eq_peripheral_0.avalon_slave_0
-   {
-      datum baseAddress
-      {
-         value = "64";
-         type = "String";
-      }
-   }
 }
 ]]></parameter>
  <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
@@ -79,18 +71,14 @@
  <parameter name="hideFromIPCatalog" value="false" />
  <parameter name="lockedInterfaceDefinition" value="" />
  <parameter name="maxAdditionalLatency" value="1" />
- <parameter name="projectName" value="" />
+ <parameter name="projectName" value="soc_system.qpf" />
  <parameter name="sopcBorderPoints" value="false" />
  <parameter name="systemHash" value="0" />
  <parameter name="testBenchDutName" value="" />
  <parameter name="timeStamp" value="0" />
  <parameter name="useTestBenchNamingPattern" value="false" />
  <instanceScript></instanceScript>
- <interface
-   name="audio"
-   internal="room_eq_peripheral_0.audio"
-   type="conduit"
-   dir="end" />
+ <interface name="audio" internal="room_eq_peripheral_0.audio" />
  <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
  <interface name="fpga_i2c" internal="i2c_0.i2c_serial" type="conduit" dir="end" />
  <interface name="hps" internal="hps_0.hps_io" type="conduit" dir="end" />

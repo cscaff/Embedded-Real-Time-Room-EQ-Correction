@@ -24,7 +24,6 @@ import matplotlib.ticker as ticker
 FS     = 48_000   # sample rate (Hz) — matches WM8731 codec
 N_FFT  = 8192
 N_HALF = N_FFT // 2 + 1   # 4097
-N_TAPS = 128
 
 # ── load data ────────────────────────────────────────────────────────────────
 
@@ -36,11 +35,10 @@ except OSError as e:
     print("Run ./test_fir_e2e first to generate them.")
     sys.exit(1)
 
+N_TAPS = len(taps_q23)
+
 if len(room_mag) != N_HALF:
     print(f"Expected {N_HALF} room bins, got {len(room_mag)}")
-    sys.exit(1)
-if len(taps_q23) != N_TAPS:
-    print(f"Expected {N_TAPS} taps, got {len(taps_q23)}")
     sys.exit(1)
 
 # ── frequency axes ───────────────────────────────────────────────────────────

@@ -4,14 +4,15 @@
 // Shared between kernel driver (room_eq.c) and userspace applications.
 //
 // Register map (from room_eq_peripheral.sv, word offsets × 4 = byte offset):
-//   0x00  CTRL      W     bit 0 = sweep_start (self-clears next cycle)
-//   0x04  STATUS    R     [3:0] FSM state: 0=IDLE 1=SWEEP 2=CAPTURE 3=DONE
-//   0x0C  VERSION   R     32'h0001_0000
-//   0x10  LUT_ADDR  W     [7:0]  sine-LUT write address
-//   0x14  LUT_DATA  W     [23:0] sine-LUT write data  (fires we_lut pulse)
-//   0x18  FFT_ADDR  R/W   [12:0] FFT result RAM read address
-//   0x1C  FFT_RDATA R     [23:0] FFT real  part at FFT_ADDR
-//   0x20  FFT_IDATA R     [23:0] FFT imag  part at FFT_ADDR
+//   0x00  CTRL         W     bit 0 = sweep_start (self-clears next cycle)
+//   0x04  STATUS       R     [3:0] FSM state: 0=IDLE 1=CALIBRATING 3=DONE
+//   0x08  CHUNK_COUNT  R     [7:0] completed FFT chunks (0 before first)
+//   0x0C  VERSION      R     32'h0002_0000
+//   0x10  LUT_ADDR     W     [7:0]  sine-LUT write address
+//   0x14  LUT_DATA     W     [23:0] sine-LUT write data  (fires we_lut pulse)
+//   0x18  FFT_ADDR     R/W   [12:0] FFT result RAM read address
+//   0x1C  FFT_RDATA    R     [23:0] FFT real  part at FFT_ADDR
+//   0x20  FFT_IDATA    R     [23:0] FFT imag  part at FFT_ADDR
 //
 // ==========================================================================
 // TODO: MAKE SURE DEVICE TREE MATCHES THIS DRIVER (compatible = "csee4840,room_eq-1.0") !!!!!!!!!!
@@ -42,8 +43,12 @@ typedef struct {
 } room_eq_fft_data_t;
 
 typedef struct {
-    unsigned int state; // [3:0]: 0=IDLE 1=SWEEP 2=CAPTURE 3=DONE
+    unsigned int state; // [3:0]: 0=IDLE 1=CALIBRATING 3=DONE
 } room_eq_status_t;
+
+typedef struct {
+    unsigned int count; // [7:0] completed FFT chunks
+} room_eq_chunk_count_t;
 
 typedef struct {
     unsigned int version; // e.g. 0x00010000 
@@ -60,5 +65,6 @@ typedef struct {
 #define ROOM_EQ_READ_VERSION    _IOR(ROOM_EQ_MAGIC, 5, room_eq_version_t)
 #define ROOM_EQ_READ_FFT_ADDR   _IOR(ROOM_EQ_MAGIC, 6, room_eq_fft_addr_t)
 #define ROOM_EQ_READ_FFT_DATA   _IOR(ROOM_EQ_MAGIC, 7, room_eq_fft_data_t)
+#define ROOM_EQ_READ_CHUNK_COUNT _IOR(ROOM_EQ_MAGIC, 8, room_eq_chunk_count_t)
 
 #endif

@@ -8,6 +8,8 @@ module soc_system (
 		output wire        audio_dacdat,                 //         .dacdat
 		output wire        audio_daclrck,                //         .daclrck
 		output wire        audio_xck,                    //         .xck
+		input  wire        audio_adcdat,                 //         .adcdat
+		output wire        audio_adclrck,                //         .adclrck
 		input  wire        clk_clk,                      //      clk.clk
 		input  wire        fpga_i2c_sda_in,              // fpga_i2c.sda_in
 		input  wire        fpga_i2c_scl_in,              //         .scl_in
@@ -120,7 +122,7 @@ module soc_system (
 	wire         hps_0_h2f_lw_axi_master_rvalid;                                   // mm_interconnect_0:hps_0_h2f_lw_axi_master_rvalid -> hps_0:h2f_lw_RVALID
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_chipselect; // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_chipselect -> room_eq_peripheral_0:chipselect
 	wire  [31:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_readdata;   // room_eq_peripheral_0:readdata -> mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_readdata
-	wire   [2:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_address;    // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_address -> room_eq_peripheral_0:address
+	wire   [3:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_address;    // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_address -> room_eq_peripheral_0:address
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_read;       // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_read -> room_eq_peripheral_0:read
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_write;      // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_write -> room_eq_peripheral_0:write
 	wire  [31:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_writedata;  // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_writedata -> room_eq_peripheral_0:writedata
@@ -364,6 +366,8 @@ module soc_system (
 		.AUD_DACDAT  (audio_dacdat),                                                     //               .dacdat
 		.AUD_DACLRCK (audio_daclrck),                                                    //               .daclrck
 		.AUD_XCK     (audio_xck),                                                        //               .xck
+		.AUD_ADCDAT  (audio_adcdat),                                                     //               .adcdat
+		.AUD_ADCLRCK (audio_adclrck),                                                    //               .adclrck
 		.audio_clk   (audio_pll_0_audio_clk_clk)                                         //      audio_clk.clk
 	);
 

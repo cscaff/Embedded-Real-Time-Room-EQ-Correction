@@ -8,9 +8,9 @@
  *
  * Offset   Bits      Access   Meaning
  *   0      [0]       W        CTRL: bit 0 = sweep_start (write 1 to trigger, self-clears next cycle)
- *   1      [3:0]     R        STATUS: FSM state — 0=IDLE, 1=SWEEP, 2=CAPTURE, 3=DONE
- *   2      —         —        (reserved)
- *   3      [31:0]    R        VERSION: 32'h0001_0000
+ *   1      [3:0]     R        STATUS: FSM state — 0=IDLE, 1=CALIBRATING, 3=DONE
+ *   2      [7:0]     R        CHUNK_COUNT: completed FFT chunks (increments on each fft_done rising edge)
+ *   3      [31:0]    R        VERSION: 32'h0002_0000
  *   4      [7:0]     W        LUT_ADDR: address for LUT initialization
  *   5      [23:0]    W        LUT_DATA: data for LUT initialization
  *   6      [12:0]    R/W      FFT_ADDR: read address for calibration engine results
@@ -38,12 +38,17 @@ module room_eq_peripheral(
     // Audio conduit — directly to codec pins
     output logic        AUD_XCK,      // master clock to codec (12.288 MHz)
     output logic        AUD_BCLK,     // I2S bit clock
-    output logic        AUD_DACDAT,   // I2S serial data
-    output logic        AUD_DACLRCK   // I2S frame clock (L/R)
+    output logic        AUD_DACDAT,   // I2S serial data to DAC
+    output logic        AUD_DACLRCK,  // I2S DAC frame clock (L/R)
+    input  logic        AUD_ADCDAT,   // I2S serial data from ADC
+    output logic        AUD_ADCLRCK   // I2S ADC frame clock (= DACLRCK)
 );
 
     // ── Forward the master clock to the codec ───────────────
     assign AUD_XCK = audio_clk;
+
+    // ── Share DAC frame clock with ADC ──────────────────────
+    assign AUD_ADCLRCK = AUD_DACLRCK;
 
     // ── All internal signal declarations ────────────────────
     // (Grouped here to avoid forward-reference errors in Questa.)
@@ -62,8 +67,12 @@ module room_eq_peripheral(
     logic        fft_done;        // Calibration engine FFT complete
     logic        sweep_done;      // Latches high in audio domain when sweep reaches 20 kHz
     logic        sweep_reset;     // Active-high reset for sweep_generator and i2s_tx (audio domain)
-    logic [23:0] left_chan_tb;    // Testbench drives via hierarchical ref; replace with I2S RX
     logic [23:0] amplitude;       // Sweep generator output
+
+    // I2S RX outputs
+    logic [23:0] i2s_rx_left;
+    logic [23:0] i2s_rx_right;
+    logic        i2s_rx_valid;
 
     // Toggle synchronizer (50 MHz → 12.288 MHz)
     logic        sweep_start_toggle;
@@ -75,12 +84,15 @@ module room_eq_peripheral(
     // rst_sync: async reset → synchronized release in audio domain
     logic        rst_sync1, rst_sync2;
 
+    // Chunk counter
+    logic        fft_done_prev;
+    logic [7:0]  chunk_count;
+
     // FSM
     typedef enum logic [3:0] {
-        IDLE    = 4'd0,
-        SWEEP   = 4'd1,
-        CAPTURE = 4'd2,
-        DONE    = 4'd3
+        IDLE        = 4'd0,
+        CALIBRATING = 4'd1,
+        DONE        = 4'd3
     } state_t;
     state_t state;
 
@@ -91,7 +103,8 @@ module room_eq_peripheral(
             case (address)
                 4'd0: readdata = 32'd0;                    // CTRL is write-only
                 4'd1: readdata = {28'd0, state};           // STATUS: FSM state
-                4'd3: readdata = 32'h0001_0000;            // VERSION
+                4'd2: readdata = {24'd0, chunk_count};     // CHUNK_COUNT
+                4'd3: readdata = 32'h0002_0000;            // VERSION
                 4'd6: readdata = {19'd0, fft_rd_addr};
                 4'd7: readdata = {8'd0, fft_rd_real};
                 4'd8: readdata = {8'd0, fft_rd_imag};
@@ -161,31 +174,50 @@ module room_eq_peripheral(
 
     assign sweep_reset = rst_sync2; // sweep_generator and i2s_tx share the audio-domain reset
 
+    // ── Chunk counter ────────────────────────────────────────
+    // Increments on each rising edge of fft_done (one per completed FFT frame).
+    // Resets when FSM returns to IDLE (on new calibration trigger).
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            fft_done_prev <= 1'b0;
+            chunk_count   <= 8'd0;
+        end else begin
+            fft_done_prev <= fft_done;
+            if (state == IDLE)
+                chunk_count <= 8'd0;
+            else if (fft_done && !fft_done_prev)  // rising edge
+                chunk_count <= chunk_count + 8'd1;
+        end
+    end
+
     // ── FSM ─────────────────────────────────────
+    // Sweep and capture run simultaneously.  The calibration engine's
+    // FFT cycles continuously (one 8192-point FFT per ~170 ms).
+    // The HPS reads each chunk's results via FFT_ADDR/FFT_RDATA/FFT_IDATA,
+    // using CHUNK_COUNT to know when a new result is available.
     always_ff @(posedge clk) begin
         if (reset) begin
             state           <= IDLE;
             calibrate_start <= 1'b0;
         end else begin
-            calibrate_start <= 1'b0; // default: clear every cycle
+            calibrate_start <= 1'b0; // default: one-cycle pulse
             case (state)
                 IDLE: begin
-                    if (sweep_start)
-                        state <= SWEEP;
-                end
-                SWEEP: begin
-                    if (done_sync2) begin
-                        state           <= CAPTURE;
-                        calibrate_start <= 1'b1; // one-cycle pulse
+                    if (sweep_start) begin
+                        state           <= CALIBRATING;
+                        calibrate_start <= 1'b1; // arm capture engine NOW
                     end
                 end
-                CAPTURE: begin
-                    if (fft_done)
+                CALIBRATING: begin
+                    // Sweep and capture run together.  FFTs cycle automatically.
+                    // fft_done toggles once per chunk; chunk_count tracks them.
+                    if (done_sync2)              // sweep finished
                         state <= DONE;
                 end
                 DONE: begin
-                    // Sticky until sweep_start fires again.
-                    if (sweep_start) state <= SWEEP;
+                    // Sticky.  HPS reads final chunk, then can re-trigger.
+                    if (sweep_start)
+                        state <= IDLE;
                 end
             endcase
         end
@@ -210,7 +242,7 @@ module room_eq_peripheral(
         .bclk    (AUD_BCLK),
         .lrclk   (AUD_DACLRCK),
         .aclr    (rst_sync2),
-        .left_chan(left_chan_tb), // TODO: Replace with I2S RX output when RX is wired up.
+        .left_chan(i2s_rx_left),
         .rd_addr (fft_rd_addr),
         .rd_real (fft_rd_real),
         .rd_imag (fft_rd_imag),
@@ -229,8 +261,16 @@ module room_eq_peripheral(
         .dacdat       (AUD_DACDAT)
     );
 
-    // ── TODO: I2S receiver ────────────────────────────────────
-    // left_chan_tb is driven by the testbench via hierarchical reference until
-    // I2S RX is wired. Replace with the RX left-channel output when available.
+    // ── I2S receiver ─────────────────────────────────────────
+    i2s_rx i2s_rx_inst (
+        .clock       (audio_clk),
+        .reset       (sweep_reset),
+        .bclk        (AUD_BCLK),
+        .lrck        (AUD_DACLRCK),
+        .adcdat      (AUD_ADCDAT),
+        .left_sample (i2s_rx_left),
+        .right_sample(i2s_rx_right),
+        .sample_valid(i2s_rx_valid)
+    );
 
 endmodule

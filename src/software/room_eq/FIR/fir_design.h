@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#define N_TAPS 128   /* fixed FIR length — must match FPGA FIR filter */
+#define N_TAPS 4096  /* FIR length — longer = better low-freq correction */
 
 /*
  * fir_design — design a 128-tap correction FIR filter from measured FFT data.
@@ -24,5 +24,20 @@
  */
 int fir_design(const int32_t *fft_real, const int32_t *fft_imag,
                int n_bins, int32_t *taps_out);
+
+/*
+ * fir_design_from_spectrum — design FIR taps from a pre-computed
+ * magnitude spectrum (assembled from chunked FFT reads).
+ *
+ * Skips the compute_magnitudes step; starts from octave_smooth.
+ *
+ * mag_in:   N_HALF (4097) linear magnitude values
+ * n_bins:   must be N_HALF (4097)
+ * taps_out: output buffer, receives N_TAPS Q1.23 tap coefficients
+ *
+ * Returns 0 on success, -1 on error.
+ */
+int fir_design_from_spectrum(const double *mag_in, int n_bins,
+                             int32_t *taps_out);
 
 #endif
