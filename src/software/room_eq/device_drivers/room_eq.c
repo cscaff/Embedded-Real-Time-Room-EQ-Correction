@@ -1,0 +1,413 @@
+// ===== Device driver for the Room EQ peripheral =====
+//
+// A Platform device implemented using the misc subsystem.
+//
+// Jacob Boxerman, Roland List, Christian Scaff
+// CSEE 4840 Spring 2026
+//
+// On probe the driver:
+//   1. Maps the Avalon I2C master (device tree reg index 0)
+//   2. Maps the room_eq_peripheral (device tree reg index 1)
+//   3. Initializes the WM8731 codec via I2C (I2S slave, 24-bit, 48 kHz)
+//   4. Exposes /dev/room_eq for ioctl access to all peripheral registers
+//
+// "make" to build
+// insmod room_eq.ko
+//
+// ========================================================
+
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/errno.h>
+#include <linux/version.h>
+#include <linux/kernel.h>
+#include <linux/platform_device.h>
+#include <linux/miscdevice.h>
+#include <linux/slab.h>
+#include <linux/io.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h> // New 
+#include "room_eq.h"
+
+#define DRIVER_NAME "room_eq"
+
+/* ── Avalon I2C master register byte offsets ─────────────── */
+/* See Intel Avalon I2C Master Core User Guide */
+#define I2C_TFR_CMD           0x00 /* Transfer Command FIFO */
+#define I2C_RX_DATA           0x04 /* Receive Data FIFO */
+#define I2C_CTRL              0x08 /* Control register */
+#define I2C_ISR               0x10 /* Interrupt Status */
+#define I2C_STATUS            0x14 /* Status register */
+#define I2C_SCL_LOW           0x20 /* SCL Low Count */
+#define I2C_SCL_HIGH          0x24 /* SCL High Count */
+#define I2C_SDA_HOLD          0x28 /* SDA Hold Count */
+
+// Using unsigned constants for bit masks.
+#define TFR_CMD_STA  (1u << 9)  /* START condition. */
+#define TFR_CMD_STO  (1u << 8)  /* STOP condition */
+#define I2C_BUSY     (1u << 0)  /* STATUS bit 0: 1 = busy  */ 
+#define I2C_CTRL_EN  (1u << 0)  /* CTRL  bit 0: core enable   */ // TODO: understand
+#define I2C_NACK     (1u << 2)  /* ISR   bit 2: NACK received */
+
+#define WM8731_ADDR  0x1A       /* 7-bit I2C address          */
+
+/* ── room_eq_peripheral register byte offsets ────────────── */
+#define REG_CTRL      0x00   /* W    bit 0 = sweep_start      */
+#define REG_STATUS    0x04   /* R    [3:0] FSM state          */
+#define REG_RESERVED  0x08   /* -    reserved for future use (Was Sweep Length) */
+#define REG_VERSION   0x0C   /* R    32'h0001_0000            */
+#define REG_LUT_ADDR  0x10   /* W    [7:0]  LUT write address */
+#define REG_LUT_DATA  0x14   /* W    [23:0] LUT write data    */
+#define REG_FFT_ADDR  0x18   /* R/W  [12:0] FFT read address  */
+#define REG_FFT_RDATA 0x1C   /* R    [23:0] FFT real part     */
+#define REG_FFT_IDATA 0x20   /* R    [23:0] FFT imag part     */
+
+/*
+ * Information about our device
+ */
+struct room_eq_dev {
+    struct resource  i2c_res; /* Resource: our registers (I2C) */
+    struct resource  eq_res; /* Resource: our registers (room_eq) */
+    void __iomem    *i2c_base; /* Where registers can be accessed in memory (I2C) */
+    void __iomem    *eq_base; /* Where registers can be accessed in memory (room_eq) */
+} dev;
+
+/* ── I2C helpers ──────────────────────────────────────────── */
+
+static inline void i2c_wr(u32 offset, u32 val)
+{
+    iowrite32(val, dev.i2c_base + offset);
+    // Using u32 kernel linux type for val and offsets.
+    // dev.i2c_base: base address pointer in memory for I2C registers.
+    // Offset: byte offset for the specific register we want to write to.
+    // iowrite32 writes 32-bit "val".
+}
+
+static inline u32 i2c_rd(u32 offset)
+{
+    return ioread32(dev.i2c_base + offset);
+    // Reads 32-bit value from I2C at base address + byte offset.
+}
+
+// Wait until I2C core is idle.
+static int i2c_wait_idle(void)
+{
+    int timeout = 100000;
+
+    // Wait until STATUS bit is 0 (not busy) or timeout expires.
+    while ((i2c_rd(I2C_STATUS) & I2C_BUSY) && --timeout > 0)
+        udelay(1);
+    if (timeout == 0) {
+        pr_err(DRIVER_NAME ": I2C timeout\n");
+        return -ETIMEDOUT;
+    }
+    return 0;
+}
+
+static void i2c_init(void)
+{
+    /* disable I2C during setup   */
+    i2c_wr(I2C_CTRL, 0);      
+
+    /* Set SCL timing for ~100 kHz
+       50 MHz / 100 kHz = 500 total counts
+       Low = 250, High = 250 */
+    i2c_wr(I2C_SCL_LOW,  250);
+    i2c_wr(I2C_SCL_HIGH, 250);    
+    i2c_wr(I2C_SDA_HOLD,  30);
+
+    /* Enable core */
+    i2c_wr(I2C_CTRL, I2C_CTRL_EN);
+    udelay(1000);
+}
+
+/*
+ * WM8731 register write: 7-bit register + 9-bit data
+ * I2C transaction: START, addr+W, byte1, byte2, STOP
+ *   byte1 = {reg[6:0], data[8]}
+ *   byte2 = data[7:0]
+ */
+static int wm8731_write(u8 reg, u16 data)
+{
+    u8  byte1 = (reg << 1) | ((data >> 8) & 0x01);
+    u8  byte2 = data & 0xFF;
+    int ret;
+
+    // Bubbles up error if waiting for idle times out.
+    ret = i2c_wait_idle();
+    if (ret)
+        return ret;
+
+    /* START + slave address + W */
+    i2c_wr(I2C_TFR_CMD, TFR_CMD_STA | (WM8731_ADDR << 1) | 0);
+
+    /* Data byte 1 */
+    i2c_wr(I2C_TFR_CMD, byte1);
+
+    /* Data byte 2 + STOP */
+    i2c_wr(I2C_TFR_CMD, TFR_CMD_STO | byte2);               
+
+    ret = i2c_wait_idle();
+    if (ret)
+        return ret;
+
+    /* Check for NACK — read ISR */
+    u32 isr = i2c_rd(I2C_ISR);
+    if (isr & I2C_NACK) {
+        /* clear NACK flag */
+        i2c_wr(I2C_ISR, isr);   
+        pr_err(DRIVER_NAME ": NACK on WM8731 reg 0x%02x\n", reg);
+        return -EIO; // I/O error for NACK.
+    }
+    return 0;
+}
+
+static int codec_init(void)
+{
+    int err = 0;
+
+    pr_info(DRIVER_NAME ": initializing Avalon I2C master\n");
+    i2c_init();
+
+    pr_info(DRIVER_NAME ": configuring WM8731 codec...\n");
+
+    err |= wm8731_write(0x0F, 0x000);  /* Reset */
+    msleep(10); /* Wait after reset (Kernel Style10 millisecond sleep) */
+
+    err |= wm8731_write(0x00, 0x017);  /* Left Line In: 0dB, no mute */
+    err |= wm8731_write(0x01, 0x017);  /* Right Line In: 0dB, no mute */
+    err |= wm8731_write(0x02, 0x079);  /* Left HP Out: near max */
+    err |= wm8731_write(0x03, 0x079);  /* Right HP Out: near max */
+    err |= wm8731_write(0x04, 0x012);  /* Analog: DAC, line in */
+    err |= wm8731_write(0x05, 0x000);  /* Digital: no mute */
+    err |= wm8731_write(0x06, 0x000);  /* Power: all on */
+    err |= wm8731_write(0x07, 0x00A);  /* Format: I2S, 24-bit, slave */
+    err |= wm8731_write(0x08, 0x000);  /* Sampling: normal, 48kHz */
+    err |= wm8731_write(0x09, 0x001);  /* Active */
+
+    if (err)
+        pr_warn(DRIVER_NAME ": codec init had one or more errors\n");
+    else
+        pr_info(DRIVER_NAME ": codec ready: I2S slave, 24-bit, 48 kHz\n");
+
+    return err ? -EIO : 0;
+}
+
+/* ── room_eq peripheral helpers ──────────────────────────── */
+
+static inline void eq_wr(u32 offset, u32 val)
+{
+    iowrite32(val, dev.eq_base + offset);
+}
+
+static inline u32 eq_rd(u32 offset)
+{
+    return ioread32(dev.eq_base + offset);
+}
+
+/*
+ * Handle ioctl() calls from userspace:
+ * Read or write the segments on single digits.
+ * Note extensive error checking of arguments
+ */
+static long room_eq_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+{
+    room_eq_ctrl_t      ctrl;
+    room_eq_lut_t       lut;
+    room_eq_fft_addr_t  fft_addr;
+    room_eq_fft_data_t  fft_data;
+    room_eq_status_t    status;
+    room_eq_version_t   version;
+
+    switch (cmd) {
+    case ROOM_EQ_WRITE_CTRL:
+        if (copy_from_user(&ctrl, (room_eq_ctrl_t *)arg, sizeof(ctrl)))
+            return -EACCES;
+        // Write only bit 0 (sweep_start) to CTRL register. 'u' for unsigned masking. 
+        eq_wr(REG_CTRL, ctrl.sweep_start & 0x1u);
+        break;
+
+    case ROOM_EQ_WRITE_LUT:
+        if (copy_from_user(&lut, (room_eq_lut_t *)arg, sizeof(lut)))
+            return -EACCES;
+        // Write LUT address. Mask to 8 bits because eq_wr writes 32 bits.
+        eq_wr(REG_LUT_ADDR, lut.addr & 0xFFu);
+        // Write LUT data. Mask to 24 bits because data is [23:0].
+        eq_wr(REG_LUT_DATA, lut.data & 0xFFFFFFu);
+        break;
+
+    case ROOM_EQ_WRITE_FFT_ADDR:
+        if (copy_from_user(&fft_addr, (room_eq_fft_addr_t *)arg, sizeof(fft_addr)))
+            return -EACCES;
+        // Write FFT RAM Address. Masks to 13 bits.
+        eq_wr(REG_FFT_ADDR, fft_addr.addr & 0x1FFFu);
+        break;
+
+    case ROOM_EQ_READ_STATUS:
+        // Reads 32 bit STATUS register, masking to 4 bits. [3:0] Bit States.
+        status.state = eq_rd(REG_STATUS) & 0xFu;
+        if (copy_to_user((room_eq_status_t *)arg, &status, sizeof(status)))
+            return -EACCES;
+        break;
+
+    case ROOM_EQ_READ_VERSION:
+        // Reads 32 bit VERSION register.
+        version.version = eq_rd(REG_VERSION);
+        if (copy_to_user((room_eq_version_t *)arg, &version, sizeof(version)))
+            return -EACCES;
+        break;
+
+    case ROOM_EQ_READ_FFT_ADDR:
+        // Reads 32 bit FFT_ADDR register, masking to 13 bits.
+        fft_addr.addr = eq_rd(REG_FFT_ADDR) & 0x1FFFu;
+        if (copy_to_user((room_eq_fft_addr_t *)arg, &fft_addr, sizeof(fft_addr)))
+            return -EACCES;
+        break;
+
+    case ROOM_EQ_READ_FFT_DATA:
+        // Reads 32 bit FFT_RDATA register, masking to 24 bits.
+        fft_data.rdata = eq_rd(REG_FFT_RDATA) & 0xFFFFFFu;
+        // Reads 32 bit FFT_IDATA register, masking to 24 bits.
+        fft_data.idata = eq_rd(REG_FFT_IDATA) & 0xFFFFFFu;
+        if (copy_to_user((room_eq_fft_data_t *)arg, &fft_data, sizeof(fft_data)))
+            return -EACCES;
+        break;
+
+    default:
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
+/* The operations our device knows how to do */
+static const struct file_operations room_eq_fops = {
+    .owner          = THIS_MODULE,
+    .unlocked_ioctl = room_eq_ioctl,
+};
+
+/* Information about our device for the "misc" framework -- like a char dev */
+static struct miscdevice room_eq_misc_device = {
+    .minor = MISC_DYNAMIC_MINOR,
+    .name  = DRIVER_NAME,
+    .fops  = &room_eq_fops,
+};
+
+/*
+ * Initialization code: get resources (registers) and display
+ * a welcome message
+ */
+static int __init room_eq_probe(struct platform_device *pdev)
+{
+    int ret;
+
+    /* Map Avalon I2C master (device tree reg index 0) */
+    ret = of_address_to_resource(pdev->dev.of_node, 0, &dev.i2c_res);
+    if (ret) {
+        pr_err(DRIVER_NAME ": no I2C resource in device tree\n");
+        return -ENOENT;
+    }
+    if (!request_mem_region(dev.i2c_res.start, resource_size(&dev.i2c_res),
+                            DRIVER_NAME)) {
+        pr_err(DRIVER_NAME ": I2C region busy\n");
+        return -EBUSY;
+    }
+    dev.i2c_base = of_iomap(pdev->dev.of_node, 0);
+    if (!dev.i2c_base) {
+        ret = -ENOMEM;
+        goto out_release_i2c;
+    }
+
+    /* Map room_eq peripheral (device tree reg index 1) */
+    ret = of_address_to_resource(pdev->dev.of_node, 1, &dev.eq_res);
+    if (ret) {
+        pr_err(DRIVER_NAME ": no room_eq resource in device tree\n");
+        ret = -ENOENT;
+        goto out_unmap_i2c;
+    }
+    if (!request_mem_region(dev.eq_res.start, resource_size(&dev.eq_res),
+                            DRIVER_NAME)) {
+        pr_err(DRIVER_NAME ": room_eq region busy\n");
+        ret = -EBUSY;
+        goto out_unmap_i2c;
+    }
+    dev.eq_base = of_iomap(pdev->dev.of_node, 1);
+    if (!dev.eq_base) {
+        ret = -ENOMEM;
+        goto out_release_eq;
+    }
+
+    /* Initialize WM8731 codec on module load */
+    if (codec_init() < 0)
+        pr_warn(DRIVER_NAME ": codec init had errors — continuing\n");
+
+    /* Register ourselves as a misc device: creates /dev/room_eq only after hardware is ready */
+    ret = misc_register(&room_eq_misc_device);
+    if (ret) {
+        pr_err(DRIVER_NAME ": misc_register failed (%d)\n", ret);
+        goto out_unmap_eq;
+    }
+
+    pr_info(DRIVER_NAME ": /dev/room_eq ready\n");
+    return 0;
+
+out_unmap_eq:
+    iounmap(dev.eq_base);
+out_release_eq:
+    release_mem_region(dev.eq_res.start, resource_size(&dev.eq_res));
+out_unmap_i2c:
+    iounmap(dev.i2c_base);
+out_release_i2c:
+    release_mem_region(dev.i2c_res.start, resource_size(&dev.i2c_res));
+    return ret;
+}
+
+static int room_eq_remove(struct platform_device *pdev)
+{
+    misc_deregister(&room_eq_misc_device);
+    iounmap(dev.eq_base);
+    release_mem_region(dev.eq_res.start, resource_size(&dev.eq_res));
+    iounmap(dev.i2c_base);
+    release_mem_region(dev.i2c_res.start, resource_size(&dev.i2c_res));
+    return 0;
+}
+
+/* Which "compatible" string(s) to search for in the Device Tree */
+#ifdef CONFIG_OF
+static const struct of_device_id room_eq_of_match[] = {
+    { .compatible = "csee4840,room_eq-1.0" },
+    {},
+};
+MODULE_DEVICE_TABLE(of, room_eq_of_match);
+#endif
+
+static struct platform_driver room_eq_driver = {
+    .driver = {
+        .name           = DRIVER_NAME,
+        .owner          = THIS_MODULE,
+        .of_match_table = of_match_ptr(room_eq_of_match),
+    },
+    .remove = __exit_p(room_eq_remove),
+};
+
+static int __init room_eq_init(void)
+{
+    pr_info(DRIVER_NAME ": init\n");
+    return platform_driver_probe(&room_eq_driver, room_eq_probe);
+}
+
+static void __exit room_eq_exit(void)
+{
+    platform_driver_unregister(&room_eq_driver);
+    pr_info(DRIVER_NAME ": exit\n");
+}
+
+module_init(room_eq_init);
+module_exit(room_eq_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("CSEE W4840 Team");
+MODULE_DESCRIPTION("Room EQ peripheral driver with WM8731 codec initialization");
