@@ -187,7 +187,7 @@ static int codec_init(void)
     err |= wm8731_write(0x07, 0x00A);  /* Format: I2S, 24-bit, slave */
     err |= wm8731_write(0x08, 0x000);  /* Sampling: normal, 48kHz */
     err |= wm8731_write(0x09, 0x001);  /* Active */
-    
+
     if (err)
         pr_warn(DRIVER_NAME ": codec init had one or more errors\n");
     else
@@ -208,8 +208,11 @@ static inline u32 eq_rd(u32 offset)
     return ioread32(dev.eq_base + offset);
 }
 
-/* ── ioctl ────────────────────────────────────────────────── */
-
+/*
+ * Handle ioctl() calls from userspace:
+ * Read or write the segments on single digits.
+ * Note extensive error checking of arguments
+ */
 static long room_eq_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
     room_eq_ctrl_t      ctrl;
@@ -221,46 +224,55 @@ static long room_eq_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 
     switch (cmd) {
     case ROOM_EQ_WRITE_CTRL:
-        if (copy_from_user(&ctrl, (room_eq_ctrl_t __user *)arg, sizeof(ctrl)))
+        if (copy_from_user(&ctrl, (room_eq_ctrl_t *)arg, sizeof(ctrl)))
             return -EACCES;
+        // Write only bit 0 (sweep_start) to CTRL register. 'u' for unsigned masking. 
         eq_wr(REG_CTRL, ctrl.sweep_start & 0x1u);
         break;
 
     case ROOM_EQ_WRITE_LUT:
-        if (copy_from_user(&lut, (room_eq_lut_t __user *)arg, sizeof(lut)))
+        if (copy_from_user(&lut, (room_eq_lut_t *)arg, sizeof(lut)))
             return -EACCES;
+        // Write LUT address. Mask to 8 bits because eq_wr writes 32 bits.
         eq_wr(REG_LUT_ADDR, lut.addr & 0xFFu);
+        // Write LUT data. Mask to 24 bits because data is [23:0].
         eq_wr(REG_LUT_DATA, lut.data & 0xFFFFFFu);
         break;
 
     case ROOM_EQ_WRITE_FFT_ADDR:
-        if (copy_from_user(&fft_addr, (room_eq_fft_addr_t __user *)arg, sizeof(fft_addr)))
+        if (copy_from_user(&fft_addr, (room_eq_fft_addr_t *)arg, sizeof(fft_addr)))
             return -EACCES;
+        // Write FFT RAM Address. Masks to 13 bits.
         eq_wr(REG_FFT_ADDR, fft_addr.addr & 0x1FFFu);
         break;
 
     case ROOM_EQ_READ_STATUS:
+        // Reads 32 bit STATUS register, masking to 4 bits. [3:0] Bit States.
         status.state = eq_rd(REG_STATUS) & 0xFu;
-        if (copy_to_user((room_eq_status_t __user *)arg, &status, sizeof(status)))
+        if (copy_to_user((room_eq_status_t *)arg, &status, sizeof(status)))
             return -EACCES;
         break;
 
     case ROOM_EQ_READ_VERSION:
+        // Reads 32 bit VERSION register.
         version.version = eq_rd(REG_VERSION);
-        if (copy_to_user((room_eq_version_t __user *)arg, &version, sizeof(version)))
+        if (copy_to_user((room_eq_version_t *)arg, &version, sizeof(version)))
             return -EACCES;
         break;
 
     case ROOM_EQ_READ_FFT_ADDR:
+        // Reads 32 bit FFT_ADDR register, masking to 13 bits.
         fft_addr.addr = eq_rd(REG_FFT_ADDR) & 0x1FFFu;
-        if (copy_to_user((room_eq_fft_addr_t __user *)arg, &fft_addr, sizeof(fft_addr)))
+        if (copy_to_user((room_eq_fft_addr_t *)arg, &fft_addr, sizeof(fft_addr)))
             return -EACCES;
         break;
 
     case ROOM_EQ_READ_FFT_DATA:
+        // Reads 32 bit FFT_RDATA register, masking to 24 bits.
         fft_data.rdata = eq_rd(REG_FFT_RDATA) & 0xFFFFFFu;
+        // Reads 32 bit FFT_IDATA register, masking to 24 bits.
         fft_data.idata = eq_rd(REG_FFT_IDATA) & 0xFFFFFFu;
-        if (copy_to_user((room_eq_fft_data_t __user *)arg, &fft_data, sizeof(fft_data)))
+        if (copy_to_user((room_eq_fft_data_t *)arg, &fft_data, sizeof(fft_data)))
             return -EACCES;
         break;
 
@@ -271,19 +283,23 @@ static long room_eq_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
     return 0;
 }
 
+/* The operations our device knows how to do */
 static const struct file_operations room_eq_fops = {
     .owner          = THIS_MODULE,
     .unlocked_ioctl = room_eq_ioctl,
 };
 
+/* Information about our device for the "misc" framework -- like a char dev */
 static struct miscdevice room_eq_misc_device = {
     .minor = MISC_DYNAMIC_MINOR,
     .name  = DRIVER_NAME,
     .fops  = &room_eq_fops,
 };
 
-/* ── Probe ────────────────────────────────────────────────── */
-
+/*
+ * Initialization code: get resources (registers) and display
+ * a welcome message
+ */
 static int __init room_eq_probe(struct platform_device *pdev)
 {
     int ret;
@@ -328,7 +344,7 @@ static int __init room_eq_probe(struct platform_device *pdev)
     if (codec_init() < 0)
         pr_warn(DRIVER_NAME ": codec init had errors — continuing\n");
 
-    /* Register /dev/room_eq only after hardware is ready */
+    /* Register ourselves as a misc device: creates /dev/room_eq only after hardware is ready */
     ret = misc_register(&room_eq_misc_device);
     if (ret) {
         pr_err(DRIVER_NAME ": misc_register failed (%d)\n", ret);
@@ -359,8 +375,7 @@ static int room_eq_remove(struct platform_device *pdev)
     return 0;
 }
 
-/* ── Platform driver registration ────────────────────────── */
-
+/* Which "compatible" string(s) to search for in the Device Tree */
 #ifdef CONFIG_OF
 static const struct of_device_id room_eq_of_match[] = {
     { .compatible = "csee4840,room_eq-1.0" },
