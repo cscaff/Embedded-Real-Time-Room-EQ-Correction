@@ -15,9 +15,13 @@ FIFO_TEST_DIR = $(TEST_DIR)/room_eq_peripheral/calibration_engine
 
 # ── Targets ─────────────────────────────────────────────────────────────────
 
-.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft sim_room_eq_peripheral clean
+.PHONY: all sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sweep_i2s sim_sweep_i2s_long sim_sweep_i2s_full sim_sweep_i2s_10s sim_sample_fifo sim_fifo sim_fft sim_fft_ram sim_calibration_engine sim_calibration_engine_fft sim_room_eq_peripheral clean test test_eq test_fir test_fir_e2e plot_eq
 
+ifeq ($(OS),Windows_NT)
 all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_sample_fifo sim_fft_ram
+else
+all: sim_phase_acc sim_sine_lut sim_sine_lookup sim_sweep sim_i2s_clk sim_i2s_shift sim_i2s_tx sim_fft_ram
+endif
 
 sim_phase_acc: $(OUT_DIR)/tb_phase_accumulator.vvp
 	$(VVP) $<
@@ -61,6 +65,7 @@ $(OUT_DIR)/tb_sweep_generator.vvp: \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
+ifeq ($(OS),Windows_NT)
 sim_sample_fifo: $(OUT_DIR)/tb_sample_fifo.vvp
 	$(VVP) $<
 
@@ -71,6 +76,7 @@ $(OUT_DIR)/tb_sample_fifo.vvp: \
 		$(FIFO_TEST_DIR)/tb_sample_fifo.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -DALTERA_RESERVED_QIS -o $@ $^
+endif
 
 sim_fft_ram: $(OUT_DIR)/tb_fft_result_ram.vvp
 	$(VVP) $<
@@ -81,6 +87,7 @@ $(OUT_DIR)/tb_fft_result_ram.vvp: \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -o $@ $^
 
+ifeq ($(OS),Windows_NT)
 sim_calibration_engine: $(OUT_DIR)/tb_calibration_engine.vvp
 	$(VVP) $<
 
@@ -95,6 +102,7 @@ $(OUT_DIR)/tb_calibration_engine.vvp: \
 		$(FIFO_TEST_DIR)/tb_calibration_engine.sv \
 		| $(OUT_DIR)
 	$(IVERILOG) $(FLAGS) -DALTERA_RESERVED_QIS -o $@ $^
+endif
 
 # ── Questa targets ────────────────────────────────────────────────────────────
 SIM_FIFO_TCL           = $(PROJ_ROOT)/test/hardware/room_eq_peripheral/calibration_engine/sim_fifo.tcl
@@ -208,5 +216,41 @@ $(OUT_DIR)/tb_sweep_i2s_10s.vvp: \
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
 
+# ── Software tests ───────────────────────────────────────────────────────────
+
+CC        = clang
+CFLAGS_SW = -Wall -lm
+SW_SRC    = src/software
+SW_TEST   = test/software
+TEST_OUT  = test_out
+
+# Run all software unit tests; exits non-zero on any failure.
+test: test_eq test_fir test_fir_e2e
+
+test_eq: $(TEST_OUT)/test_eq
+	$(TEST_OUT)/test_eq
+
+$(TEST_OUT)/test_eq: $(SW_TEST)/test_eq.c $(SW_SRC)/eq.c | $(TEST_OUT)
+	$(CC) $(CFLAGS_SW) -DEQ_TEST_BUILD -I$(SW_SRC) -o $@ $^
+
+test_fir: $(TEST_OUT)/test_fir
+	$(TEST_OUT)/test_fir
+
+$(TEST_OUT)/test_fir: $(SW_TEST)/FIR/test_fir.c $(SW_SRC)/room_eq/FIR/fir_design.c | $(TEST_OUT)
+	$(CC) $(CFLAGS_SW) -I$(SW_SRC) -o $@ $^
+
+test_fir_e2e: $(TEST_OUT)/test_fir_e2e
+	$(TEST_OUT)/test_fir_e2e
+
+$(TEST_OUT)/test_fir_e2e: $(SW_TEST)/FIR/test_fir_e2e.c $(SW_SRC)/room_eq/FIR/fir_design.c | $(TEST_OUT)
+	$(CC) $(CFLAGS_SW) -I$(SW_SRC) -o $@ $^
+
+# Build + run the e2e test, then plot the EQ curves.
+plot_eq: test_fir_e2e
+	python3 $(SW_TEST)/plot_eq.py
+
+$(TEST_OUT):
+	mkdir -p $(TEST_OUT)
+
 clean:
-	rm -rf $(OUT_DIR)
+	rm -rf $(OUT_DIR) $(TEST_OUT) fir_e2e_room.txt fir_e2e_taps.txt fir_e2e_plot.png
