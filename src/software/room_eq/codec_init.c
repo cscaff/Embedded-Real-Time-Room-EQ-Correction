@@ -267,6 +267,13 @@ static void fifo_test(void)
 
 /* ── Full calibration (Stage 2+3) ─────────────────────────── */
 
+#define MAX_FRAMES   64
+#define BINS_PER_FRAME (FFT_SIZE / 2 + 1)  /* 4097 */
+
+/* Store real+imag per bin, per frame. ~2 MB for 64 frames. */
+static int32_t frame_real[MAX_FRAMES][BINS_PER_FRAME];
+static int32_t frame_imag[MAX_FRAMES][BINS_PER_FRAME];
+
 static void calibrate(void)
 {
     load_sine_lut();
@@ -276,74 +283,121 @@ static void calibrate(void)
     room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
 
     int frame_num = 0;
-    int n_bins = FFT_SIZE / 2 + 1;
 
-    /* Loop: poll fft_done, read each FFT frame, until sweep finishes */
+    /* Capture loop: read FFT frames into memory, no printing */
     while (1) {
         uint32_t status = room_eq_base[STATUS_REG];
         uint32_t fsm_state = status & STATUS_STATE_MASK;
 
         /* Check if FFT frame is ready */
-        if (status & STATUS_FFT_DONE) {
-            printf("# frame %d\n", frame_num);
-
-            /* Read all bins for this frame */
-            for (int i = 0; i < n_bins; i++) {
+        if ((status & STATUS_FFT_DONE) && frame_num < MAX_FRAMES) {
+            /* Read all bins into buffer */
+            for (int i = 0; i < BINS_PER_FRAME; i++) {
                 room_eq_base[FFT_ADDR_REG] = i;
-                usleep(1);
+                /* No usleep — register read latency is 1 cycle at 50 MHz */
                 uint32_t re = room_eq_base[FFT_RDATA_REG] & 0xFFFFFF;
                 uint32_t im = room_eq_base[FFT_IDATA_REG] & 0xFFFFFF;
-                int32_t real_val = sign_extend_24(re);
-                int32_t imag_val = sign_extend_24(im);
-                printf("%d,%d,%d,%d\n", frame_num, i, real_val, imag_val);
+                frame_real[frame_num][i] = sign_extend_24(re);
+                frame_imag[frame_num][i] = sign_extend_24(im);
             }
-
             frame_num++;
 
             /* Wait for fft_done to clear (next frame SOP) before polling again */
             while (room_eq_base[STATUS_REG] & STATUS_FFT_DONE)
-                usleep(100);
+                ;  /* busy-wait, no usleep — speed matters */
         }
 
         /* Check if sweep is done */
         if (fsm_state == STATE_DONE) {
-            /* Read final frame if available */
+            /* Capture final frame if available */
             status = room_eq_base[STATUS_REG];
-            if (status & STATUS_FFT_DONE) {
-                printf("# frame %d (final)\n", frame_num);
-                for (int i = 0; i < n_bins; i++) {
+            if ((status & STATUS_FFT_DONE) && frame_num < MAX_FRAMES) {
+                for (int i = 0; i < BINS_PER_FRAME; i++) {
                     room_eq_base[FFT_ADDR_REG] = i;
-                    usleep(1);
                     uint32_t re = room_eq_base[FFT_RDATA_REG] & 0xFFFFFF;
                     uint32_t im = room_eq_base[FFT_IDATA_REG] & 0xFFFFFF;
-                    printf("%d,%d,%d,%d\n", frame_num, i,
-                           sign_extend_24(re), sign_extend_24(im));
+                    frame_real[frame_num][i] = sign_extend_24(re);
+                    frame_imag[frame_num][i] = sign_extend_24(im);
                 }
                 frame_num++;
             }
             break;
         }
-
-        usleep(1000);  /* poll interval */
     }
 
     printf("Calibration complete. %d FFT frames captured.\n", frame_num);
+
+    /* Now dump all buffered data */
+    printf("frame,bin,real,imag\n");
+    for (int f = 0; f < frame_num; f++) {
+        for (int i = 0; i < BINS_PER_FRAME; i++) {
+            printf("%d,%d,%d,%d\n", f, i, frame_real[f][i], frame_imag[f][i]);
+        }
+    }
+}
+
+/* ── Live spectrum (continuous FFT display) ───────────────── */
+
+static void live_spectrum(void)
+{
+    load_sine_lut();
+
+    /* Start sweep to get BCLK/LRCK running, FFT mode */
+    room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
+    usleep(50000);
+
+    printf("\nLive spectrum — Ctrl-C to stop\n");
+    printf("Showing magnitude of first 64 bins (0-%d Hz)\n",
+           64 * 48000 / FFT_SIZE);
+
+    int frame = 0;
+    while (1) {
+        /* Wait for fft_done */
+        while (!(room_eq_base[STATUS_REG] & STATUS_FFT_DONE))
+            ;
+
+        /* Read first 64 bins, compute magnitude, display bar chart */
+        printf("\033[2J\033[H");  /* clear screen, cursor home */
+        printf("Frame %d — Live Spectrum (bins 0-63)\n\n", frame);
+
+        for (int i = 0; i < 64; i++) {
+            room_eq_base[FFT_ADDR_REG] = i;
+            int32_t re = sign_extend_24(room_eq_base[FFT_RDATA_REG] & 0xFFFFFF);
+            int32_t im = sign_extend_24(room_eq_base[FFT_IDATA_REG] & 0xFFFFFF);
+
+            /* Approximate magnitude: |re| + |im| (fast, no sqrt) */
+            int32_t mag = (re < 0 ? -re : re) + (im < 0 ? -im : im);
+            int bar_len = mag / 1000;  /* scale down */
+            if (bar_len > 60) bar_len = 60;
+
+            printf("%3d|", i);
+            for (int b = 0; b < bar_len; b++) printf("#");
+            printf("\n");
+        }
+
+        frame++;
+
+        /* Wait for fft_done to clear */
+        while (room_eq_base[STATUS_REG] & STATUS_FFT_DONE)
+            ;
+    }
 }
 
 /* ── Main ─────────────────────────────────────────────────── */
 
 int main(int argc, char *argv[])
 {
-    int mode = 0;  /* 0=sweep, 1=mic, 2=fifo, 3=calibrate */
+    int mode = 0;  /* 0=sweep, 1=mic, 2=fifo, 3=calibrate, 4=live */
     if (argc > 1) {
         switch (argv[1][0]) {
         case 'm': mode = 1; break;
         case 'f': mode = 2; break;
         case 'c': mode = 3; break;
+        case 'l': mode = 4; break;
         }
     }
 
-    const char *mode_names[] = {"Sweep", "Mic Test", "FIFO Test", "Calibration"};
+    const char *mode_names[] = {"Sweep", "Mic Test", "FIFO Test", "Calibration", "Live Spectrum"};
     printf("Room EQ — Codec Init + %s\n", mode_names[mode]);
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -379,6 +433,9 @@ int main(int argc, char *argv[])
         break;
     case 3:
         calibrate();
+        break;
+    case 4:
+        live_spectrum();
         break;
     }
 
