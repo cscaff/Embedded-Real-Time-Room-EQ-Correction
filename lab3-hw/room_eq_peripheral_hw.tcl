@@ -53,7 +53,7 @@ add_fileset_file calibration_engine.sv SYSTEM_VERILOG PATH ../src/hardware/room_
 add_fileset_file sample_fifo.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv
 add_fileset_file sample_fft.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv
 add_fileset_file capture_fifo.v VERILOG PATH capture_fifo.v
-add_fileset_file capture_fft.v VERILOG PATH capture_fft.v
+add_fileset_file capture_fft.v VERILOG PATH capture_fft/synthesis/capture_fft.v
 
 
 # 

@@ -31,6 +31,7 @@
 #include <sys/mman.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
 
 /* ── Memory map ──────────────────────────────────────────── */
 
@@ -60,6 +61,15 @@
 /* ── WM8731 ──────────────────────────────────────────────── */
 
 #define WM8731_ADDR      0x1A
+
+/* Analog path control (reg 0x04) options:
+ *   0x010 = line-in, no boost, DAC selected
+ *   0x012 = line-in, muted (bad)
+ *   0x014 = mic input, no boost, DAC selected
+ *   0x015 = mic input, +20dB boost, DAC selected
+ */
+static int use_line_in = 0;    /* 0=mic (default), 1=line-in */
+static int mic_boost = 1;      /* 0=no boost, 1=+20dB boost */
 
 /* ── Room EQ register offsets (word offsets) ──────────────── */
 
@@ -158,7 +168,15 @@ static int codec_init(void)
     err |= wm8731_write(0x01, 0x017);
     err |= wm8731_write(0x02, 0x079);
     err |= wm8731_write(0x03, 0x079);
-    err |= wm8731_write(0x04, 0x015);
+    {
+        uint16_t reg04 = 0x010;          /* base: line-in, DAC selected */
+        if (!use_line_in) reg04 |= 0x004; /* select mic instead of line-in */
+        if (!use_line_in && mic_boost) reg04 |= 0x001; /* +20dB mic boost */
+        printf("Analog path: %s%s (reg04=0x%03x)\n",
+               use_line_in ? "LINE-IN" : "MIC",
+               (!use_line_in && mic_boost) ? " +20dB" : "", reg04);
+        err |= wm8731_write(0x04, reg04);
+    }
     err |= wm8731_write(0x05, 0x000);
     err |= wm8731_write(0x06, 0x000);
     err |= wm8731_write(0x07, 0x00A);
@@ -338,41 +356,101 @@ static void calibrate(void)
 
 /* ── Live spectrum (continuous FFT display) ───────────────── */
 
+/* Compute log-spaced band edges at runtime.
+ * NUM_BANDS bands from 20 Hz to 20 kHz. */
+#define NUM_BANDS 48
+static int band_edges[NUM_BANDS + 1];
+
 static void live_spectrum(void)
 {
     load_sine_lut();
+
+    /* Build log-spaced band edges: 20 Hz to 20 kHz */
+    double hz_per_bin = 48000.0 / FFT_SIZE;
+    for (int i = 0; i <= NUM_BANDS; i++) {
+        double freq = 20.0 * pow(20000.0 / 20.0, (double)i / NUM_BANDS);
+        band_edges[i] = (int)(freq / hz_per_bin);
+        if (band_edges[i] < 1) band_edges[i] = 1;
+        if (band_edges[i] > FFT_SIZE / 2) band_edges[i] = FFT_SIZE / 2;
+        /* Ensure monotonic */
+        if (i > 0 && band_edges[i] <= band_edges[i - 1])
+            band_edges[i] = band_edges[i - 1] + 1;
+    }
 
     /* Start sweep to get BCLK/LRCK running, FFT mode */
     room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
     usleep(50000);
 
     printf("\nLive spectrum — Ctrl-C to stop\n");
-    printf("Showing magnitude of first 64 bins (0-%d Hz)\n",
-           64 * 48000 / FFT_SIZE);
 
     int frame = 0;
+    struct timespec t_prev, t_now;
+    clock_gettime(CLOCK_MONOTONIC, &t_prev);
+
     while (1) {
         /* Wait for fft_done */
         while (!(room_eq_base[STATUS_REG] & STATUS_FFT_DONE))
             ;
 
-        /* Read first 64 bins, compute magnitude, display bar chart */
-        printf("\033[2J\033[H");  /* clear screen, cursor home */
-        printf("Frame %d — Live Spectrum (bins 0-63)\n\n", frame);
+        /* Time the HPS bin readout */
+        struct timespec t_read_start, t_read_end;
+        clock_gettime(CLOCK_MONOTONIC, &t_read_start);
 
-        for (int i = 0; i < 64; i++) {
-            room_eq_base[FFT_ADDR_REG] = i;
-            int32_t re = sign_extend_24(room_eq_base[FFT_RDATA_REG] & 0xFFFFFF);
-            int32_t im = sign_extend_24(room_eq_base[FFT_IDATA_REG] & 0xFFFFFF);
+        /* Read all bands */
+        int band_bar[NUM_BANDS];
+        int total_bins_read = 0;
+        for (int b = 0; b < NUM_BANDS; b++) {
+            int lo = band_edges[b];
+            int hi = band_edges[b + 1];
 
-            /* Approximate magnitude: |re| + |im| (fast, no sqrt) */
-            int32_t mag = (re < 0 ? -re : re) + (im < 0 ? -im : im);
-            int bar_len = mag / 1000;  /* scale down */
-            if (bar_len > 60) bar_len = 60;
+            int64_t total_mag = 0;
+            for (int i = lo; i < hi; i++) {
+                room_eq_base[FFT_ADDR_REG] = i;
+                int32_t re = sign_extend_24(room_eq_base[FFT_RDATA_REG] & 0xFFFFFF);
+                int32_t im = sign_extend_24(room_eq_base[FFT_IDATA_REG] & 0xFFFFFF);
+                int32_t mag = (re < 0 ? -re : re) + (im < 0 ? -im : im);
+                total_mag += mag;
+            }
+            total_bins_read += (hi - lo);
+            total_mag /= (hi - lo);
 
-            printf("%3d|", i);
-            for (int b = 0; b < bar_len; b++) printf("#");
-            printf("\n");
+            int bar_len = 0;
+            if (total_mag > 0) {
+                int64_t v = total_mag;
+                while (v > 0) { bar_len++; v >>= 1; }
+                bar_len = bar_len * 3 - 20;
+                if (bar_len < 0) bar_len = 0;
+                if (bar_len > 60) bar_len = 60;
+            }
+            band_bar[b] = bar_len;
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &t_read_end);
+        clock_gettime(CLOCK_MONOTONIC, &t_now);
+
+        double read_us = (t_read_end.tv_sec - t_read_start.tv_sec) * 1e6 +
+                         (t_read_end.tv_nsec - t_read_start.tv_nsec) / 1e3;
+        double frame_ms = (t_now.tv_sec - t_prev.tv_sec) * 1e3 +
+                          (t_now.tv_nsec - t_prev.tv_nsec) / 1e6;
+        double fps = (frame_ms > 0) ? 1000.0 / frame_ms : 0;
+        t_prev = t_now;
+
+        /* Display */
+        printf("\033[2J\033[H");
+        printf("Room EQ Live Spectrum\n");
+        printf("FPGA: 8192-pt FFT @ 50MHz | ADC: 48kHz 24-bit | Input: %s%s\n",
+               use_line_in ? "LINE-IN" : "MIC",
+               (!use_line_in && mic_boost) ? " +20dB" : "");
+        printf("HPS:  %d bins read in %.0f us | Frame %d | %.1f fps | %.0f ms/frame\n\n",
+               total_bins_read, read_us, frame, fps, frame_ms);
+
+        for (int b = 0; b < NUM_BANDS; b++) {
+            int lo = band_edges[b];
+            int hi = band_edges[b + 1];
+            int center_freq = ((lo + hi) / 2) * 48000 / FFT_SIZE;
+            printf("%5dHz|", center_freq);
+            for (int j = 0; j < band_bar[b]; j++) putchar('#');
+            putchar('\n');
         }
 
         frame++;
@@ -388,12 +466,17 @@ static void live_spectrum(void)
 int main(int argc, char *argv[])
 {
     int mode = 0;  /* 0=sweep, 1=mic, 2=fifo, 3=calibrate, 4=live */
-    if (argc > 1) {
-        switch (argv[1][0]) {
-        case 'm': mode = 1; break;
-        case 'f': mode = 2; break;
-        case 'c': mode = 3; break;
-        case 'l': mode = 4; break;
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            if (argv[i][1] == 'L') use_line_in = 1;       /* -L = line-in */
+            else if (argv[i][1] == 'B') mic_boost = 0;    /* -B = no boost */
+        } else {
+            switch (argv[i][0]) {
+            case 'm': mode = 1; break;
+            case 'f': mode = 2; break;
+            case 'c': mode = 3; break;
+            case 'l': mode = 4; break;
+            }
         }
     }
 
