@@ -36,3 +36,5 @@ lab3-hw/output_files/*.sld
 lab3-hw/output_files/*.jdi
 lab3-hw/output_files/*.done
 lab3-hw/output_files/*.flow.rpt
+*.png
+*.csv
