@@ -21,6 +21,8 @@
             pkgs.gtkwave
 	    pkgs.surfer
             python
+	    pkgs.gnumake
+	    pkgs.screen
           ];
 
           shellHook = ''

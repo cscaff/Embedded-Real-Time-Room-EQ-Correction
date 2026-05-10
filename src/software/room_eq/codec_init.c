@@ -22,14 +22,15 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <stdint.h>
+#include <math.h>
 
 /* ── Memory map ──────────────────────────────────────────── */
 
 #define LW_BRIDGE_BASE   0xFF200000
 #define LW_BRIDGE_SPAN   0x00200000
 
-#define I2C_BASE_OFFSET  0x00
-#define ROOM_EQ_OFFSET   0x40
+#define I2C_BASE_OFFSET  0x0000
+#define ROOM_EQ_OFFSET   0x2000  /* must match baseAddress in soc_system.qsys */
 
 /* ── Avalon I2C Master registers (byte offsets) ──────────── */
 /* See Intel Avalon I2C Master Core User Guide */
@@ -167,6 +168,29 @@ static int codec_init(void)
     return err;
 }
 
+/* ── Sine LUT ─────────────────────────────────────────────── */
+
+/*
+ * LUT_BASE_OFFSET and LUT_SIZE must match the localparams in
+ * room_eq_peripheral.sv (LUT_BASE and LUT_SIZE).
+ *
+ * The BRAM holds LUT_SIZE quarter-wave sine values (24-bit signed).
+ * Entry i = sin(i * π / (2 * LUT_SIZE)) * 8388607
+ */
+#define LUT_BASE_OFFSET  4
+#define LUT_SIZE         1024
+
+static void load_sine_lut(void)
+{
+    printf("Loading sine LUT (%d entries)...\n", LUT_SIZE);
+    for (int i = 0; i < LUT_SIZE; i++) {
+        double  angle = i * M_PI / (2.0 * LUT_SIZE);
+        int32_t val   = (int32_t)(sin(angle) * 8388607.0);
+        room_eq_base[LUT_BASE_OFFSET + i] = (uint32_t)(val & 0x00FFFFFF);
+    }
+    printf("Sine LUT loaded.\n");
+}
+
 /* ── Room EQ peripheral ──────────────────────────────────── */
 
 #define CTRL_REG  0  /* word offset 0: bit 0 = sweep_start */
@@ -213,6 +237,7 @@ int main(int argc, char *argv[])
     if (codec_init() < 0)
         fprintf(stderr, "Warning: codec init had errors\n");
 
+    load_sine_lut();
     start_sweep();
 
     munmap(base, LW_BRIDGE_SPAN);

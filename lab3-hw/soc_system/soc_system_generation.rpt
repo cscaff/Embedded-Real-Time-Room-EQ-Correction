@@ -1,28 +1,3 @@
-Info: Starting: Create block symbol file (.bsf)
-Info: qsys-generate /home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system.qsys --block-symbol-file --output-directory=/home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system --family="Cyclone V" --part=5CSEMA5F31C6
-Progress: Loading lab3-hw/soc_system.qsys
-Progress: Reading input file
-Progress: Adding audio_pll_0 [altera_up_avalon_audio_pll 18.0]
-Progress: Parameterizing module audio_pll_0
-Progress: Adding clk_0 [clock_source 24.1]
-Progress: Parameterizing module clk_0
-Progress: Adding hps_0 [altera_hps 24.1]
-Progress: Parameterizing module hps_0
-Progress: Adding i2c_0 [altera_avalon_i2c 24.1]
-Progress: Parameterizing module i2c_0
-Progress: Adding room_eq_peripheral_0 [room_eq_peripheral 1.0]
-Progress: Parameterizing module room_eq_peripheral_0
-Progress: Building connections
-Progress: Parameterizing connections
-Progress: Validating
-Progress: Done reading input file
-Info: soc_system.hps_0: HPS Main PLL counter settings: n = 0  m = 73
-Info: soc_system.hps_0: HPS peripherial PLL counter settings: n = 0  m = 39
-Warning: soc_system.hps_0: HPS model no longer supports simulation for HPS FPGA Bridges.
-Warning: soc_system.i2c_0: Interrupt sender i2c_0.interrupt_sender is not connected to an interrupt receiver
-Info: qsys-generate succeeded.
-Info: Finished: Create block symbol file (.bsf)
-Info: 
 Info: Starting: Create HDL design files for synthesis
 Info: qsys-generate /home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system.qsys --synthesis=VERILOG --output-directory=/home/jacob/projects/Embedded-Real-Time-Room-EQ-Correction/lab3-hw/soc_system/synthesis --family="Cyclone V" --part=5CSEMA5F31C6
 Progress: Loading lab3-hw/soc_system.qsys

@@ -51,7 +51,7 @@ module soc_system_mm_interconnect_0 (
 		output wire        i2c_0_csr_read,                                                      //                                                              .read
 		input  wire [31:0] i2c_0_csr_readdata,                                                  //                                                              .readdata
 		output wire [31:0] i2c_0_csr_writedata,                                                 //                                                              .writedata
-		output wire [2:0]  room_eq_peripheral_0_avalon_slave_0_address,                         //                           room_eq_peripheral_0_avalon_slave_0.address
+		output wire [10:0] room_eq_peripheral_0_avalon_slave_0_address,                         //                           room_eq_peripheral_0_avalon_slave_0.address
 		output wire        room_eq_peripheral_0_avalon_slave_0_write,                           //                                                              .write
 		output wire        room_eq_peripheral_0_avalon_slave_0_read,                            //                                                              .read
 		input  wire [31:0] room_eq_peripheral_0_avalon_slave_0_readdata,                        //                                                              .readdata
@@ -275,7 +275,7 @@ module soc_system_mm_interconnect_0 (
 	wire    [0:0] avalon_st_adapter_001_out_0_error;                                       // avalon_st_adapter_001:out_0_error -> i2c_0_csr_agent:rdata_fifo_sink_error
 
 	altera_merlin_slave_translator #(
-		.AV_ADDRESS_W                   (3),
+		.AV_ADDRESS_W                   (11),
 		.AV_DATA_W                      (32),
 		.UAV_DATA_W                     (32),
 		.AV_BURSTCOUNT_W                (1),

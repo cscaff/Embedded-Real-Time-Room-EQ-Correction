@@ -6,20 +6,23 @@
  *
  * Register map (32-bit words):
  *
- * Offset   Bits      Access   Meaning
- *   0      [0]       R/W      CTRL: bit 0 = sweep_start (write 1 to trigger,
- *                                          self-clears when sweep begins)
- *                              bit 1 = sweep_running (read-only, 1 while sweep active)
- *   1      [31:0]    R        STATUS: reserved for future use
- *   2      [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s)
- *   3      [31:0]    R        VERSION: 32'h0001_0000
+ * Offset      Bits      Access   Meaning
+ *   0         [0]       R/W      CTRL: bit 0 = sweep_start (write 1 to trigger,
+ *                                             self-clears after one cycle)
+ *                                      bit 1 = sweep_running (read-only)
+ *   1         [31:0]    R        STATUS: reserved
+ *   2         [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s)
+ *   3         [31:0]    R        VERSION: 32'h0001_0000
+ *   4..259    [23:0]    W        SINE_LUT: quarter-wave sine BRAM (256 × 24-bit)
+ *                                Write offset (LUT_BASE + i) with sin(i×π/512)×8388607
+ *                                (LUT_BASE must match localparam below and codec_init.c)
  *
  * Audio conduit signals connect to the WM8731 codec on the DE1-SoC.
  * The PLL-generated 12.288 MHz audio clock is received from Platform Designer.
  */
 
 module room_eq_peripheral(
-    // Avalon slave interface (active)
+    // Avalon slave interface
     input  logic        clk,          // 50 MHz system clock from Platform Designer
     input  logic        reset,        // system reset (active high)
     input  logic [31:0] writedata,    // data from HPS
@@ -27,141 +30,145 @@ module room_eq_peripheral(
     input  logic        write,        // write strobe
     input  logic        read,         // read strobe
     input  logic        chipselect,   // peripheral selected
-    input  logic [2:0]  address,      // register address (word offset)
+    input  logic [10:0] address,      // register/LUT word offset (0..1027)
 
-    // Audio clock from PLL (active)
+    // Audio clock from PLL
     input  logic        audio_clk,    // 12.288 MHz from audio PLL
 
     // Audio conduit — directly to codec pins
     output logic        AUD_XCK,      // master clock to codec (12.288 MHz)
     output logic        AUD_BCLK,     // I2S bit clock
     output logic        AUD_DACDAT,   // I2S serial data
-    output logic        AUD_DACLRCK   // I2S frame clock (L/R)
+    output logic        AUD_DACLRCK  // I2S frame clock (L/R)
 );
 
-    // ── Forward the master clock to the codec ───────────────
+    // ── Address map ──────────────────────────────────────────
+    //   Offsets 0..3   : control registers
+    //   Offsets 4..259 : sine LUT (256 quarter-wave entries)
+    localparam [10:0] LUT_BASE = 11'd4;
+    localparam [10:0] LUT_SIZE = 11'd1024;
+
+    // ── Forward master clock to codec ────────────────────────
     assign AUD_XCK = audio_clk;
 
-    // ── Registers ───────────────────────────────────────────
-    logic        sweep_start;     // pulse from HPS to start sweep
-    logic        sweep_running;   // 1 while sweep is active
-    logic [31:0] sweep_len;       // sweep length in samples
+    // ── Control registers ────────────────────────────────────
+    logic        sweep_start;   // one-cycle pulse: HPS writes 1 to CTRL[0]
+    logic        sweep_running; // read-only status
+    logic [31:0] sweep_len;     // sweep length in samples
 
-    // ── Register read ───────────────────────────────────────
+    // ── Sine LUT write signals (to sweep_generator) ──────────
+    logic        we_lut;
+    logic  [9:0] addr_lut;
+    logic [23:0] din_lut;
+
+    // ── Register read ────────────────────────────────────────
     always_comb begin
         readdata = 32'd0;
         if (chipselect && read)
             case (address)
-                3'd0: readdata = {30'd0, sweep_running, 1'b0};
-                3'd1: readdata = 32'd0;            // STATUS: reserved
-                3'd2: readdata = sweep_len;
-                3'd3: readdata = 32'h0001_0000;    // VERSION
-                default: readdata = 32'd0;
+                11'd0:    readdata = {30'd0, sweep_running, 1'b0};
+                11'd1:    readdata = 32'd0;           // STATUS: reserved
+                11'd2:    readdata = sweep_len;
+                11'd3:    readdata = 32'h0001_0000;   // VERSION
+                default: readdata = 32'd0;           // LUT not readable
             endcase
     end
 
-    // ── Register write ──────────────────────────────────────
+    // ── Register / LUT write ─────────────────────────────────
     always_ff @(posedge clk) begin
         if (reset) begin
             sweep_start <= 1'b0;
-            sweep_len   <= 32'd480_000;  // default: 10 seconds at 48 kHz
-        end else if (chipselect && write) begin
-            case (address)
-                3'd0: sweep_start <= writedata[0];
-                3'd2: sweep_len   <= writedata;
-                default: ;
-            endcase
+            sweep_len   <= 32'd480_000;  // default: 10 s at 48 kHz
+            we_lut      <= 1'b0;
+            addr_lut    <= 8'd0;
+            din_lut     <= 24'd0;
         end else begin
-            sweep_start <= 1'b0;  // self-clear
+            // Self-clearing defaults
+            sweep_start <= 1'b0;
+            we_lut      <= 1'b0;
+
+            if (chipselect && write) begin
+                if (address < LUT_BASE) begin
+                    // ── Control registers ─────────────────
+                    case (address)
+                        11'd0: sweep_start <= writedata[0];
+                        11'd2: sweep_len   <= writedata;
+                        default: ;
+                    endcase
+                end else if (address < LUT_BASE + LUT_SIZE) begin
+                    // ── Sine LUT write ────────────────────
+                    // address[7:0] - LUT_BASE[7:0] gives the BRAM index
+                    // (modular 10-bit arithmetic is correct for all 1024 entries)
+                    addr_lut <= address[9:0] - LUT_BASE[9:0];
+                    din_lut  <= writedata[23:0];
+                    we_lut   <= 1'b1;
+                end
+            end
         end
     end
 
-    // ── Sweep control ───────────────────────────────────────
-    // For now: sweep runs continuously after start, resets on
-    // reset.  The sweep_running signal will eventually gate
-    // the sweep_generator and count samples.
-    //
-    // Simple approach: reset the sweep generator when not running.
-    logic sweep_reset;
-    logic sweep_active;
+    // ── Sweep control ─────────────────────────────────────────
+
+    // Sample counter in audio clock domain.
+    // Counts 48 kHz ticks (audio_clk / 256); stops sweep at sweep_len.
+    // sweep_len is quasi-static: written by HPS before sweep starts,
+    // stable for the entire sweep duration — safe to read cross-domain.
+    logic        sweep_active;
+    logic        sweep_done_audio;  // asserted in audio clock domain when done
+
+    // Sync sweep_done_audio → sys clock domain (2-FF)
+    logic sweep_done_sync1, sweep_done_sync2;
+    always_ff @(posedge clk) begin
+        sweep_done_sync1 <= sweep_done_audio;
+        sweep_done_sync2 <= sweep_done_sync1;
+    end
 
     always_ff @(posedge clk) begin
-        if (reset) begin
+        if (reset)
             sweep_active <= 1'b0;
-        end else if (sweep_start) begin
+        else if (sweep_start)
             sweep_active <= 1'b1;
-        end
+        else if (sweep_done_sync2)
+            sweep_active <= 1'b0;
     end
 
     assign sweep_running = sweep_active;
 
-    // Synchronize sweep_active into the audio clock domain
+    // Synchronise sweep_active into the audio clock domain (2-FF)
     logic sweep_active_sync1, sweep_active_sync2;
     always_ff @(posedge audio_clk) begin
         sweep_active_sync1 <= sweep_active;
         sweep_active_sync2 <= sweep_active_sync1;
     end
 
-    assign sweep_reset = !sweep_active_sync2;
+    logic sweep_reset;
+    assign sweep_reset = ~sweep_active_sync2;
 
-    // ── Sine LUT initialization ─────────────────────────────
-    // Load the quarter-wave sine table at startup from the
-    // 50 MHz clock domain.
-    logic        lut_init_done;
-    logic        we_lut;
-    logic  [7:0] addr_lut;
-    logic [23:0] din_lut;
+    // 48 kHz tick divider + sample counter (audio clock domain)
+    logic [7:0]  smpl_div;
+    logic        smpl_en;
+    logic [31:0] sample_cnt;
 
-    // LUT init state machine
-    logic [8:0]  lut_init_cnt;  // 0-256 (256 = done)
-
-    // Precomputed quarter-wave sine values (256 entries)
-    // sin(i * pi / 512) * 8388607 for i = 0..255
-    // We compute this combinationally from the counter.
-    // NOTE: For synthesis, we use a ROM-style init.
-    // iverilog supports $sin but Quartus doesn't in synthesis.
-    // For now, we use a simple linear approximation init that
-    // will be replaced with a proper ROM or init from HPS.
-    //
-    // Actually, the cleanest approach: have the HPS write the
-    // LUT values through registers after boot. This avoids
-    // needing $sin in synthesis. For the initial hardware test,
-    // we'll init the LUT from a generate block with hard-coded values.
-
-    // For initial bring-up: use a MIF file or HPS init.
-    // For now, flag as not done and let the sweep run with
-    // whatever is in BRAM (zeros until HPS writes it).
-    //
-    // TODO: Add registers for HPS to write LUT values, or
-    //       use a .mif file for BRAM initialization.
-
-    // Temporary: simple init from a counter-based approach
-    // that produces a rough sine. Will be replaced.
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            lut_init_cnt  <= 9'd0;
-            lut_init_done <= 1'b0;
-            we_lut        <= 1'b0;
-        end else if (!lut_init_done) begin
-            if (lut_init_cnt < 9'd256) begin
-                we_lut   <= 1'b1;
-                addr_lut <= lut_init_cnt[7:0];
-                // Approximate quarter-wave sine using a parabolic
-                // approximation: sin(x) ≈ x*(256-x)*2/256^2 * MAX
-                // where x = lut_init_cnt, MAX = 8388607
-                // This gives a reasonable sine shape for bring-up.
-                din_lut <= (lut_init_cnt[7:0] * (8'd255 - lut_init_cnt[7:0])) << 7;
-                lut_init_cnt <= lut_init_cnt + 9'd1;
-            end else begin
-                we_lut        <= 1'b0;
-                lut_init_done <= 1'b1;
-            end
+    always_ff @(posedge audio_clk) begin
+        if (sweep_reset) begin
+            smpl_div      <= 8'd0;
+            smpl_en       <= 1'b0;
+            sample_cnt    <= 32'd0;
+            sweep_done_audio <= 1'b0;
         end else begin
-            we_lut <= 1'b0;
+            smpl_en  <= (smpl_div == 8'd255);
+            smpl_div <= smpl_div + 8'd1;
+
+            if (smpl_en && !sweep_done_audio) begin
+                if (sample_cnt == sweep_len - 1)
+                    sweep_done_audio <= 1'b1;
+                else
+                    sample_cnt <= sample_cnt + 32'd1;
+            end
         end
     end
 
-    // ── Sweep generator ─────────────────────────────────────
+    // ── Sweep generator ───────────────────────────────────────
     logic [23:0] amplitude;
 
     sweep_generator sweep_inst (
@@ -174,8 +181,8 @@ module room_eq_peripheral(
         .din_lut  (din_lut)
     );
 
-    // ── I2S transmitter ─────────────────────────────────────
-    // Mono output: same sample on both channels.
+    // ── I2S transmitter ───────────────────────────────────────
+    // Mono: same sample on both channels
     i2s_tx i2s_inst (
         .clock        (audio_clk),
         .reset        (sweep_reset),

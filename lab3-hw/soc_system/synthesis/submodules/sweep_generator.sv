@@ -4,7 +4,7 @@
 // - reset:    Active high
 // - clk_sys: 50 MHz system clock, drives BRAM write port
 // - we_lut: Write enable (active high). Assert to write a sine value.
-// - addr_lut: 8-bit write address (0-255)
+// - addr_lut: 10-bit write address (0-1023)
 // - din_lut: 24-bit signed sine value to store
 //
 // LUT Initialization Inputs (Port A — 50 MHz system clock):
@@ -30,7 +30,7 @@ module sweep_generator(
     output  [23:0] amplitude;
     input          clk_sys;
     input          we_lut;
-    input    [7:0] addr_lut;
+    input    [9:0] addr_lut;
     input   [23:0] din_lut;
 
     // Clock Division for Sweep Generation (Convert 12.288 MHz to 48 kHz)

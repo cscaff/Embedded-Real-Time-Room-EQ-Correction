@@ -25,7 +25,7 @@ module phase_accumulator(
 
     // Parameters
     parameter [31:0] INCREMENT_START = 32'd1_789_570; // Initial Phase Increment to get 20 Hz Output.
-    parameter [31:0] K_FRAC          = 32'd123_621;   // (K-1)*2^32 where K=exp(ln(1000)/(48000*5))
+    parameter [31:0] K_FRAC          = 32'd61_810;    // (K-1)*2^32 where K=exp(ln(1000)/(48000*10))
 
     // Internal Registers
     reg [63:0] increment; // Phase increment w/ Q.32.32 (Recommended By Claude. Need to verify if this quantization makes sense.)

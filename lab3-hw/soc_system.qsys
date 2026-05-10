@@ -40,6 +40,11 @@
          value = "4";
          type = "int";
       }
+      datum sopceditor_expanded
+      {
+         value = "1";
+         type = "boolean";
+      }
    }
    element i2c_0.csr
    {
@@ -61,7 +66,15 @@
    {
       datum baseAddress
       {
-         value = "64";
+         value = "8192";
+         type = "String";
+      }
+   }
+   element soc_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
          type = "String";
       }
    }
@@ -79,7 +92,7 @@
  <parameter name="hideFromIPCatalog" value="false" />
  <parameter name="lockedInterfaceDefinition" value="" />
  <parameter name="maxAdditionalLatency" value="1" />
- <parameter name="projectName" value="" />
+ <parameter name="projectName" value="soc_system.qpf" />
  <parameter name="sopcBorderPoints" value="false" />
  <parameter name="systemHash" value="0" />
  <parameter name="testBenchDutName" value="" />
@@ -659,7 +672,7 @@
    start="hps_0.h2f_lw_axi_master"
    end="room_eq_peripheral_0.avalon_slave_0">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0040" />
+  <parameter name="baseAddress" value="0x2000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection

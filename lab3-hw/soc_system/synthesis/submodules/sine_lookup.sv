@@ -39,7 +39,7 @@ module sine_lookup(
     // Port A — LUT initialization (driven by top-level init controller)
     input        clk_sys;
     input        we_lut;
-    input  [7:0] addr_lut;
+    input  [9:0] addr_lut;
     input [23:0] din_lut;
 
     // Determining the quadrant and LUT index from the phase accumulator:
@@ -47,9 +47,11 @@ module sine_lookup(
     // Q2 (01): output = lut_out read backwards, positive
     // Q3 (10): output = lut_out               forward, negative
     // Q4 (11): output = lut_out read backwards, negative
+    //
+    // 1024-entry quarter-wave LUT: use bits [29:20] as 10-bit index.
 
-    wire [1:0] quadrant  = phase[31:30];
-    wire [7:0] lut_index = (quadrant[0]) ? ~phase[29:22] : phase[29:22];
+    wire [1:0]  quadrant  = phase[31:30];
+    wire [9:0]  lut_index = (quadrant[0]) ? ~phase[29:20] : phase[29:20];
 
     // BRAM output wire — 1-cycle read latency handled inside sine_lut.
     wire [23:0] lut_out;

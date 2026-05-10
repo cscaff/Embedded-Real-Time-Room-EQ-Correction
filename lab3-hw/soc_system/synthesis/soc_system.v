@@ -120,7 +120,7 @@ module soc_system (
 	wire         hps_0_h2f_lw_axi_master_rvalid;                                   // mm_interconnect_0:hps_0_h2f_lw_axi_master_rvalid -> hps_0:h2f_lw_RVALID
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_chipselect; // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_chipselect -> room_eq_peripheral_0:chipselect
 	wire  [31:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_readdata;   // room_eq_peripheral_0:readdata -> mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_readdata
-	wire   [2:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_address;    // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_address -> room_eq_peripheral_0:address
+	wire  [10:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_address;    // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_address -> room_eq_peripheral_0:address
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_read;       // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_read -> room_eq_peripheral_0:read
 	wire         mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_write;      // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_write -> room_eq_peripheral_0:write
 	wire  [31:0] mm_interconnect_0_room_eq_peripheral_0_avalon_slave_0_writedata;  // mm_interconnect_0:room_eq_peripheral_0_avalon_slave_0_writedata -> room_eq_peripheral_0:writedata

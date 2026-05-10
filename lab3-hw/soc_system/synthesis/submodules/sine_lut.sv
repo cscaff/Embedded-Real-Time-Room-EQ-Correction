@@ -1,5 +1,5 @@
 // ==================== MODULE INTERFACE ====================
-// True Dual-Port BRAM: 256 entries x 24-bit wide.
+// True Dual-Port BRAM: 1024 entries x 24-bit wide.
 // Port A: 50 MHz system clock — write-only (used for startup initialization).
 // Port B: 12.288 MHz PLL Generated Clock
 // The FPGA BRAM primitive natively handles the two independent clock domains.
@@ -11,12 +11,12 @@
 // Inputs (Port A — write, 50 MHz):
 // - clk_a:  50 MHz system clock.
 // - we_a:   Write enable (active high). Writes din_a into mem[addr_a].
-// - addr_a: 8-bit write address selecting one of 256 entries (0-255).
+// - addr_a: 10-bit write address selecting one of 1024 entries (0-1023).
 // - din_a:  24-bit signed sine value to store.
 //
 // Inputs (Port B — read, 12.288 MHz):
 // - clk_b:  12.288 MHz sample clock (same clock driving sine_lookup).
-// - addr_b: 8-bit read address, driven by lut_index from sine_lookup.
+// - addr_b: 10-bit read address, driven by lut_index from sine_lookup.
 //
 // Outputs:
 // - dout_b: 24-bit sine value at mem[addr_b]. Registered — valid 1 cycle after addr_b.
@@ -27,16 +27,16 @@ module sine_lut (
     // Port A — write (50 MHz system clock)
     input  logic        clk_a,
     input  logic        we_a,
-    input  logic [7:0]  addr_a,
+    input  logic [9:0]  addr_a,
     input  logic [23:0] din_a,
 
     // Port B — read (12.288 MHz sample clock)
     input  logic        clk_b,
-    input  logic [7:0]  addr_b,
+    input  logic [9:0]  addr_b,
     output logic [23:0] dout_b
 );
 
-    logic [23:0] mem [255:0];
+    logic [23:0] mem [1023:0];
 
     // Port A: synchronous write
     always_ff @(posedge clk_a) begin
