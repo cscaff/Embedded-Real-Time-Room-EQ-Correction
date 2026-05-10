@@ -41,8 +41,11 @@ module sine_lookup(
     wire [9:0]  frac_bits = phase[19:10];  // fractional part between LUT entries
 
     // Quarter-wave mirror: in Q2/Q4 read backwards
-    wire [9:0]  index0 = (quadrant[0]) ? ~raw_index       : raw_index;
-    wire [9:0]  index1 = (quadrant[0]) ? (~raw_index - 1) : (raw_index + 1);
+    // Clamp index1 at 1023 to prevent wrap-around crackle at quadrant boundaries
+    wire [9:0]  index0 = (quadrant[0]) ? ~raw_index : raw_index;
+    wire [9:0]  next_fwd = (raw_index == 10'd1023) ? 10'd1023 : (raw_index + 10'd1);
+    wire [9:0]  next_rev = (raw_index == 10'd0)    ? 10'd1023 : (~raw_index - 10'd1);
+    wire [9:0]  index1 = (quadrant[0]) ? next_rev : next_fwd;
 
     // ── BRAM ────────────────────────────────────────────────
     wire [23:0] lut_out;
