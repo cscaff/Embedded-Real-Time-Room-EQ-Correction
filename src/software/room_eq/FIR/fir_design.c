@@ -1,15 +1,16 @@
 /*
  * fir_design.c — inverse-target FIR design pipeline
  *
- * Each function below is one stage. They are built and tested incrementally.
+ * Each function below is one stage.
  * The public entry point (fir_design) calls them in order.
  *
- * Completed stages:
  *   1. compute_magnitudes  — Q1.23 complex bins → double magnitudes
  *   2. octave_smooth       — 1/3-octave log-frequency averaging
- *
- * Remaining (stubs):
- *   3. inverse design, Hermitian extension, IFFT, windowing, Q1.23 output
+ *   3. inverse design
+ *   4. Hermitian extension
+ *   5. IFFT
+ *   6. Windowing
+ *   7. Q1.23 output
  */
 
 #include <math.h>
@@ -19,7 +20,7 @@
 #include "fir_design.h"
 #include "fir_internal.h"
 
-/* ── Stage 1: Q1.23 complex bins → double magnitudes ───────────────────────
+/* ── Stage 1: Q1.23 complex bins --> double magnitudes ───────────────────────
  *
  * Each FFT bin arrives as a pair of Q1.23 signed 32-bit integers.
  * Dividing by 2^23 converts to the double in [-1.0, 1.0).
@@ -28,10 +29,13 @@
 void compute_magnitudes(const int32_t *real, const int32_t *imag,
                         int n_bins, double *mag_out)
 {
+    // Floating Point Conversion: Q1.23 → double
     const double scale = 1.0 / (double)(1 << 23);
     for (int k = 0; k < n_bins; k++) {
+        // Conversion Step
         double r = real[k] * scale;
         double i = imag[k] * scale;
+        // Magnitude Calculation
         mag_out[k] = sqrt(r * r + i * i);
     }
 }
@@ -56,18 +60,24 @@ void compute_magnitudes(const int32_t *real, const int32_t *imag,
 void octave_smooth(const double *mag_in, int n_bins,
                    double fraction, double *mag_out)
 {
+    // Compute Frequency Scaling Factors via logarithmic window.
     double lo_factor = pow(2.0, -fraction / 2.0);
     double hi_factor = pow(2.0,  fraction / 2.0);
 
+    // Bin 0 is unchanged because it represents 0 Hz and is stable.
     mag_out[0] = mag_in[0];   /* DC: pass through */
 
+    // Iterate over each bin.
     for (int k = 1; k < n_bins; k++) {
+        // Compute Smoothing Range
         int k_lo = (int)floor(k * lo_factor);
         int k_hi = (int)ceil(k * hi_factor);
 
+        // Clamp Bounds to Valid Range.
         if (k_lo < 0)         k_lo = 0;
         if (k_hi >= n_bins)   k_hi = n_bins - 1;
 
+        // Averaging Window
         double sum = 0.0;
         for (int j = k_lo; j <= k_hi; j++)
             sum += mag_in[j];
@@ -82,7 +92,7 @@ void octave_smooth(const double *mag_in, int n_bins,
  *
  * eps prevents division by zero at deep room nulls (frequencies where the
  * room nearly cancels the signal due to reflections).  Setting eps relative
- * to the spectrum peak means it has no effect on strong bins but regularises
+ * to the spectrum peak means it has no effect on strong bins but regularizes
  * weak ones consistently regardless of the overall signal level.
  *
  * The ±12 dB clamp (linear: 0.251 to 3.981) stops the filter from applying
@@ -104,7 +114,9 @@ void compute_inverse(const double *h_mag, int n_bins,
     double c_min = pow(10.0, -12.0 / 20.0);   /* -12 dB in linear = 0.251 */
 
     for (int k = 0; k < n_bins; k++) {
+        // Inversion w/ Regularization
         double c = target / (h_mag[k] + eps);
+        // Clamping
         if (c > c_max) c = c_max;
         if (c < c_min) c = c_min;
         c_mag_out[k] = c;
