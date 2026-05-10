@@ -5,7 +5,7 @@
  *   1. generate_sine_lut()  — compute 256 Q1.23 sine values for one quadrant
  *   2. load_lut()           — write them to the peripheral via ROOM_EQ_WRITE_LUT
  *   3. trigger_sweep()      — assert sweep_start via ROOM_EQ_WRITE_CTRL
- *   4. poll_done()          — poll ROOM_EQ_READ_STATUS until state == DONE
+ *   4. poll_done()          — poll ROOM_EQ_READ_STATUS until state == DONE // TODO: Will likely change to be a continuous read.
  *   5. read_fft_bins()      — read 4097 complex bins via ROOM_EQ_READ_FFT_DATA
  *   6. fir_design()         — compute 128 correction taps (see room_eq/FIR/)
  *
@@ -38,6 +38,7 @@
 #define POLL_TIMEOUT_S    30       /* give up after 30 s (sweep is ~5 s)   */
 
 /* FSM state values from room_eq_peripheral.sv */
+// Unsigned Integers
 #define STATE_IDLE    0u
 #define STATE_SWEEP   1u
 #define STATE_CAPTURE 2u
@@ -46,19 +47,19 @@
 /* ── Step 1: sine LUT generation ────────────────────────────────────────────
  *
  * The sweep generator (sine_lookup.sv) reconstructs a full sine wave from
- * 256 values that cover one quadrant (0 to just below π/2).  Port A of the
+ * 256 values that cover one quadrant (0 to just below pi/2).  Port A of the
  * sine_lut BRAM must be loaded with these values before the sweep starts.
  *
- * Formula:  lut[i] = round(sin(i × π / 512) × 2²³)
+ * Formula:  lut[i] = round(sin(i × pi / 512) × 2²³)
  *
- * The factor π/512 = π / (2 × 256) steps uniformly through one quadrant.
+ * The factor pi/512 = pi / (2 × 256) steps uniformly through one quadrant.
  * The ×2²³ converts to Q1.23 signed integer (1 sign bit + 23 fractional bits).
  */
 void generate_sine_lut(int32_t *lut, int n)  /* non-static: callable from test_eq.c */
 {
     for (int i = 0; i < n; i++) {
         double angle = (double)i * M_PI / (2.0 * n);
-        lut[i] = (int32_t)round(sin(angle) * (double)(1 << 23));
+        lut[i] = (int32_t)round(sin(angle) * (double)(1 << 23)); // Scale to Q1.23 and round to nearest integer
     }
 }
 
@@ -69,10 +70,12 @@ void generate_sine_lut(int32_t *lut, int n)  /* non-static: callable from test_e
 static int load_lut(int fd, const int32_t *lut, int n)
 {
     for (int i = 0; i < n; i++) {
+        // Pack LUT entry into room_eq_lut_t struct.
         room_eq_lut_t entry = {
-            .addr = (unsigned char)i,
-            .data = (unsigned int)(lut[i] & 0xFFFFFF)
+            .addr = (unsigned char)i, // Unsigned Char 2^8 = 256 entries
+            .data = (unsigned int)(lut[i] & 0xFFFFFF) // Mask to 24 bits.
         };
+        // Send ioctl to write this LUT entry to the device.
         if (ioctl(fd, ROOM_EQ_WRITE_LUT, &entry) < 0) {
             fprintf(stderr, "eq: LUT write failed at addr %d: %s\n",
                     i, strerror(errno));
@@ -111,8 +114,8 @@ static const char *state_name(unsigned int s)
 
 static int poll_done(int fd)
 {
-    int max_polls = (POLL_TIMEOUT_S * 1000000) / POLL_INTERVAL_US;
-    unsigned int last_state = 0xFF;
+    int max_polls = (POLL_TIMEOUT_S * 1000000) / POLL_INTERVAL_US; // Conversion to microseconds and division to get number of polls.
+    unsigned int last_state = 0xFF; // Invalid starting state.
     room_eq_status_t status;
 
     for (int i = 0; i < max_polls; i++) {
@@ -123,7 +126,7 @@ static int poll_done(int fd)
 
         /* Print a line only when the FSM state changes */
         if (status.state != last_state) {
-            printf("eq: status → %s\n", state_name(status.state));
+            printf("eq: status --> %s\n", state_name(status.state));
             last_state = status.state;
         }
 
@@ -141,6 +144,7 @@ static int poll_done(int fd)
 /*
  * The FFT result RAM stores 8192 bins but only 0..4096 are unique for a real
  * input (Hermitian symmetry).  We read N_HALF = 4097 bins.
+ * RAM stores 8192 solely because 2^12 = 4096 and cannot fit 4097 entries.
  *
  * Each bin is 24-bit two's-complement Q1.23.  The driver masks to 24 bits
  * with & 0xFFFFFF; sign_extend_24() restores the sign before storing.
@@ -152,13 +156,15 @@ static int poll_done(int fd)
 static int read_fft_bins(int fd, int32_t *real_out, int32_t *imag_out, int n_bins)
 {
     for (int k = 0; k < n_bins; k++) {
+        // Write FFT Address.
         room_eq_fft_addr_t addr = { .addr = (unsigned short)k };
         if (ioctl(fd, ROOM_EQ_WRITE_FFT_ADDR, &addr) < 0) {
             fprintf(stderr, "eq: FFT_ADDR write failed at bin %d: %s\n",
                     k, strerror(errno));
             return -1;
         }
-
+ 
+        // Read Resulting FFT Data.
         room_eq_fft_data_t data;
         if (ioctl(fd, ROOM_EQ_READ_FFT_DATA, &data) < 0) {
             fprintf(stderr, "eq: FFT_DATA read failed at bin %d: %s\n",
@@ -198,7 +204,7 @@ int main(void)
     /* 3. Read the half-spectrum FFT bins */
     int32_t *fft_real = malloc(N_HALF * sizeof(int32_t));
     int32_t *fft_imag = malloc(N_HALF * sizeof(int32_t));
-    if (!fft_real || !fft_imag) {
+    if (!fft_real || !fft_imag) { // Check for memory allocation failure.
         perror("eq: malloc");
         free(fft_real);
         free(fft_imag);
