@@ -1,15 +1,13 @@
 // ==================== MODULE INTERFACE ====================
 // Sine lookup with linear interpolation between adjacent LUT entries.
-// Eliminates staircase aliasing at high frequencies where the phase
-// increment skips many LUT entries per sample.
+// Eliminates staircase aliasing at high frequencies.
 //
-// Pipeline (3 stages after sample_en):
-//   Cycle 0: present addr_b = index0 to BRAM
-//   Cycle 1: latch lut_out0, present addr_b = index1
-//   Cycle 2: latch lut_out1, interpolate, apply quadrant, output
-//
-// At 12.288 MHz with 256 clocks per sample, the 3-cycle pipeline
-// completes well before the next sample_en.
+// Pipeline (5 stages after sample_en, plenty of time in 256-clock frame):
+//   Stage 0: present index0 to BRAM
+//   Stage 1: BRAM latency — wait for lut_out to settle
+//   Stage 2: latch val0, present index1 to BRAM
+//   Stage 3: BRAM latency — wait for lut_out to settle
+//   Stage 4: latch val1, interpolate, apply quadrant, output
 // ===========================================================
 
 module sine_lookup(
@@ -38,10 +36,10 @@ module sine_lookup(
     // ── Phase decomposition ─────────────────────────────────
     wire [1:0]  quadrant  = phase[31:30];
     wire [9:0]  raw_index = phase[29:20];
-    wire [9:0]  frac_bits = phase[19:10];  // fractional part between LUT entries
+    wire [9:0]  frac_bits = phase[19:10];  // 10-bit fraction between LUT entries
 
     // Quarter-wave mirror: in Q2/Q4 read backwards
-    // Clamp index1 at 1023 to prevent wrap-around crackle at quadrant boundaries
+    // Clamp index1 to prevent wrap-around at boundaries
     wire [9:0]  index0 = (quadrant[0]) ? ~raw_index : raw_index;
     wire [9:0]  next_fwd = (raw_index == 10'd1023) ? 10'd1023 : (raw_index + 10'd1);
     wire [9:0]  next_rev = (raw_index == 10'd0)    ? 10'd1023 : (~raw_index - 10'd1);
@@ -62,56 +60,65 @@ module sine_lookup(
     );
 
     // ── Interpolation pipeline ──────────────────────────────
-    // State: 0=idle, 1=reading index0, 2=reading index1, 3=output
-    reg [1:0] pipe_state;
-    reg [23:0] val0;          // LUT value at index0
-    reg [1:0]  quad_saved;    // quadrant saved at sample_en
-    reg [9:0]  frac_saved;    // fractional bits saved at sample_en
+    reg [2:0] pipe_state;
+    reg [23:0] val0;
+    reg [1:0]  quad_saved;
+    reg [9:0]  frac_saved;
+    reg [9:0]  index1_saved;
 
-    // Interpolation wires (combinational, used in stage 2)
-    // All unsigned: LUT values are 0..8388607 (quarter-wave positive)
-    // diff can be negative so use signed 25-bit
+    // Interpolation math (combinational, used in stage 4)
     wire signed [24:0] w_val0 = {1'b0, val0};
     wire signed [24:0] w_val1 = {1'b0, lut_out};
     wire signed [24:0] w_diff = w_val1 - w_val0;
-    // frac_saved is 0..1023, multiply then shift right by 10
     wire signed [34:0] w_product = w_diff * {1'b0, frac_saved};
     wire signed [24:0] w_interp = w_val0 + (w_product >>> 10);
-    wire [23:0] interp_clamp = w_interp[24] ? 24'd0 : w_interp[23:0];  // clamp negative to 0
+    wire [23:0] interp_clamp = w_interp[24] ? 24'd0 : w_interp[23:0];
 
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            pipe_state <= 2'd0;
-            bram_addr  <= 10'd0;
-            val0       <= 24'd0;
-            quad_saved <= 2'b00;
-            frac_saved <= 10'd0;
-            amplitude  <= 24'd0;
+            pipe_state   <= 3'd0;
+            bram_addr    <= 10'd0;
+            val0         <= 24'd0;
+            quad_saved   <= 2'b00;
+            frac_saved   <= 10'd0;
+            index1_saved <= 10'd0;
+            amplitude    <= 24'd0;
         end else begin
             case (pipe_state)
-                2'd0: begin
+                3'd0: begin
                     if (sample_en) begin
-                        bram_addr  <= index0;
-                        quad_saved <= quadrant;
-                        frac_saved <= frac_bits;
-                        pipe_state <= 2'd1;
+                        bram_addr    <= index0;
+                        index1_saved <= index1;
+                        quad_saved   <= quadrant;
+                        frac_saved   <= frac_bits;
+                        pipe_state   <= 3'd1;
                     end
                 end
-                2'd1: begin
-                    val0       <= lut_out;
-                    bram_addr  <= index1;
-                    pipe_state <= 2'd2;
+                3'd1: begin
+                    // Wait: BRAM is reading index0
+                    pipe_state <= 3'd2;
                 end
-                2'd2: begin
+                3'd2: begin
+                    // lut_out now has val at index0
+                    val0      <= lut_out;
+                    bram_addr <= index1_saved;
+                    pipe_state <= 3'd3;
+                end
+                3'd3: begin
+                    // Wait: BRAM is reading index1
+                    pipe_state <= 3'd4;
+                end
+                3'd4: begin
+                    // lut_out now has val at index1, interpolate
                     case (quad_saved)
                         2'b00: amplitude <=  interp_clamp;
                         2'b01: amplitude <=  interp_clamp;
                         2'b10: amplitude <= -interp_clamp;
                         2'b11: amplitude <= -interp_clamp;
                     endcase
-                    pipe_state <= 2'd0;
+                    pipe_state <= 3'd0;
                 end
-                default: pipe_state <= 2'd0;
+                default: pipe_state <= 3'd0;
             endcase
         end
     end
