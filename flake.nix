@@ -24,6 +24,8 @@
 	    pkgs.gnumake
 	    pkgs.screen
 	    pkgs.sox
+	    pkgs.fftw
+	    pkgs.fftwFloat
           ];
 
           shellHook = ''
