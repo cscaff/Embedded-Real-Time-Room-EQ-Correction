@@ -28,7 +28,7 @@ module phase_accumulator(
 
     // Parameters
     parameter [31:0] INCREMENT_START = 32'd1_789_570;   // Initial Phase Increment to get 20 Hz Output.
-    parameter [31:0] K_FRAC          = 32'd61_810;      // (K-1)*2^32 where K=exp(ln(1000)/(48000*10))
+    parameter [31:0] K_FRAC          = 32'd30_904;      // (K-1)*2^32 where K=exp(ln(1000)/(48000*20)), 16s to 5kHz
     parameter [31:0] INC_STOP        = 32'd447_392_426;   // increment[63:32] threshold for 5 kHz: (5000/48000)*2^32
 
     // Internal Registers
