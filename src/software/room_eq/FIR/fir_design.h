@@ -2,7 +2,7 @@
  * fir_design.h — interface for the inverse-target FIR design algorithm
  *
  * Called by eq.c after it has read all FFT bins from the hardware.
- * The actual algorithm lives in fir_design.c and will be built up step by step.
+ * The actual algorithm lives in fir_design.c.
  */
 
 #ifndef FIR_DESIGN_H
@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#define N_TAPS 128   /* fixed FIR length — must match FPGA FIR filter */
+#define N_TAPS 128   /* fixed FIR length */
 
 /*
  * fir_design — design a 128-tap correction FIR filter from measured FFT data.
