@@ -155,10 +155,10 @@ static int wm8731_write(uint8_t reg, uint16_t data)
 
 static int codec_init(void)
 {
-    printf("Initializing I2C master...\n");
+    fprintf(stderr, "Initializing I2C master...\n");
     i2c_init();
 
-    printf("Configuring WM8731 codec...\n");
+    fprintf(stderr, "Configuring WM8731 codec...\n");
     int err = 0;
 
     err |= wm8731_write(0x0F, 0x000);
@@ -172,7 +172,7 @@ static int codec_init(void)
         uint16_t reg04 = 0x010;          /* base: line-in, DAC selected */
         if (!use_line_in) reg04 |= 0x004; /* select mic instead of line-in */
         if (!use_line_in && mic_boost) reg04 |= 0x001; /* +20dB mic boost */
-        printf("Analog path: %s%s (reg04=0x%03x)\n",
+        fprintf(stderr, "Analog path: %s%s (reg04=0x%03x)\n",
                use_line_in ? "LINE-IN" : "MIC",
                (!use_line_in && mic_boost) ? " +20dB" : "", reg04);
         err |= wm8731_write(0x04, reg04);
@@ -184,9 +184,9 @@ static int codec_init(void)
     err |= wm8731_write(0x09, 0x001);
 
     if (err)
-        printf("Some codec writes failed (NACKs)\n");
+        fprintf(stderr, "Some codec writes failed (NACKs)\n");
     else
-        printf("Codec initialized: I2S slave, 24-bit, 48 kHz\n");
+        fprintf(stderr, "Codec initialized: I2S slave, 24-bit, 48 kHz\n");
 
     return err;
 }
@@ -195,14 +195,14 @@ static int codec_init(void)
 
 static void load_sine_lut(void)
 {
-    printf("Loading sine LUT (%d entries)...\n", LUT_SIZE);
+    fprintf(stderr, "Loading sine LUT (%d entries)...\n", LUT_SIZE);
     for (int i = 0; i < LUT_SIZE; i++) {
         double  angle = i * M_PI / (2.0 * LUT_SIZE);
         int32_t val   = (int32_t)(sin(angle) * 8388607.0);
         room_eq_base[LUT_ADDR_REG] = i;
         room_eq_base[LUT_DATA_REG] = (uint32_t)(val & 0x00FFFFFF);
     }
-    printf("Sine LUT loaded.\n");
+    fprintf(stderr, "Sine LUT loaded.\n");
 }
 
 /* ── Sign-extend 24-bit to 32-bit ─────────────────────────── */
@@ -218,12 +218,12 @@ static int start_sweep(void)
 {
     /* Start sweep with FFT mode (fifo_hps_mode=0) */
     room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
-    printf("Sweep started.\n");
+    fprintf(stderr, "Sweep started.\n");
 
     usleep(1000);
 
     uint32_t status = room_eq_base[STATUS_REG];
-    printf("STATUS: 0x%08x (state=%d, fft_done=%d)\n",
+    fprintf(stderr, "STATUS: 0x%08x (state=%d, fft_done=%d)\n",
            status, status & STATUS_STATE_MASK,
            (status >> 4) & 1);
 
@@ -280,7 +280,7 @@ static void fifo_test(void)
         }
     }
 
-    printf("Read %d samples from FIFO.\n", count);
+    fprintf(stderr, "Read %d samples from FIFO.\n", count);
 }
 
 /* ── Full calibration (Stage 2+3) ─────────────────────────── */
@@ -297,7 +297,7 @@ static void calibrate(void)
     load_sine_lut();
 
     /* FFT mode (fifo_hps_mode=0), start sweep */
-    printf("Starting calibration sweep (continuous FFT)...\n");
+    fprintf(stderr, "Starting calibration sweep (continuous FFT)...\n");
     room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
 
     int frame_num = 0;
@@ -343,7 +343,7 @@ static void calibrate(void)
         }
     }
 
-    printf("Calibration complete. %d FFT frames captured.\n", frame_num);
+    fprintf(stderr, "Calibration complete. %d FFT frames captured.\n", frame_num);
 
     /* Now dump all buffered data */
     printf("frame,bin,real,imag\n");
@@ -437,7 +437,7 @@ static void live_spectrum(void)
 
         /* Display */
         printf("\033[2J\033[H");
-        printf("Room EQ Live Spectrum\n");
+        fprintf(stderr, "Room EQ Live Spectrum\n");
         printf("FPGA: 8192-pt FFT @ 50MHz | ADC: 48kHz 24-bit | Input: %s%s\n",
                use_line_in ? "LINE-IN" : "MIC",
                (!use_line_in && mic_boost) ? " +20dB" : "");
@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
     }
 
     const char *mode_names[] = {"Sweep", "Mic Test", "FIFO Test", "Calibration", "Live Spectrum"};
-    printf("Room EQ — Codec Init + %s\n", mode_names[mode]);
+    fprintf(stderr, "Room EQ — Codec Init + %s\n", mode_names[mode]);
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd < 0) {

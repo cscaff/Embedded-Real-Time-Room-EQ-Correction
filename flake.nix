@@ -23,6 +23,7 @@
             python
 	    pkgs.gnumake
 	    pkgs.screen
+	    pkgs.sox
           ];
 
           shellHook = ''
