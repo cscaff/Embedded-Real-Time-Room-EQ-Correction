@@ -234,8 +234,7 @@ module room_eq_peripheral(
         .addr_lut (lut_addr),
         .din_lut  (lut_data),
         .start    (sweep_start_audio),
-        .done     (sweep_done),
-        .lrck     (lrck_int)
+        .done     (sweep_done)
     );
 
     // ── I2S transmitter ──────────────────────────────────────
