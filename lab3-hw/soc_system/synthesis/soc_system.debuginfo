@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="system" version="24.1" fabric="QSYS">
  <!-- Format version 24.1 1077 (Future versions may contain additional information.) -->
- <!-- 2026.05.10.04:29:10 -->
+ <!-- 2026.05.10.06:28:37 -->
  <!-- A collection of modules and connections -->
  <parameter name="clockCrossingAdapter">
   <type>com.altera.sopcmodel.ensemble.EClockAdapter</type>
@@ -53,7 +53,7 @@
  </parameter>
  <parameter name="generationId">
   <type>int</type>
-  <value>1778387302</value>
+  <value>1778394469</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>true</visible>
@@ -43555,6 +43555,18 @@ parameters are a RESULT of the module parameters. -->
     <width>1</width>
     <role>xck</role>
    </port>
+   <port>
+    <name>AUD_ADCDAT</name>
+    <direction>Input</direction>
+    <width>1</width>
+    <role>adcdat</role>
+   </port>
+   <port>
+    <name>AUD_ADCLRCK</name>
+    <direction>Output</direction>
+    <width>1</width>
+    <role>adclrck</role>
+   </port>
   </interface>
   <interface name="audio_clk" kind="clock_sink" version="24.1">
    <!-- The connection points exposed by a module instance for the
@@ -46373,5 +46385,5 @@ parameters are a RESULT of the module parameters. -->
   <version>24.1</version>
  </plugin>
  <reportVersion>24.1 1077</reportVersion>
- <uniqueIdentifier>9CB6D0956D9D0000019E10251836</uniqueIdentifier>
+ <uniqueIdentifier>9CB6D0956D9D0000019E109272F7</uniqueIdentifier>
 </EnsembleReport>

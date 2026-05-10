@@ -48,6 +48,10 @@ add_fileset_file i2s_shift_register.sv SYSTEM_VERILOG PATH ../src/hardware/room_
 add_fileset_file i2s_tx.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv
 add_fileset_file sine_lut.sv SYSTEM_VERILOG PATH ../src/hardware/memory/sine_lut.sv
 add_fileset_file i2s_rx.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv
+add_fileset_file fft_results_ram.sv SYSTEM_VERILOG PATH ../src/hardware/memory/fft_results_ram.sv
+add_fileset_file calibration_engine.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv
+add_fileset_file sample_fifo.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv
+add_fileset_file sample_fft.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv
 
 
 # 
@@ -120,7 +124,7 @@ add_interface_port avalon_slave_0 readdata readdata Output 32
 add_interface_port avalon_slave_0 write write Input 1
 add_interface_port avalon_slave_0 read read Input 1
 add_interface_port avalon_slave_0 chipselect chipselect Input 1
-add_interface_port avalon_slave_0 address address Input 11
+add_interface_port avalon_slave_0 address address Input 4
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isFlash 0
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isMemoryDevice 0
 set_interface_assignment avalon_slave_0 embeddedsw.configuration.isNonVolatileStorage 0

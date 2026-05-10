@@ -6,19 +6,29 @@
  *
  * Register map (32-bit words):
  *
- * Offset      Bits      Access   Meaning
- *   0         [0]       R/W      CTRL: bit 0 = sweep_start (write 1 to trigger,
- *                                             self-clears after one cycle)
- *                                      bit 1 = sweep_running (read-only)
- *   1         [23:0]    R        ADC_LEFT: latest left-channel sample from I2S RX
- *   2         [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s)
- *   3         [31:0]    R        VERSION: 32'h0001_0000
- *   4..1027   [23:0]    W        SINE_LUT: quarter-wave sine BRAM (1024 × 24-bit)
- *                                Write offset (LUT_BASE + i) with sin(i×π/512)×8388607
- *                                (LUT_BASE must match localparam below and codec_init.c)
+ * Offset   Bits      Access   Meaning
+ *   0      [0]       W        CTRL: bit 0 = sweep_start (self-clears)
+ *          [1]       R/W      CTRL: bit 1 = fifo_hps_mode (1=HPS drains FIFO, 0=FFT drains)
+ *   1      [3:0]     R        STATUS: FSM state — 0=IDLE, 1=SWEEP, 2=DONE
+ *          [4]       R        STATUS: fft_done (FFT frame complete, result RAM valid)
+ *          [5]       R        STATUS: fifo_empty
+ *   2      —         —        (reserved)
+ *   3      [31:0]    R        VERSION: 32'h0001_0000
+ *   4      [9:0]     W        LUT_ADDR: address for LUT initialization (1024 entries)
+ *   5      [23:0]    W        LUT_DATA: data for LUT initialization (fires we_lut)
+ *   6      [12:0]    R/W      FFT_ADDR: read address for FFT result RAM
+ *   7      [23:0]    R        FFT_RDATA: real part of FFT result at FFT_ADDR
+ *   8      [23:0]    R        FFT_IDATA: imaginary part of FFT result at FFT_ADDR
+ *   9      [23:0]    R        ADC_LEFT: latest left-channel sample from I2S RX
+ *  10      [23:0]    R        FIFO_RDATA: pop-on-read from DCFIFO (showahead)
  *
  * Audio conduit signals connect to the WM8731 codec on the DE1-SoC.
  * The PLL-generated 12.288 MHz audio clock is received from Platform Designer.
+ *
+ * Staged testing:
+ *   Stage 1: Set fifo_hps_mode=1, start sweep, read FIFO_RDATA to verify ADC→DCFIFO→HPS.
+ *   Stage 2: Set fifo_hps_mode=0, start sweep, poll fft_done, read FFT bins.
+ *   Stage 3: Continuous FFT — loop reading FFT frames during sweep.
  */
 
 module room_eq_peripheral(
@@ -30,7 +40,7 @@ module room_eq_peripheral(
     input  logic        write,        // write strobe
     input  logic        read,         // read strobe
     input  logic        chipselect,   // peripheral selected
-    input  logic [10:0] address,      // register/LUT word offset (0..1027)
+    input  logic [3:0]  address,      // register address (word offset, 0-15)
 
     // Audio clock from PLL
     input  logic        audio_clk,    // 12.288 MHz from audio PLL
@@ -39,16 +49,10 @@ module room_eq_peripheral(
     output logic        AUD_XCK,      // master clock to codec (12.288 MHz)
     output logic        AUD_BCLK,     // I2S bit clock
     output logic        AUD_DACDAT,   // I2S DAC serial data (FPGA → codec)
-    output logic        AUD_DACLRCK, // I2S DAC frame clock (L/R)
-    output logic        AUD_ADCLRCK, // I2S ADC frame clock (tied to DACLRCK)
-    input  logic        AUD_ADCDAT   // I2S ADC serial data (codec → FPGA)
+    output logic        AUD_DACLRCK,  // I2S DAC frame clock (L/R)
+    output logic        AUD_ADCLRCK,  // I2S ADC frame clock (tied to DACLRCK)
+    input  logic        AUD_ADCDAT    // I2S ADC serial data (codec → FPGA)
 );
-
-    // ── Address map ──────────────────────────────────────────
-    //   Offsets 0..3   : control registers
-    //   Offsets 4..259 : sine LUT (256 quarter-wave entries)
-    localparam [10:0] LUT_BASE = 11'd4;
-    localparam [10:0] LUT_SIZE = 11'd1024;
 
     // ── Forward master clock to codec ────────────────────────
     assign AUD_XCK = audio_clk;
@@ -59,15 +63,27 @@ module room_eq_peripheral(
     assign AUD_DACLRCK = lrck_int;
     assign AUD_ADCLRCK = lrck_int;  // ADC and DAC share the same frame clock
 
-    // ── Control registers ────────────────────────────────────
-    logic        sweep_start;   // one-cycle pulse: HPS writes 1 to CTRL[0]
-    logic        sweep_running; // read-only status
-    logic [31:0] sweep_len;     // sweep length in samples
+    // ── Register file ────────────────────────────────────────
+    logic        sweep_start;     // one-cycle pulse from HPS
+    logic        fifo_hps_mode;   // 1 = HPS drains FIFO, 0 = FFT drains
+    logic [9:0]  lut_addr;        // 10-bit for 1024-entry LUT
+    logic [23:0] lut_data;
+    logic [12:0] fft_rd_addr;
 
-    // ── Sine LUT write signals (to sweep_generator) ──────────
-    logic        we_lut;
-    logic  [9:0] addr_lut;
-    logic [23:0] din_lut;
+    // ── Internal control ─────────────────────────────────────
+    logic        we_lut;          // LUT write enable (self-clearing pulse)
+    logic        calibrate_start; // One-cycle pulse to arm calibration engine
+    logic        fft_done;        // Calibration engine FFT frame complete
+    logic        sweep_done;      // Latches high in audio domain when sweep reaches 20 kHz
+    logic        sweep_reset;     // Active-high reset for audio-domain modules
+    logic [23:0] amplitude;       // Sweep generator output
+
+    // ── Calibration engine FIFO access ──────────────────────
+    logic [23:0] fft_rd_real, fft_rd_imag;
+    logic [23:0] fifo_data_out;
+    logic        fifo_data_valid;
+    logic        fifo_empty;
+    wire         fifo_hps_pop = chipselect && read && (address == 4'd10);
 
     // ── I2S RX ────────────────────────────────────────────────
     logic [23:0] rx_left, rx_right;
@@ -82,128 +98,146 @@ module room_eq_peripheral(
         .right_sample(rx_right)
     );
 
+    // ── Toggle synchronizer (50 MHz → 12.288 MHz) ───────────
+    logic        sweep_start_toggle;
+    logic        tog_sync1, tog_sync2, tog_sync3;
+
+    always_ff @(posedge clk) begin
+        if (reset)            sweep_start_toggle <= 1'b0;
+        else if (sweep_start) sweep_start_toggle <= ~sweep_start_toggle;
+    end
+
+    always_ff @(posedge audio_clk) begin
+        tog_sync1 <= sweep_start_toggle;
+        tog_sync2 <= tog_sync1;
+        tog_sync3 <= tog_sync2;
+    end
+
+    wire sweep_start_audio = tog_sync2 ^ tog_sync3;
+
+    // ── Synchronize sweep_done: audio → system ───────────────
+    logic done_sync1, done_sync2;
+    always_ff @(posedge clk) begin
+        done_sync1 <= sweep_done;
+        done_sync2 <= done_sync1;
+    end
+
+    // ── Async reset synchronizer for audio domain ────────────
+    logic rst_sync1, rst_sync2;
+    always_ff @(posedge audio_clk or posedge reset) begin
+        if (reset) begin
+            rst_sync1 <= 1'b1;
+            rst_sync2 <= 1'b1;
+        end else begin
+            rst_sync1 <= 1'b0;
+            rst_sync2 <= rst_sync1;
+        end
+    end
+
+    assign sweep_reset = rst_sync2;
+
+    // ── FSM ──────────────────────────────────────────────────
+    typedef enum logic [3:0] {
+        IDLE  = 4'd0,
+        SWEEP = 4'd1,
+        DONE  = 4'd2
+    } state_t;
+    state_t state;
+
+    // Rising-edge detector for done_sync2: prevent stale high from
+    // previous sweep from immediately triggering SWEEP→DONE.
+    logic done_sync2_prev;
+    wire  done_rising = done_sync2 && !done_sync2_prev;
+
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            state           <= IDLE;
+            calibrate_start <= 1'b0;
+            done_sync2_prev <= 1'b0;
+        end else begin
+            calibrate_start <= 1'b0;
+            done_sync2_prev <= done_sync2;
+            case (state)
+                IDLE: begin
+                    if (sweep_start) begin
+                        state           <= SWEEP;
+                        calibrate_start <= 1'b1;  // arm FFT at sweep start
+                    end
+                end
+                SWEEP: begin
+                    if (done_rising)
+                        state <= DONE;
+                end
+                DONE: begin
+                    if (sweep_start) begin
+                        state           <= SWEEP;
+                        calibrate_start <= 1'b1;
+                    end
+                end
+            endcase
+        end
+    end
+
     // ── Register read ────────────────────────────────────────
     always_comb begin
         readdata = 32'd0;
         if (chipselect && read)
             case (address)
-                11'd0:    readdata = {30'd0, sweep_running, 1'b0};
-                11'd1:    readdata = {8'd0, rx_left};  // ADC_LEFT
-                11'd2:    readdata = sweep_len;
-                11'd3:    readdata = 32'h0001_0000;    // VERSION
-                default: readdata = 32'd0;             // LUT not readable
+                4'd0:    readdata = {30'd0, fifo_hps_mode, 1'b0};
+                4'd1:    readdata = {26'd0, fifo_empty, fft_done, state};
+                4'd3:    readdata = 32'h0001_0000;           // VERSION
+                4'd6:    readdata = {19'd0, fft_rd_addr};
+                4'd7:    readdata = {8'd0, fft_rd_real};
+                4'd8:    readdata = {8'd0, fft_rd_imag};
+                4'd9:    readdata = {8'd0, rx_left};          // ADC_LEFT
+                4'd10:   readdata = {8'd0, fifo_data_out};    // FIFO_RDATA (pop-on-read)
+                default: readdata = 32'd0;
             endcase
     end
 
-    // ── Register / LUT write ─────────────────────────────────
+    // ── Register write ───────────────────────────────────────
     always_ff @(posedge clk) begin
         if (reset) begin
-            sweep_start <= 1'b0;
-            sweep_len   <= 32'd480_000;  // default: 10 s at 48 kHz
-            we_lut      <= 1'b0;
-            addr_lut    <= 8'd0;
-            din_lut     <= 24'd0;
-        end else begin
-            // Self-clearing defaults
-            sweep_start <= 1'b0;
-            we_lut      <= 1'b0;
-
-            if (chipselect && write) begin
-                if (address < LUT_BASE) begin
-                    // ── Control registers ─────────────────
-                    case (address)
-                        11'd0: sweep_start <= writedata[0];
-                        11'd2: sweep_len   <= writedata;
-                        default: ;
-                    endcase
-                end else if (address < LUT_BASE + LUT_SIZE) begin
-                    // ── Sine LUT write ────────────────────
-                    // address[7:0] - LUT_BASE[7:0] gives the BRAM index
-                    // (modular 10-bit arithmetic is correct for all 1024 entries)
-                    addr_lut <= address[9:0] - LUT_BASE[9:0];
-                    din_lut  <= writedata[23:0];
-                    we_lut   <= 1'b1;
+            sweep_start   <= 1'b0;
+            fifo_hps_mode <= 1'b0;
+            lut_addr      <= 10'd0;
+            we_lut        <= 1'b0;
+            fft_rd_addr   <= 13'd0;
+        end else if (chipselect && write) begin
+            we_lut <= 1'b0;
+            case (address)
+                4'd0: begin
+                    sweep_start   <= writedata[0];
+                    fifo_hps_mode <= writedata[1];
                 end
-            end
-        end
-    end
-
-    // ── Sweep control ─────────────────────────────────────────
-
-    // Sample counter in audio clock domain.
-    // Counts 48 kHz ticks (audio_clk / 256); stops sweep at sweep_len.
-    // sweep_len is quasi-static: written by HPS before sweep starts,
-    // stable for the entire sweep duration — safe to read cross-domain.
-    logic        sweep_active;
-    logic        sweep_done_audio;  // asserted in audio clock domain when done
-
-    // Sync sweep_done_audio → sys clock domain (2-FF)
-    logic sweep_done_sync1, sweep_done_sync2;
-    always_ff @(posedge clk) begin
-        sweep_done_sync1 <= sweep_done_audio;
-        sweep_done_sync2 <= sweep_done_sync1;
-    end
-
-    always_ff @(posedge clk) begin
-        if (reset)
-            sweep_active <= 1'b0;
-        else if (sweep_start)
-            sweep_active <= 1'b1;
-        else if (sweep_done_sync2)
-            sweep_active <= 1'b0;
-    end
-
-    assign sweep_running = sweep_active;
-
-    // Synchronise sweep_active into the audio clock domain (2-FF)
-    logic sweep_active_sync1, sweep_active_sync2;
-    always_ff @(posedge audio_clk) begin
-        sweep_active_sync1 <= sweep_active;
-        sweep_active_sync2 <= sweep_active_sync1;
-    end
-
-    logic sweep_reset;
-    assign sweep_reset = ~sweep_active_sync2;
-
-    // 48 kHz tick divider + sample counter (audio clock domain)
-    logic [7:0]  smpl_div;
-    logic        smpl_en;
-    logic [31:0] sample_cnt;
-
-    always_ff @(posedge audio_clk) begin
-        if (sweep_reset) begin
-            smpl_div      <= 8'd0;
-            smpl_en       <= 1'b0;
-            sample_cnt    <= 32'd0;
-            sweep_done_audio <= 1'b0;
+                4'd4: lut_addr    <= writedata[9:0];
+                4'd5: begin
+                    we_lut   <= 1'b1;
+                    lut_data <= writedata[23:0];
+                end
+                4'd6: fft_rd_addr <= writedata[12:0];
+                default: ;
+            endcase
         end else begin
-            smpl_en  <= (smpl_div == 8'd255);
-            smpl_div <= smpl_div + 8'd1;
-
-            if (smpl_en && !sweep_done_audio) begin
-                if (sample_cnt == sweep_len - 1)
-                    sweep_done_audio <= 1'b1;
-                else
-                    sample_cnt <= sample_cnt + 32'd1;
-            end
+            we_lut      <= 1'b0;
+            sweep_start <= 1'b0;
         end
     end
 
-    // ── Sweep generator ───────────────────────────────────────
-    logic [23:0] amplitude;
-
+    // ── Sweep generator ──────────────────────────────────────
     sweep_generator sweep_inst (
         .clock    (audio_clk),
         .reset    (sweep_reset),
         .amplitude(amplitude),
         .clk_sys  (clk),
         .we_lut   (we_lut),
-        .addr_lut (addr_lut),
-        .din_lut  (din_lut)
+        .addr_lut (lut_addr),
+        .din_lut  (lut_data),
+        .start    (sweep_start_audio),
+        .done     (sweep_done)
     );
 
-    // ── I2S transmitter ───────────────────────────────────────
-    // Mono: same sample on both channels
+    // ── I2S transmitter ──────────────────────────────────────
     i2s_tx i2s_inst (
         .clock        (audio_clk),
         .reset        (sweep_reset),
@@ -212,6 +246,25 @@ module room_eq_peripheral(
         .bclk         (bclk_int),
         .lrck         (lrck_int),
         .dacdat       (AUD_DACDAT)
+    );
+
+    // ── Calibration engine ───────────────────────────────────
+    calibration_engine calib_inst (
+        .sysclk        (clk),
+        .bclk          (bclk_int),
+        .lrclk         (lrck_int),
+        .aclr          (rst_sync2),
+        .start         (calibrate_start),
+        .left_chan      (rx_left),
+        .rd_addr       (fft_rd_addr),
+        .rd_real       (fft_rd_real),
+        .rd_imag       (fft_rd_imag),
+        .fft_done      (fft_done),
+        .fifo_hps_mode (fifo_hps_mode),
+        .fifo_hps_pop  (fifo_hps_pop),
+        .fifo_data_out (fifo_data_out),
+        .fifo_data_valid(fifo_data_valid),
+        .fifo_empty    (fifo_empty)
     );
 
 endmodule

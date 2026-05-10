@@ -4,6 +4,8 @@
 			audio_dacdat                 : out   std_logic;                                        -- dacdat
 			audio_daclrck                : out   std_logic;                                        -- daclrck
 			audio_xck                    : out   std_logic;                                        -- xck
+			audio_adcdat                 : in    std_logic                     := 'X';             -- adcdat
+			audio_adclrck                : out   std_logic;                                        -- adclrck
 			clk_clk                      : in    std_logic                     := 'X';             -- clk
 			fpga_i2c_sda_in              : in    std_logic                     := 'X';             -- sda_in
 			fpga_i2c_scl_in              : in    std_logic                     := 'X';             -- scl_in

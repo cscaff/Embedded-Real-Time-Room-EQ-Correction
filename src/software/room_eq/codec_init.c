@@ -1,19 +1,27 @@
 /*
  * codec_init.c — Initialize the WM8731 codec via the FPGA I2C master
- *                and start the Room EQ sweep.
+ *                and run Room EQ calibration.
  *
  * The Avalon I2C master IP is at offset 0x00 from the lightweight bridge.
- * The room_eq_peripheral is at offset 0x40.
+ * The room_eq_peripheral is at offset 0x2000.
  *
- * Configures the codec for:
- *   - I2S slave mode, 24-bit, 48 kHz
- *   - LINE IN selected, unmuted
- *   - Headphone output unmuted, near-max volume
- *   - DAC selected, no bypass
- *   - All power blocks on
- *   - Codec active
+ * Register map (word offsets from room_eq_peripheral base):
+ *   0: CTRL       — [0] sweep_start (W, self-clears), [1] fifo_hps_mode (R/W)
+ *   1: STATUS     — [3:0] FSM state, [4] fft_done, [5] fifo_empty
+ *   3: VERSION    — 0x0001_0000
+ *   4: LUT_ADDR   — 10-bit write address for sine LUT
+ *   5: LUT_DATA   — 24-bit write data for sine LUT (fires we_lut)
+ *   6: FFT_ADDR   — 13-bit read address for FFT results
+ *   7: FFT_RDATA  — 24-bit real part at FFT_ADDR
+ *   8: FFT_IDATA  — 24-bit imaginary part at FFT_ADDR
+ *   9: ADC_LEFT   — 24-bit latest left ADC sample
+ *  10: FIFO_RDATA — 24-bit pop-on-read from DCFIFO
  *
- * Usage: gcc -o codec_init codec_init.c && ./codec_init
+ * Usage:
+ *   ./codec_init       — init codec + load LUT + start sweep
+ *   ./codec_init m     — mic test (continuous ADC readback via reg 9)
+ *   ./codec_init f     — FIFO test (Stage 1: read raw samples through DCFIFO)
+ *   ./codec_init c     — full calibration (continuous FFT during sweep)
  */
 
 #include <stdio.h>
@@ -30,37 +38,58 @@
 #define LW_BRIDGE_SPAN   0x00200000
 
 #define I2C_BASE_OFFSET  0x0000
-#define ROOM_EQ_OFFSET   0x2000  /* must match baseAddress in soc_system.qsys */
+#define ROOM_EQ_OFFSET   0x2000
 
 /* ── Avalon I2C Master registers (byte offsets) ──────────── */
-/* See Intel Avalon I2C Master Core User Guide */
 
-#define I2C_TFR_CMD      0x00  /* Transfer Command FIFO */
-#define I2C_RX_DATA      0x04  /* Receive Data FIFO */
-#define I2C_CTRL         0x08  /* Control register */
-#define I2C_ISER         0x0C  /* Interrupt Status Enable */
-#define I2C_ISR          0x10  /* Interrupt Status */
-#define I2C_STATUS       0x14  /* Status register */
-#define I2C_TFR_CMD_FIFO_LVL  0x18  /* Transfer Command FIFO Level */
-#define I2C_RX_DATA_FIFO_LVL  0x1C  /* Receive Data FIFO Level */
-#define I2C_SCL_LOW      0x20  /* SCL Low Count */
-#define I2C_SCL_HIGH     0x24  /* SCL High Count */
-#define I2C_SDA_HOLD     0x28  /* SDA Hold Count */
+#define I2C_TFR_CMD      0x00
+#define I2C_RX_DATA      0x04
+#define I2C_CTRL         0x08
+#define I2C_ISER         0x0C
+#define I2C_ISR          0x10
+#define I2C_STATUS       0x14
+#define I2C_SCL_LOW      0x20
+#define I2C_SCL_HIGH     0x24
+#define I2C_SDA_HOLD     0x28
 
-/* TFR_CMD bits */
-#define TFR_CMD_STA      (1 << 9)   /* START condition */
-#define TFR_CMD_STO      (1 << 8)   /* STOP condition */
-#define TFR_CMD_RW_D     (0 << 8)   /* Data transfer (no STA/STO) */
-
-/* STATUS bits */
-#define STATUS_CORE_STATUS  (1 << 0)  /* 1 = busy */
-
-/* CTRL bits */
-#define CTRL_EN          (1 << 0)   /* Core enable */
+#define TFR_CMD_STA      (1 << 9)
+#define TFR_CMD_STO      (1 << 8)
+#define STATUS_CORE_STATUS  (1 << 0)
+#define CTRL_EN          (1 << 0)
 
 /* ── WM8731 ──────────────────────────────────────────────── */
 
-#define WM8731_ADDR      0x1A  /* 7-bit I2C address */
+#define WM8731_ADDR      0x1A
+
+/* ── Room EQ register offsets (word offsets) ──────────────── */
+
+#define CTRL_REG        0
+#define STATUS_REG      1
+#define VERSION_REG     3
+#define LUT_ADDR_REG    4
+#define LUT_DATA_REG    5
+#define FFT_ADDR_REG    6
+#define FFT_RDATA_REG   7
+#define FFT_IDATA_REG   8
+#define ADC_LEFT_REG    9
+#define FIFO_RDATA_REG  10
+
+/* CTRL bits */
+#define CTRL_SWEEP_START   (1 << 0)
+#define CTRL_FIFO_HPS_MODE (1 << 1)
+
+/* STATUS bits */
+#define STATUS_STATE_MASK  0xF
+#define STATUS_FFT_DONE    (1 << 4)
+#define STATUS_FIFO_EMPTY  (1 << 5)
+
+/* FSM states */
+#define STATE_IDLE     0
+#define STATE_SWEEP    1
+#define STATE_DONE     2
+
+#define LUT_SIZE       1024
+#define FFT_SIZE       8192
 
 static volatile uint32_t *i2c_base;
 static volatile uint32_t *room_eq_base;
@@ -86,55 +115,31 @@ static void i2c_wait_idle(void)
 
 static void i2c_init(void)
 {
-    /* Disable core during setup */
     i2c_write_reg(I2C_CTRL, 0);
-
-    /* Set SCL timing for ~100 kHz
-       50 MHz / 100 kHz = 500 total counts
-       Low = 250, High = 250 */
     i2c_write_reg(I2C_SCL_LOW, 250);
     i2c_write_reg(I2C_SCL_HIGH, 250);
     i2c_write_reg(I2C_SDA_HOLD, 30);
-
-    /* Enable core */
     i2c_write_reg(I2C_CTRL, CTRL_EN);
-
     usleep(1000);
 }
 
-/*
- * WM8731 register write: 7-bit register + 9-bit data
- * I2C transaction: START, addr+W, byte1, byte2, STOP
- *   byte1 = {reg[6:0], data[8]}
- *   byte2 = data[7:0]
- */
 static int wm8731_write(uint8_t reg, uint16_t data)
 {
     uint8_t byte1 = (reg << 1) | ((data >> 8) & 0x01);
     uint8_t byte2 = data & 0xFF;
 
     i2c_wait_idle();
-
-    /* START + slave address + W */
     i2c_write_reg(I2C_TFR_CMD, TFR_CMD_STA | (WM8731_ADDR << 1) | 0);
-
-    /* Data byte 1 */
     i2c_write_reg(I2C_TFR_CMD, byte1);
-
-    /* Data byte 2 + STOP */
     i2c_write_reg(I2C_TFR_CMD, TFR_CMD_STO | byte2);
-
     i2c_wait_idle();
 
-    /* Check for NACK — read ISR */
     uint32_t isr = i2c_read_reg(I2C_ISR);
-    if (isr & (1 << 2)) {  /* NACK bit */
-        /* Clear it */
+    if (isr & (1 << 2)) {
         i2c_write_reg(I2C_ISR, isr);
         fprintf(stderr, "NACK on reg 0x%02x\n", reg);
         return -1;
     }
-
     return 0;
 }
 
@@ -146,19 +151,19 @@ static int codec_init(void)
     printf("Configuring WM8731 codec...\n");
     int err = 0;
 
-    err |= wm8731_write(0x0F, 0x000);  /* Reset */
-    usleep(10000);                       /* Wait after reset */
+    err |= wm8731_write(0x0F, 0x000);
+    usleep(10000);
 
-    err |= wm8731_write(0x00, 0x017);  /* Left Line In: 0dB, no mute */
-    err |= wm8731_write(0x01, 0x017);  /* Right Line In: 0dB, no mute */
-    err |= wm8731_write(0x02, 0x079);  /* Left HP Out: near max */
-    err |= wm8731_write(0x03, 0x079);  /* Right HP Out: near max */
-    err |= wm8731_write(0x04, 0x015);  /* Analog: DAC, mic input, +20dB boost */
-    err |= wm8731_write(0x05, 0x000);  /* Digital: no mute */
-    err |= wm8731_write(0x06, 0x000);  /* Power: all on */
-    err |= wm8731_write(0x07, 0x00A);  /* Format: I2S, 24-bit, slave */
-    err |= wm8731_write(0x08, 0x000);  /* Sampling: normal, 48kHz */
-    err |= wm8731_write(0x09, 0x001);  /* Active */
+    err |= wm8731_write(0x00, 0x017);
+    err |= wm8731_write(0x01, 0x017);
+    err |= wm8731_write(0x02, 0x079);
+    err |= wm8731_write(0x03, 0x079);
+    err |= wm8731_write(0x04, 0x015);
+    err |= wm8731_write(0x05, 0x000);
+    err |= wm8731_write(0x06, 0x000);
+    err |= wm8731_write(0x07, 0x00A);
+    err |= wm8731_write(0x08, 0x000);
+    err |= wm8731_write(0x09, 0x001);
 
     if (err)
         printf("Some codec writes failed (NACKs)\n");
@@ -170,44 +175,39 @@ static int codec_init(void)
 
 /* ── Sine LUT ─────────────────────────────────────────────── */
 
-/*
- * LUT_BASE_OFFSET and LUT_SIZE must match the localparams in
- * room_eq_peripheral.sv (LUT_BASE and LUT_SIZE).
- *
- * The BRAM holds LUT_SIZE quarter-wave sine values (24-bit signed).
- * Entry i = sin(i * π / (2 * LUT_SIZE)) * 8388607
- */
-#define LUT_BASE_OFFSET  4
-#define LUT_SIZE         1024
-
 static void load_sine_lut(void)
 {
     printf("Loading sine LUT (%d entries)...\n", LUT_SIZE);
     for (int i = 0; i < LUT_SIZE; i++) {
         double  angle = i * M_PI / (2.0 * LUT_SIZE);
         int32_t val   = (int32_t)(sin(angle) * 8388607.0);
-        room_eq_base[LUT_BASE_OFFSET + i] = (uint32_t)(val & 0x00FFFFFF);
+        room_eq_base[LUT_ADDR_REG] = i;
+        room_eq_base[LUT_DATA_REG] = (uint32_t)(val & 0x00FFFFFF);
     }
     printf("Sine LUT loaded.\n");
 }
 
-/* ── Room EQ peripheral ──────────────────────────────────── */
+/* ── Sign-extend 24-bit to 32-bit ─────────────────────────── */
 
-#define CTRL_REG      0   /* word offset 0: bit 0 = sweep_start */
-#define ADC_LEFT_REG  1   /* word offset 1: latest left ADC sample (24-bit) */
+static int32_t sign_extend_24(uint32_t val)
+{
+    return (val & 0x800000) ? (int32_t)(val | 0xFF000000) : (int32_t)val;
+}
+
+/* ── Sweep ────────────────────────────────────────────────── */
 
 static int start_sweep(void)
 {
-    /* Write 1 to start the sweep */
-    room_eq_base[CTRL_REG] = 0x1;
+    /* Start sweep with FFT mode (fifo_hps_mode=0) */
+    room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
     printf("Sweep started.\n");
 
     usleep(1000);
 
-    /* Read back status */
-    uint32_t status = room_eq_base[CTRL_REG];
-    printf("CTRL reg: 0x%08x (sweep_running = %d)\n",
-           status, (status >> 1) & 1);
+    uint32_t status = room_eq_base[STATUS_REG];
+    printf("STATUS: 0x%08x (state=%d, fft_done=%d)\n",
+           status, status & STATUS_STATE_MASK,
+           (status >> 4) & 1);
 
     return 0;
 }
@@ -216,17 +216,16 @@ static int start_sweep(void)
 
 static void mic_test(void)
 {
-    /* Load LUT and start sweep so BCLK/LRCK are running */
     load_sine_lut();
-    room_eq_base[CTRL_REG] = 0x1;
-    usleep(50000);  /* 50 ms — let clocks stabilise */
+    room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
+    usleep(50000);
 
     printf("\nMic test — make noise! (Ctrl-C to stop)\n");
     uint32_t prev = 0xDEADBEEF;
     while (1) {
         uint32_t raw = room_eq_base[ADC_LEFT_REG] & 0x00FFFFFF;
         if (raw != prev) {
-            int32_t sample = (raw & 0x800000) ? (int32_t)(raw | 0xFF000000) : (int32_t)raw;
+            int32_t sample = sign_extend_24(raw);
             printf("ADC left: 0x%06x  (%d)\n", raw, sample);
             fflush(stdout);
             prev = raw;
@@ -235,12 +234,117 @@ static void mic_test(void)
     }
 }
 
+/* ── FIFO test (Stage 1) ──────────────────────────────────── */
+
+static void fifo_test(void)
+{
+    load_sine_lut();
+
+    /* Set fifo_hps_mode=1, then start sweep */
+    room_eq_base[CTRL_REG] = CTRL_FIFO_HPS_MODE;
+    usleep(1000);
+    room_eq_base[CTRL_REG] = CTRL_FIFO_HPS_MODE | CTRL_SWEEP_START;
+    usleep(50000);  /* let BCLK/LRCK stabilize */
+
+    printf("\nFIFO test — reading raw ADC samples through DCFIFO (Ctrl-C to stop)\n");
+    printf("sample_num,value\n");
+
+    int count = 0;
+    while (count < 2000) {
+        uint32_t status = room_eq_base[STATUS_REG];
+        if (!(status & STATUS_FIFO_EMPTY)) {
+            uint32_t raw = room_eq_base[FIFO_RDATA_REG] & 0x00FFFFFF;
+            int32_t sample = sign_extend_24(raw);
+            printf("%d,%d\n", count, sample);
+            count++;
+        } else {
+            usleep(100);  /* wait for FIFO to fill */
+        }
+    }
+
+    printf("Read %d samples from FIFO.\n", count);
+}
+
+/* ── Full calibration (Stage 2+3) ─────────────────────────── */
+
+static void calibrate(void)
+{
+    load_sine_lut();
+
+    /* FFT mode (fifo_hps_mode=0), start sweep */
+    printf("Starting calibration sweep (continuous FFT)...\n");
+    room_eq_base[CTRL_REG] = CTRL_SWEEP_START;
+
+    int frame_num = 0;
+    int n_bins = FFT_SIZE / 2 + 1;
+
+    /* Loop: poll fft_done, read each FFT frame, until sweep finishes */
+    while (1) {
+        uint32_t status = room_eq_base[STATUS_REG];
+        uint32_t fsm_state = status & STATUS_STATE_MASK;
+
+        /* Check if FFT frame is ready */
+        if (status & STATUS_FFT_DONE) {
+            printf("# frame %d\n", frame_num);
+
+            /* Read all bins for this frame */
+            for (int i = 0; i < n_bins; i++) {
+                room_eq_base[FFT_ADDR_REG] = i;
+                usleep(1);
+                uint32_t re = room_eq_base[FFT_RDATA_REG] & 0xFFFFFF;
+                uint32_t im = room_eq_base[FFT_IDATA_REG] & 0xFFFFFF;
+                int32_t real_val = sign_extend_24(re);
+                int32_t imag_val = sign_extend_24(im);
+                printf("%d,%d,%d,%d\n", frame_num, i, real_val, imag_val);
+            }
+
+            frame_num++;
+
+            /* Wait for fft_done to clear (next frame SOP) before polling again */
+            while (room_eq_base[STATUS_REG] & STATUS_FFT_DONE)
+                usleep(100);
+        }
+
+        /* Check if sweep is done */
+        if (fsm_state == STATE_DONE) {
+            /* Read final frame if available */
+            status = room_eq_base[STATUS_REG];
+            if (status & STATUS_FFT_DONE) {
+                printf("# frame %d (final)\n", frame_num);
+                for (int i = 0; i < n_bins; i++) {
+                    room_eq_base[FFT_ADDR_REG] = i;
+                    usleep(1);
+                    uint32_t re = room_eq_base[FFT_RDATA_REG] & 0xFFFFFF;
+                    uint32_t im = room_eq_base[FFT_IDATA_REG] & 0xFFFFFF;
+                    printf("%d,%d,%d,%d\n", frame_num, i,
+                           sign_extend_24(re), sign_extend_24(im));
+                }
+                frame_num++;
+            }
+            break;
+        }
+
+        usleep(1000);  /* poll interval */
+    }
+
+    printf("Calibration complete. %d FFT frames captured.\n", frame_num);
+}
+
 /* ── Main ─────────────────────────────────────────────────── */
 
 int main(int argc, char *argv[])
 {
-    int do_mic_test = (argc > 1 && argv[1][0] == 'm');
-    printf("Room EQ — Codec Init + %s\n", do_mic_test ? "Mic Test" : "Sweep Start");
+    int mode = 0;  /* 0=sweep, 1=mic, 2=fifo, 3=calibrate */
+    if (argc > 1) {
+        switch (argv[1][0]) {
+        case 'm': mode = 1; break;
+        case 'f': mode = 2; break;
+        case 'c': mode = 3; break;
+        }
+    }
+
+    const char *mode_names[] = {"Sweep", "Mic Test", "FIFO Test", "Calibration"};
+    printf("Room EQ — Codec Init + %s\n", mode_names[mode]);
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd < 0) {
@@ -262,11 +366,20 @@ int main(int argc, char *argv[])
     if (codec_init() < 0)
         fprintf(stderr, "Warning: codec init had errors\n");
 
-    if (do_mic_test) {
-        mic_test();  /* loops forever until Ctrl-C */
-    } else {
+    switch (mode) {
+    case 0:
         load_sine_lut();
         start_sweep();
+        break;
+    case 1:
+        mic_test();
+        break;
+    case 2:
+        fifo_test();
+        break;
+    case 3:
+        calibrate();
+        break;
     }
 
     munmap(base, LW_BRIDGE_SPAN);
