@@ -25,7 +25,8 @@ module sweep_generator(
     addr_lut, // LUT Write Address
     din_lut, // LUT Write Data
     start, // Start Trigger
-    done  // Sweep complete (latches high at 20 kHz)
+    done,  // Sweep complete (latches high at 20 kHz)
+    lrck   // I2S frame clock for sample sync
     );
 
     // Inputs and outputs:
@@ -39,12 +40,16 @@ module sweep_generator(
     input          start;
     output         done;
 
-    // Clock Division for Sweep Generation (Convert 12.288 MHz to 48 kHz)
-    logic [7:0] clk_div; // 8-bit Counter to divide 12.288 by 256 = 48 kHz
-    logic       sample_en; // Sample Enable goes high every wrap around.
+    // Sample enable derived from LRCK falling edge (from I2S clock gen).
+    // This ensures the sweep amplitude updates in sync with the I2S frame,
+    // eliminating sample jitter that caused audio distortion at mid/high frequencies.
+    input          lrck;  // I2S frame clock from i2s_tx
 
-    // Register to hold the current state of the sweep generator
+    logic lrck_d;
+    wire  lrck_fall = lrck_d & ~lrck;
+
     logic sweep_active;
+    wire  sample_en = lrck_fall & sweep_active & !done;
 
     // Reset phase_accumulator on system reset OR new start pulse
     // so the sweep can be re-triggered from DONE state.
@@ -52,16 +57,12 @@ module sweep_generator(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            clk_div   <= '0;
-            sample_en <= 1'b0;
+            lrck_d <= 1'b0;
             sweep_active <= 1'b0;
         end else if (start) begin
             sweep_active <= 1'b1;
-            clk_div   <= '0;
-            sample_en <= 1'b0;
         end else begin
-            sample_en <= (clk_div == 8'd255) & sweep_active & !done;
-            clk_div   <= clk_div + 1'b1;
+            lrck_d <= lrck;
         end
     end
 
