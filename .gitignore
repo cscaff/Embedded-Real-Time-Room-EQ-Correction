@@ -4,7 +4,7 @@
 # Simulation Output
 sim_out/*
 
-# Quartus generated files
+# Quartus generated files (old quartus/ layout — kept for reference)
 quartus/db/
 quartus/incremental_db/
 quartus/output_files/
@@ -16,8 +16,23 @@ quartus/*.pof
 quartus/*.jdi
 quartus/*.qws
 quartus/*.sopcinfo
-
-# Platform Designer generated synthesis output (keep the .qsys, ignore generated HDL)
 quartus/room_eq_system/synthesis/
 quartus/room_eq_system/simulation/
 db/*
+
+# lab3-hw Quartus build artifacts
+lab3-hw/db/
+lab3-hw/incremental_db/
+lab3-hw/.qsys_edit/
+lab3-hw/*.qws
+lab3-hw/*.sopcinfo
+
+# lab3-hw output_files: keep .rbf (SD card boot image), ignore everything else
+lab3-hw/output_files/*.rpt
+lab3-hw/output_files/*.summary
+lab3-hw/output_files/*.smsg
+lab3-hw/output_files/*.sof
+lab3-hw/output_files/*.sld
+lab3-hw/output_files/*.jdi
+lab3-hw/output_files/*.done
+lab3-hw/output_files/*.flow.rpt

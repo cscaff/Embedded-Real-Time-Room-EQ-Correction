@@ -47,6 +47,7 @@ add_fileset_file i2s_clock_gen.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_pe
 add_fileset_file i2s_shift_register.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv
 add_fileset_file i2s_tx.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv
 add_fileset_file sine_lut.sv SYSTEM_VERILOG PATH ../src/hardware/memory/sine_lut.sv
+add_fileset_file i2s_rx.sv SYSTEM_VERILOG PATH ../src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv
 
 
 # 
@@ -142,6 +143,8 @@ add_interface_port audio AUD_BCLK bclk Output 1
 add_interface_port audio AUD_DACDAT dacdat Output 1
 add_interface_port audio AUD_DACLRCK daclrck Output 1
 add_interface_port audio AUD_XCK xck Output 1
+add_interface_port audio AUD_ADCDAT adcdat Input 1
+add_interface_port audio AUD_ADCLRCK adclrck Output 1
 
 
 # 

@@ -153,7 +153,7 @@ static int codec_init(void)
     err |= wm8731_write(0x01, 0x017);  /* Right Line In: 0dB, no mute */
     err |= wm8731_write(0x02, 0x079);  /* Left HP Out: near max */
     err |= wm8731_write(0x03, 0x079);  /* Right HP Out: near max */
-    err |= wm8731_write(0x04, 0x012);  /* Analog: DAC, line in */
+    err |= wm8731_write(0x04, 0x015);  /* Analog: DAC, mic input, +20dB boost */
     err |= wm8731_write(0x05, 0x000);  /* Digital: no mute */
     err |= wm8731_write(0x06, 0x000);  /* Power: all on */
     err |= wm8731_write(0x07, 0x00A);  /* Format: I2S, 24-bit, slave */
@@ -193,7 +193,8 @@ static void load_sine_lut(void)
 
 /* ── Room EQ peripheral ──────────────────────────────────── */
 
-#define CTRL_REG  0  /* word offset 0: bit 0 = sweep_start */
+#define CTRL_REG      0   /* word offset 0: bit 0 = sweep_start */
+#define ADC_LEFT_REG  1   /* word offset 1: latest left ADC sample (24-bit) */
 
 static int start_sweep(void)
 {
@@ -211,11 +212,35 @@ static int start_sweep(void)
     return 0;
 }
 
+/* ── Mic test ─────────────────────────────────────────────── */
+
+static void mic_test(void)
+{
+    /* Load LUT and start sweep so BCLK/LRCK are running */
+    load_sine_lut();
+    room_eq_base[CTRL_REG] = 0x1;
+    usleep(50000);  /* 50 ms — let clocks stabilise */
+
+    printf("\nMic test — make noise! (Ctrl-C to stop)\n");
+    uint32_t prev = 0xDEADBEEF;
+    while (1) {
+        uint32_t raw = room_eq_base[ADC_LEFT_REG] & 0x00FFFFFF;
+        if (raw != prev) {
+            int32_t sample = (raw & 0x800000) ? (int32_t)(raw | 0xFF000000) : (int32_t)raw;
+            printf("ADC left: 0x%06x  (%d)\n", raw, sample);
+            fflush(stdout);
+            prev = raw;
+        }
+        usleep(10000);
+    }
+}
+
 /* ── Main ─────────────────────────────────────────────────── */
 
 int main(int argc, char *argv[])
 {
-    printf("Room EQ — Codec Init + Sweep Start\n");
+    int do_mic_test = (argc > 1 && argv[1][0] == 'm');
+    printf("Room EQ — Codec Init + %s\n", do_mic_test ? "Mic Test" : "Sweep Start");
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd < 0) {
@@ -237,8 +262,12 @@ int main(int argc, char *argv[])
     if (codec_init() < 0)
         fprintf(stderr, "Warning: codec init had errors\n");
 
-    load_sine_lut();
-    start_sweep();
+    if (do_mic_test) {
+        mic_test();  /* loops forever until Ctrl-C */
+    } else {
+        load_sine_lut();
+        start_sweep();
+    }
 
     munmap(base, LW_BRIDGE_SPAN);
     close(fd);

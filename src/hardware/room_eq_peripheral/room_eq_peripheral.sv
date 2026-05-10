@@ -10,10 +10,10 @@
  *   0         [0]       R/W      CTRL: bit 0 = sweep_start (write 1 to trigger,
  *                                             self-clears after one cycle)
  *                                      bit 1 = sweep_running (read-only)
- *   1         [31:0]    R        STATUS: reserved
+ *   1         [23:0]    R        ADC_LEFT: latest left-channel sample from I2S RX
  *   2         [31:0]    R/W      SWEEP_LEN: sweep length in samples (default 480000 = 10s)
  *   3         [31:0]    R        VERSION: 32'h0001_0000
- *   4..259    [23:0]    W        SINE_LUT: quarter-wave sine BRAM (256 × 24-bit)
+ *   4..1027   [23:0]    W        SINE_LUT: quarter-wave sine BRAM (1024 × 24-bit)
  *                                Write offset (LUT_BASE + i) with sin(i×π/512)×8388607
  *                                (LUT_BASE must match localparam below and codec_init.c)
  *
@@ -38,8 +38,10 @@ module room_eq_peripheral(
     // Audio conduit — directly to codec pins
     output logic        AUD_XCK,      // master clock to codec (12.288 MHz)
     output logic        AUD_BCLK,     // I2S bit clock
-    output logic        AUD_DACDAT,   // I2S serial data
-    output logic        AUD_DACLRCK  // I2S frame clock (L/R)
+    output logic        AUD_DACDAT,   // I2S DAC serial data (FPGA → codec)
+    output logic        AUD_DACLRCK, // I2S DAC frame clock (L/R)
+    output logic        AUD_ADCLRCK, // I2S ADC frame clock (tied to DACLRCK)
+    input  logic        AUD_ADCDAT   // I2S ADC serial data (codec → FPGA)
 );
 
     // ── Address map ──────────────────────────────────────────
@@ -51,6 +53,12 @@ module room_eq_peripheral(
     // ── Forward master clock to codec ────────────────────────
     assign AUD_XCK = audio_clk;
 
+    // ── Internal BCLK/LRCK wires (shared by TX and RX) ───────
+    logic bclk_int, lrck_int;
+    assign AUD_BCLK    = bclk_int;
+    assign AUD_DACLRCK = lrck_int;
+    assign AUD_ADCLRCK = lrck_int;  // ADC and DAC share the same frame clock
+
     // ── Control registers ────────────────────────────────────
     logic        sweep_start;   // one-cycle pulse: HPS writes 1 to CTRL[0]
     logic        sweep_running; // read-only status
@@ -61,16 +69,29 @@ module room_eq_peripheral(
     logic  [9:0] addr_lut;
     logic [23:0] din_lut;
 
+    // ── I2S RX ────────────────────────────────────────────────
+    logic [23:0] rx_left, rx_right;
+
+    i2s_rx rx_inst (
+        .clock       (audio_clk),
+        .reset       (sweep_reset),
+        .bclk        (bclk_int),
+        .lrck        (lrck_int),
+        .adcdat      (AUD_ADCDAT),
+        .left_sample (rx_left),
+        .right_sample(rx_right)
+    );
+
     // ── Register read ────────────────────────────────────────
     always_comb begin
         readdata = 32'd0;
         if (chipselect && read)
             case (address)
                 11'd0:    readdata = {30'd0, sweep_running, 1'b0};
-                11'd1:    readdata = 32'd0;           // STATUS: reserved
+                11'd1:    readdata = {8'd0, rx_left};  // ADC_LEFT
                 11'd2:    readdata = sweep_len;
-                11'd3:    readdata = 32'h0001_0000;   // VERSION
-                default: readdata = 32'd0;           // LUT not readable
+                11'd3:    readdata = 32'h0001_0000;    // VERSION
+                default: readdata = 32'd0;             // LUT not readable
             endcase
     end
 
@@ -188,8 +209,8 @@ module room_eq_peripheral(
         .reset        (sweep_reset),
         .left_sample  (amplitude),
         .right_sample (amplitude),
-        .bclk         (AUD_BCLK),
-        .lrck         (AUD_DACLRCK),
+        .bclk         (bclk_int),
+        .lrck         (lrck_int),
         .dacdat       (AUD_DACDAT)
     );
 

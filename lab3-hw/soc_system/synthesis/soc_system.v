@@ -8,6 +8,8 @@ module soc_system (
 		output wire        audio_dacdat,                 //         .dacdat
 		output wire        audio_daclrck,                //         .daclrck
 		output wire        audio_xck,                    //         .xck
+		input  wire        audio_adcdat,                 //         .adcdat
+		output wire        audio_adclrck,                //         .adclrck
 		input  wire        clk_clk,                      //      clk.clk
 		input  wire        fpga_i2c_sda_in,              // fpga_i2c.sda_in
 		input  wire        fpga_i2c_scl_in,              //         .scl_in
@@ -364,6 +366,8 @@ module soc_system (
 		.AUD_DACDAT  (audio_dacdat),                                                     //               .dacdat
 		.AUD_DACLRCK (audio_daclrck),                                                    //               .daclrck
 		.AUD_XCK     (audio_xck),                                                        //               .xck
+		.AUD_ADCDAT  (audio_adcdat),                                                     //               .adcdat
+		.AUD_ADCLRCK (audio_adclrck),                                                    //               .adclrck
 		.audio_clk   (audio_pll_0_audio_clk_clk)                                         //      audio_clk.clk
 	);
 
