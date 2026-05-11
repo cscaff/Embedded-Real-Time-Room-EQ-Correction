@@ -189,6 +189,7 @@ static int capture_sweep(void)
     return n;
 }
 
+// Non-hardware capture test.
 static int load_sweep_csv(const char *fname)
 {
     FILE *f = fopen(fname, "r");
@@ -253,7 +254,7 @@ static void compute_room_response(int n_frames)
     /* Compensate for log sweep energy (1/f) */
     for (int b = 1; b < BINS_PER_FRAME; b++) {
         double freq_hz = b * hz_per_bin;
-        H_mag[b] *= (freq_hz / 1000.0);
+        H_mag[b] *= (freq_hz / 1000.0); // Normalization Heuristic 
     }
 
     /* Smooth */
@@ -264,8 +265,10 @@ static void compute_correction(int lo_hz, int hi_hz, double max_db,
                                 double strength)
 {
     double hz_per_bin = 48000.0 / FFT_SIZE;
+    // Convert Hz to bin indices, with safety checks.
     int lo_bin = (int)(lo_hz / hz_per_bin);
     int hi_bin = (int)(hi_hz / hz_per_bin);
+    // Clamp to valid range
     if (hi_bin > BINS_PER_FRAME) hi_bin = BINS_PER_FRAME;
 
     /* Mean level in correction range */
@@ -274,11 +277,12 @@ static void compute_correction(int lo_hz, int hi_hz, double max_db,
     for (int b = lo_bin; b < hi_bin; b++) {
         if (H_smooth[b] > 0) { sum += H_smooth[b]; count++; }
     }
-    double H_mean = sum / count;
+    double H_mean = sum / count; // Target level for correction.
     fprintf(stderr, "Target level: %.1f dB (mean of %d-%d Hz)\n",
             20 * log10(H_mean + 1), lo_hz, hi_hz);
 
     /* Compute correction per bin */
+    // Convert dB to linear gain limits.
     double max_boost = pow(10, max_db / 20.0);
     double max_cut = pow(10, -max_db / 20.0);
 
@@ -286,12 +290,15 @@ static void compute_correction(int lo_hz, int hi_hz, double max_db,
         correction[b] = 1.0;
 
     for (int b = lo_bin; b < hi_bin; b++) {
+        // Normalized response at this bin (relative to target level).
         double H_norm = H_smooth[b] / H_mean;
         if (H_norm > 0.001) {
+            // Invert Room Response
             double c = 1.0 / H_norm;
-            if (c > max_boost) c = max_boost;
-            if (c < max_cut) c = max_cut;
-            c = 1.0 + strength * (c - 1.0);
+            if (c > max_boost) c = max_boost; // Clamping 
+            if (c < max_cut) c = max_cut; // Clamping
+            // Apply strength control (0.0 = no correction, 1.0 = full correction)
+            c = 1.0 + strength * (c - 1.0); 
             correction[b] = c;
         }
     }
@@ -319,8 +326,10 @@ static double *compute_fir_taps(int n_taps)
     double *taps = calloc(n_taps, sizeof(double));
     int half = n_taps / 2;
 
+    // FFTW's r2c output is in "wrap-around" order, so we take the end and the beginning of time_buf.
     for (int i = 0; i < half; i++)
         taps[i] = time_buf[FFT_SIZE - half + i] / FFT_SIZE;
+    // Places second half of the impulse after the first half.
     for (int i = 0; i <= half; i++)
         taps[half + i] = time_buf[i] / FFT_SIZE;
 

@@ -35,32 +35,32 @@
 
 /* ── Memory map ──────────────────────────────────────────── */
 
-#define LW_BRIDGE_BASE   0xFF200000
-#define LW_BRIDGE_SPAN   0x00200000
+#define LW_BRIDGE_BASE   0xFF200000 // Lightweight HPS - FPGA Bridge
+#define LW_BRIDGE_SPAN   0x00200000 // Width in Bytes 
 
-#define I2C_BASE_OFFSET  0x0000
-#define ROOM_EQ_OFFSET   0x2000
+#define I2C_BASE_OFFSET  0x0000 // I2C Base Address in bridge
+#define ROOM_EQ_OFFSET   0x2000 // Room EQ Peripheral Base Address in bridge
 
 /* ── Avalon I2C Master registers (byte offsets) ──────────── */
 
-#define I2C_TFR_CMD      0x00
-#define I2C_RX_DATA      0x04
-#define I2C_CTRL         0x08
-#define I2C_ISER         0x0C
-#define I2C_ISR          0x10
-#define I2C_STATUS       0x14
-#define I2C_SCL_LOW      0x20
-#define I2C_SCL_HIGH     0x24
-#define I2C_SDA_HOLD     0x28
+#define I2C_TFR_CMD      0x00 // main transmit command register
+#define I2C_RX_DATA      0x04 // data received from the I2C bus
+#define I2C_CTRL         0x08 // data received from the I2C bus
+#define I2C_ISER         0x0C // Interrupt enable register
+#define I2C_ISR          0x10 // Interrupt enable register
+#define I2C_STATUS       0x14 // General controller state register
+#define I2C_SCL_LOW      0x20 // SCL low period in clock cycles (for 100 kHz, at 50 MHz: 250 cycles)
+#define I2C_SCL_HIGH     0x24 // SCL high period in clock cycles (for 100 kHz, at 50 MHz: 250 cycles)
+#define I2C_SDA_HOLD     0x28 // Controls SDA hold timing.  (data remain stable briefly after clock edges)
 
-#define TFR_CMD_STA      (1 << 9)
-#define TFR_CMD_STO      (1 << 8)
-#define STATUS_CORE_STATUS  (1 << 0)
-#define CTRL_EN          (1 << 0)
+#define TFR_CMD_STA      (1 << 9) // Start condition
+#define TFR_CMD_STO      (1 << 8) // Stop condition
+#define STATUS_CORE_STATUS  (1 << 0) // 0 indicates: I2C core is busy performing a transaction
+#define CTRL_EN          (1 << 0) // Enable I2C master
 
 /* ── WM8731 ──────────────────────────────────────────────── */
 
-#define WM8731_ADDR      0x1A
+#define WM8731_ADDR      0x1A // Address of WM8731 on I2C bus
 
 /* Analog path control (reg 0x04) options:
  *   0x010 = line-in, no boost, DAC selected
@@ -85,11 +85,11 @@ static int mic_boost = 1;      /* 0=no boost, 1=+20dB boost */
 #define FIFO_RDATA_REG  10
 
 /* CTRL bits */
-#define CTRL_SWEEP_START   (1 << 0)
-#define CTRL_FIFO_HPS_MODE (1 << 1)
+#define CTRL_SWEEP_START   (1 << 0) // Write 1 to start sweep.
+#define CTRL_FIFO_HPS_MODE (1 << 1) // Diagnostic - Routes FIFO samples to HPS.
 
 /* STATUS bits */
-#define STATUS_STATE_MASK  0xF
+#define STATUS_STATE_MASK  0xF // FSM States + FFT FLAGS
 #define STATUS_FFT_DONE    (1 << 4)
 #define STATUS_FIFO_EMPTY  (1 << 5)
 
@@ -114,6 +114,7 @@ static inline uint32_t i2c_read_reg(int reg)
     return *(volatile uint32_t *)((uint8_t *)i2c_base + reg);
 }
 
+// Wait until i2c is idle.
 static void i2c_wait_idle(void)
 {
     int timeout = 100000;
@@ -123,6 +124,7 @@ static void i2c_wait_idle(void)
         fprintf(stderr, "Warning: I2C timeout waiting for idle\n");
 }
 
+// Initialize I2C master with 100 kHz clock and enable it.
 static void i2c_init(void)
 {
     i2c_write_reg(I2C_CTRL, 0);
@@ -133,18 +135,24 @@ static void i2c_init(void)
     usleep(1000);
 }
 
+// 
 static int wm8731_write(uint8_t reg, uint16_t data)
 {
     uint8_t byte1 = (reg << 1) | ((data >> 8) & 0x01);
     uint8_t byte2 = data & 0xFF;
+    // byte1 = [reg bits][data bit 8]
+    // byte2 = [data bits 7:0]
 
     i2c_wait_idle();
+    // Send start + Address
     i2c_write_reg(I2C_TFR_CMD, TFR_CMD_STA | (WM8731_ADDR << 1) | 0);
+    // Sends [register bits + top data bit]
     i2c_write_reg(I2C_TFR_CMD, byte1);
+    // Sends second byte and stop condition
     i2c_write_reg(I2C_TFR_CMD, TFR_CMD_STO | byte2);
     i2c_wait_idle();
 
-    uint32_t isr = i2c_read_reg(I2C_ISR);
+    uint32_t isr = i2c_read_reg(I2C_ISR); // Check for NACK
     if (isr & (1 << 2)) {
         i2c_write_reg(I2C_ISR, isr);
         fprintf(stderr, "NACK on reg 0x%02x\n", reg);
@@ -161,9 +169,13 @@ static int codec_init(void)
     fprintf(stderr, "Configuring WM8731 codec...\n");
     int err = 0;
 
+    // Reset codec
     err |= wm8731_write(0x0F, 0x000);
     usleep(10000);
 
+    // configure left/right headphone or line outputs
+    // digital audio interface format
+    // sample rate and clocking behavior
     err |= wm8731_write(0x00, 0x017);
     err |= wm8731_write(0x01, 0x017);
     err |= wm8731_write(0x02, 0x079);
@@ -175,13 +187,13 @@ static int codec_init(void)
         fprintf(stderr, "Analog path: %s%s (reg04=0x%03x)\n",
                use_line_in ? "LINE-IN" : "MIC",
                (!use_line_in && mic_boost) ? " +20dB" : "", reg04);
-        err |= wm8731_write(0x04, reg04);
+        err |= wm8731_write(0x04, reg04); // analog path control
     }
-    err |= wm8731_write(0x05, 0x000);
-    err |= wm8731_write(0x06, 0x000);
-    err |= wm8731_write(0x07, 0x00A);
-    err |= wm8731_write(0x08, 0x000);
-    err |= wm8731_write(0x09, 0x001);
+    err |= wm8731_write(0x05, 0x000); 
+    err |= wm8731_write(0x06, 0x000); 
+    err |= wm8731_write(0x07, 0x00A); // digital audio interface: I2S, 24-bit, slave mode
+    err |= wm8731_write(0x08, 0x000); 
+    err |= wm8731_write(0x09, 0x001); // activate digital interface
 
     if (err)
         fprintf(stderr, "Some codec writes failed (NACKs)\n");
@@ -241,8 +253,8 @@ static void mic_test(void)
     printf("\nMic test — make noise! (Ctrl-C to stop)\n");
     uint32_t prev = 0xDEADBEEF;
     while (1) {
-        uint32_t raw = room_eq_base[ADC_LEFT_REG] & 0x00FFFFFF;
-        if (raw != prev) {
+        uint32_t raw = room_eq_base[ADC_LEFT_REG] & 0x00FFFFFF;  // 24 bit mask
+        if (raw != prev) { // Only prints changing samples.
             int32_t sample = sign_extend_24(raw);
             printf("ADC left: 0x%06x  (%d)\n", raw, sample);
             fflush(stdout);
@@ -270,7 +282,7 @@ static void fifo_test(void)
     int count = 0;
     while (count < 2000) {
         uint32_t status = room_eq_base[STATUS_REG];
-        if (!(status & STATUS_FIFO_EMPTY)) {
+        if (!(status & STATUS_FIFO_EMPTY)) { // Read while not empty. Pops on read.
             uint32_t raw = room_eq_base[FIFO_RDATA_REG] & 0x00FFFFFF;
             int32_t sample = sign_extend_24(raw);
             printf("%d,%d\n", count, sample);
