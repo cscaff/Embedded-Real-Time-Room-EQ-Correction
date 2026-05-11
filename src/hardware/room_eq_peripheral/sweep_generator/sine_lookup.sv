@@ -59,11 +59,16 @@ module sine_lookup(
     );
 
     // ── Interpolation pipeline ──────────────────────────────
-    // State: 0=idle, 1=reading index0, 2=reading index1, 3=interpolate
     reg [1:0] pipe_state;
-    reg [23:0] val0;          // LUT value at index0
-    reg [1:0]  quad_saved;    // quadrant saved at sample_en
-    reg [9:0]  frac_saved;    // fractional bits saved at sample_en
+    reg [23:0] val0;
+    reg [1:0]  quad_saved;
+    reg [9:0]  frac_saved;
+
+    // Interpolation math as combinational wires (no reg inside always)
+    wire signed [24:0] w_diff    = {1'b0, lut_out} - {1'b0, val0};
+    wire signed [34:0] w_product = w_diff * $signed({1'b0, frac_saved});
+    wire signed [24:0] w_interp  = {1'b0, val0} + w_product[34:10];
+    wire [23:0] interp_out = w_interp[23:0];
 
     always @(posedge clock or posedge reset) begin
         if (reset) begin
@@ -77,7 +82,6 @@ module sine_lookup(
             case (pipe_state)
                 2'd0: begin
                     if (sample_en) begin
-                        // Stage 0: present index0 to BRAM
                         bram_addr  <= index0;
                         quad_saved <= quadrant;
                         frac_saved <= frac_bits;
@@ -85,30 +89,17 @@ module sine_lookup(
                     end
                 end
                 2'd1: begin
-                    // Stage 1: lut_out has val at index0, present index1
                     val0       <= lut_out;
                     bram_addr  <= index1;
                     pipe_state <= 2'd2;
                 end
                 2'd2: begin
-                    // Stage 2: lut_out has val at index1, interpolate
-                    // lerp = val0 + frac * (val1 - val0) / 1024
-                    // Using signed arithmetic for the difference
-                    begin
-                        reg signed [24:0] diff;
-                        reg signed [34:0] product;
-                        reg signed [24:0] interp;
-                        diff    = {1'b0, lut_out} - {1'b0, val0};
-                        product = diff * $signed({1'b0, frac_saved});
-                        interp  = {1'b0, val0} + product[34:10];  // divide by 1024
-
-                        case (quad_saved)
-                            2'b00: amplitude <=  interp[23:0];
-                            2'b01: amplitude <=  interp[23:0];
-                            2'b10: amplitude <= -interp[23:0];
-                            2'b11: amplitude <= -interp[23:0];
-                        endcase
-                    end
+                    case (quad_saved)
+                        2'b00: amplitude <=  interp_out;
+                        2'b01: amplitude <=  interp_out;
+                        2'b10: amplitude <= -interp_out;
+                        2'b11: amplitude <= -interp_out;
+                    endcase
                     pipe_state <= 2'd0;
                 end
                 default: pipe_state <= 2'd0;
