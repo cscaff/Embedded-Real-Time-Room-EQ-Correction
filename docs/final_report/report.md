@@ -420,7 +420,68 @@ This I2S receiver module deserializes stereo 24-bit audio from the WM8731 codec.
 
 ## 3. Software System Architecture
 
-## 4. Demo 
+### HPS–FPGA Interface
+
+The software accesses all FPGA peripherals through the lightweight HPS-to-FPGA bridge, mapped into the HPS virtual address space using `/dev/mem`. At startup, `main` opens `/dev/mem` and calls `mmap` to map a 2 MB window starting at physical address `0xFF200000` (`LW_BRIDGE_BASE`) into process memory. Two typed pointers are then derived from this window:
+
+| Pointer | Offset | Physical Base | Target |
+|---------|--------|---------------|--------|
+| `i2c_base` | `0x0000` | `0xFF200000` | Altera soft I2C master (codec control) |
+| `room_eq_base` | `0x2000` | `0xFF202000` | Room EQ peripheral register bank |
+
+All peripheral reads and writes are 32-bit word accesses through `volatile uint32_t *` pointers — no kernel driver is used. We attempted to build a kernel module based on lab three, however, were unable to get the device tree set up properly. We fell back on this design, trading off security for simplicity.
+
+#### Room EQ Register Access
+
+`room_eq_base` is indexed by word offset, matching the hardware register map:
+
+| Offset | Name | Direction | Usage in software |
+|--------|------|-----------|-------------------|
+| 0 | `CTRL` | W | Write `(1 << 0)` to pulse `sweep_start` |
+| 1 | `STATUS` | R | Poll `[3:0]` for FSM state (2 = DONE), `[4]` for `fft_done` |
+| 4 | `LUT_ADDR` | W | Write sine LUT address (0–1023) before each `LUT_DATA` write |
+| 5 | `LUT_DATA` | W | Write 24-bit sine sample; hardware pulses `we_lut` on each write |
+| 6 | `FFT_ADDR` | W | Set bin index (0–4096) before reading result |
+| 7 | `FFT_RDATA` | R | Read real part of FFT bin at `FFT_ADDR` |
+| 8 | `FFT_IDATA` | R | Read imaginary part of FFT bin at `FFT_ADDR` |
+
+#### I2C / WM8731 Register Access
+
+`i2c_base` exposes the Altera I2C master's control registers. The software programs the codec over I2C by writing to `I2C_TFR_CMD` (`+0x00`) with start/stop control bits, reading `I2C_STATUS` (`+0x14`) to poll for idle, and checking `I2C_ISR` (`+0x10`) for NACK errors. The WM8731 7-bit I2C address is `0x1A`.
+
+### Algorithmic Pipeline
+
+The program executes the following stages in order.
+
+**1. Hardware Setup** (`main` → `hw_codec_init`)
+
+`/dev/mem` is opened and a 2 MB window is mapped. The Altera I2C master is configured (SCL period 500 ns), and 10 WM8731 registers are written over I2C to power up the codec, configure input gain (mic or line-in), enable DAC and ADC, set 24-bit I2S mode, and activate the digital core. This must complete before any audio signal is valid.
+
+**2. Sine LUT Load** (`load_sine_lut`)
+
+1024 quarter-wave samples are computed on the HPS as `sin(i * π / 2048) * 8388607` (scaled to 24-bit signed) and written to the FPGA sine LUT one entry at a time via `LUT_ADDR_REG` / `LUT_DATA_REG`. This initializes the sweep generator's BRAM before the sweep starts.
+
+**3. Sweep and FFT Capture** (`capture_sweep`)
+
+`CTRL_REG` is written with `sweep_start` (bit 0). The software then polls `STATUS_REG` in a tight loop. Each time bit 4 (`fft_done`) goes high, it reads all 4097 bins (`FFT_SIZE/2 + 1`) by writing `FFT_ADDR_REG` and reading `FFT_RDATA_REG` / `FFT_IDATA_REG` for each bin, storing the 24-bit sign-extended values into `frame_real[n]` / `frame_imag[n]`. After consuming a frame it waits for `fft_done` to deassert before continuing. The loop exits when `STATUS[3:0]` reaches `STATE_DONE` (2). Up to 64 frames are captured.
+
+**4. Room Response Computation** (`compute_room_response`)
+
+For each frequency bin, the peak magnitude across all captured frames is selected: `max(sqrt(re² + im²))`. Bins are then scaled by `freq_hz / 1000` to compensate for the 1/f energy distribution of a logarithmic sweep. The resulting spectrum is smoothed with a proportional-bandwidth (10%) sliding window to reduce noise before subsequent stages.
+
+**5. Correction Curve Computation** (`compute_correction`)
+
+The mean level of the smoothed response is computed over the target correction range (default 60 Hz – 20 kHz). Each bin's correction gain is set to the inverse of its normalized response (`1 / H_norm`), clamped to ±`max_db` (default ±12 dB), then blended toward unity by `strength` (default 0.5): `c = 1 + strength * (c - 1)`. Bins outside the correction range are set to unity gain.
+
+**6. FIR Tap Computation** (`compute_fir_taps`)
+
+The correction gain array (real-valued, one entry per bin) is treated as a half-complex frequency-domain spectrum and transformed to the time domain with FFTW's `c2r` inverse FFT. The center `n_taps` samples (default 511) are extracted from the wrap-around impulse response, multiplied by a Hanning window, and normalized so the DC gain equals 1. The result is a linear-phase FIR filter whose frequency response approximates the target correction curve.
+
+**7. Output**
+
+The `n_taps` tap coefficients are written one per line to a CSV file (default `correction_taps.csv`). A terminal frequency-response graph (32 log-spaced rows, 50-character bars) and a room analysis report listing peaks, dips, and standard deviation are printed to stdout.
+
+## 4. Demo
 
 
 
