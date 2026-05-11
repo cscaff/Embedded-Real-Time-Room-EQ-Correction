@@ -96,6 +96,30 @@ Each `sample_en` pulse advances a 5-state pipeline to produce one output sample:
 
 At 12.288 MHz with 256 clock cycles per 48 kHz sample period, the 5-cycle pipeline completes well before the next `sample_en` pulse.
 
+### Sine LUT
+
+The sine LUT is a true dual-port block RAM storing 1024 entries of 24-bit signed sine values, representing one quarter-wave of a full sine period. Port A is write-only and driven by the 50 MHz system clock, used exclusively at startup to load pre-computed values from the HPS. Port B is read-only and driven by the 12.288 MHz audio clock, used by the `sine_lookup` interpolation pipeline during the sweep. The two ports operate in entirely separate clock domains; correct operation depends on all Port A writes completing before any Port B reads begin, which is guaranteed by system-level sequencing.
+
+#### Interface
+
+| Direction | Signal | Width | Clock Domain | Description |
+|-----------|--------|-------|-------------|-------------|
+| Input | `clk_a` | 1 | 50 MHz | Port A write clock |
+| Input | `we_a` | 1 | `clk_a` | Write enable — high to write `din_a` into `mem[addr_a]` |
+| Input | `addr_a` | 10 | `clk_a` | Write address (0–1023) |
+| Input | `din_a` | 24 | `clk_a` | Signed sine value to store |
+| Input | `clk_b` | 1 | 12.288 MHz | Port B read clock |
+| Input | `addr_b` | 10 | `clk_b` | Read address driven by `sine_lookup` pipeline |
+| Output | `dout_b` | 24 | `clk_b` | Sine value at `mem[addr_b]`, registered — valid 1 cycle after `addr_b` |
+
+#### Port A — Write
+
+On each rising edge of `clk_a`, if `we_a` is high, `din_a` is written into `mem[addr_a]`. No read capability exists on Port A.
+
+#### Port B — Read
+
+On each rising edge of `clk_b`, `dout_b` is registered from `mem[addr_b]`, giving a one-cycle read latency. The `sine_lookup` pipeline accounts for this latency with its explicit wait states at pipeline stages 1 and 3.
+
 ### Calibration Engine
 
 The calibration engine captures the room's acoustic response by recording the microphone signal during a frequency sweep, streaming the samples through an FFT, and storing the resulting frequency-domain bins in a dual-port RAM for the HPS to read. It bridges two clock domains — the I2S bit clock (`bclk`) and the 50 MHz system clock (`sysclk`) — using a sample FIFO, and supports two drain modes: automatic FFT processing or direct HPS readout.
@@ -137,4 +161,99 @@ On `start`, a `running` latch arms the FFT input gate. Samples arriving from `sa
 A consumer MUX on the FIFO read port selects between two drain paths: `fft_to_fifo_ready` (backpressure from the FFT core) in normal mode, or `fifo_hps_pop` (one-cycle pulses from the HPS) in HPS mode. The reset path uses a 2-FF synchronizer on `sysclk` to derive `reset_n` from the async `aclr`, ensuring a glitch-free active-low reset for the FFT IP core.
 
 ### Sample FIFO
+
+The sample FIFO captures incoming I2S audio samples on the bit clock domain and makes them available to the FFT pipeline on the 50 MHz system clock domain. It wraps a Quartus-generated dual-clock FIFO (`capture_fifo`) with write and read request logic, using the falling edge of `lrclk` to clock in one 24-bit sample per stereo frame and backpressure from the FFT consumer to control the read side.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `bclk` | 1 | I2S bit clock (3.072 MHz) — write clock domain |
+| Input | `lrclk` | 1 | I2S left-right clock (48 kHz) — used to detect new sample boundaries |
+| Input | `left_chan` | 24 | 24-bit I2S audio sample (left channel) |
+| Input | `sysclk` | 1 | 50 MHz system clock — read clock domain |
+| Input | `aclr` | 1 | Active high async reset |
+| Input | `fft_ready` | 1 | Backpressure signal from FFT — high when FFT can accept a sample |
+| Output | `data_out` | 24 | 24-bit audio sample at the head of the FIFO |
+| Output | `data_valid` | 1 | High when the FIFO is non-empty and `data_out` is valid |
+
+#### Write Logic
+
+A falling edge detector on `lrclk` (registered on `bclk`) produces a one-cycle `lrclk_neg_edge` pulse once per 48 kHz frame, marking the boundary of a new left-channel sample. A write request (`wrreq`) is asserted on that pulse only if the FIFO is not full (`~wrfull`), preventing overflow drops.
+
+#### Read Logic
+
+The read side is entirely driven by backpressure. `data_valid` is the logical inverse of `rdempty` — it is high whenever the FIFO holds at least one sample. A read request (`rdreq`) fires only when both `data_valid` and `fft_ready` are high, so the FIFO stalls automatically when the downstream FFT core is not ready to consume.
+
+#### Clock Domain Crossing
+
+The underlying `capture_fifo` is a Quartus DCFIFO primitive with `bclk` as the write clock and `sysclk` as the read clock. All gray-code pointer synchronization is handled internally by the IP, so no additional CDC logic is required in this module.
+
+### Sample FFT
+
+The sample FFT module wraps a Quartus-generated 8192-point forward FFT IP core (`capture_fft`) with the SOP/EOP framing logic required by its variable-streaming interface. It accepts a stream of real-valued 24-bit audio samples from the sample FIFO and produces a stream of complex 24-bit frequency-domain bins. The imaginary input is tied to zero since all incoming samples are real.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `sysclk` | 1 | 50 MHz system clock |
+| Input | `reset_n` | 1 | Active low reset |
+| Input | `sink_real` | 24 | Real part of input sample from FIFO |
+| Input | `sink_valid` | 1 | High when input sample is valid and ready to be consumed |
+| Output | `sink_ready` | 1 | Backpressure from FFT core — high when the core can accept a sample |
+| Output | `source_real` | 24 | Real part of FFT output bin |
+| Output | `source_imag` | 24 | Imaginary part of FFT output bin |
+| Output | `source_valid` | 1 | High when the output bin is valid |
+| Output | `source_sop` | 1 | Start of packet — asserts on the first bin of each FFT frame |
+| Output | `source_eop` | 1 | End of packet — asserts on the last bin of each FFT frame |
+
+#### SOP/EOP Framing
+
+The Quartus FFT IP selected uses a variable-streaming interface that requires explicit start-of-packet and end-of-packet signals on the sink side to delimit each 8192-sample frame. A 13-bit counter (`sample_count`) tracks the number of samples consumed by the core, incrementing on every valid handshake (`sink_valid & sink_ready`) and wrapping at 8191.
+
+- `sink_sop` asserts when `sample_count == 0` (first sample of the frame)
+- `sink_eop` asserts when `sample_count == 8191` (last sample of the frame)
+
+#### Fixed Configuration
+
+Several inputs to the underlying IP are tied to constants in this module:
+
+| Signal | Value | Reason |
+|--------|-------|--------|
+| `fftpts_in` | 8192 | Fixed 8192-point transform |
+| `inverse` | 0 | Forward FFT only — IFFT not used |
+| `sink_imag` | 0 | Real-only input; no imaginary component |
+| `source_ready` | 1 | Downstream RAM never stalls — no backpressure needed |
+| `sink_error` | 0 | Error injection not used |
+
+The core is instantiated as bidirectional (FFT + IFFT) solely because Quartus requires the bidirectional variant to support variable streaming with fixed-point precision. Only the forward direction is exercised.
+
+### FFT Result RAM
+
+The FFT result RAM receives the complex frequency-domain bins from the FFT core and stores them in two 8192-entry 24-bit arrays — one for real parts, one for imaginary parts. Only 4097 entries are used per array. However, a 23-bit array is insufficient for such size. A sequential write pointer traverses the arrays as valid bins arrive, and `fft_done` latches high on the end-of-packet signal to notify the HPS that the full frame is ready. The HPS then reads any bin by supplying a 13-bit address, with a one-cycle read latency.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `sysclk` | 1 | 50 MHz system clock |
+| Input | `reset_n` | 1 | Active low reset |
+| Input | `fft_real` | 24 | Real part of incoming FFT bin |
+| Input | `fft_imag` | 24 | Imaginary part of incoming FFT bin |
+| Input | `fft_valid` | 1 | High when the current bin is valid (Avalon-ST) |
+| Input | `data_sop` | 1 | Start of packet — marks the first bin of the FFT frame |
+| Input | `data_eop` | 1 | End of packet — marks the last bin of the FFT frame |
+| Input | `rd_addr` | 13 | Read address from HPS (0–8191) |
+| Output | `rd_real` | 24 | Real part of stored bin at `rd_addr` (1-cycle latency) |
+| Output | `rd_imag` | 24 | Imaginary part of stored bin at `rd_addr` (1-cycle latency) |
+| Output | `fft_done` | 1 | Latches high when the full 8192-bin frame has been stored |
+
+#### Write Logic
+
+Bins are written only when `fft_valid` is high. On `data_sop`, the write pointer resets to zero, the first bin is stored at address 0, `fft_done` is cleared, and the pointer advances to 1. On each subsequent valid cycle the bin is stored at the current pointer address and the pointer increments. When `data_eop` arrives coincident with `fft_valid`, `fft_done` latches high, signalling the HPS that the RAM holds a complete spectrum.
+
+#### Read Logic
+
+Reads are synchronous with a one-cycle latency: `rd_real` and `rd_imag` reflect `ram_real[rd_addr]` and `ram_imag[rd_addr]` on the clock edge following the address being presented.
 
