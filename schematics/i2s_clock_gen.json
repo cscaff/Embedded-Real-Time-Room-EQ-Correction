@@ -1,0 +1,232 @@
+{
+  "creator": "Yosys 0.62+91 (git sha1 fb653c418-dirty, aarch64-apple-darwin23.5-clang++ 18.1.8 -fPIC -O3)",
+  "modules": {
+    "i2s_clock_gen": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:23.1-56.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "bclk": {
+          "direction": "output",
+          "bits": [ 4 ]
+        },
+        "lrck": {
+          "direction": "output",
+          "bits": [ 5 ]
+        },
+        "bclk_fall": {
+          "direction": "output",
+          "bits": [ 6 ]
+        },
+        "bit_cnt": {
+          "direction": "output",
+          "bits": [ 7, 8, 9, 10, 11, 5 ]
+        }
+      },
+      "cells": {
+        "$add$/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:50$3": {
+          "hide_name": 1,
+          "type": "$add",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000010"
+          },
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:50.25-50.40"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 12, 4 ],
+            "B": [ "1", "0" ],
+            "Y": [ 13, 14 ]
+          }
+        },
+        "$add$/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:52$4": {
+          "hide_name": 1,
+          "type": "$add",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000110",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000110",
+            "Y_WIDTH": "00000000000000000000000000000110"
+          },
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:52.28-52.42"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 7, 8, 9, 10, 11, 5 ],
+            "B": [ "1", "0", "0", "0", "0", "0" ],
+            "Y": [ 15, 16, 17, 18, 19, 20 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$17": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "000000",
+            "WIDTH": "00000000000000000000000000000110"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:45.5-54.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 15, 16, 17, 18, 19, 20 ],
+            "EN": [ 6 ],
+            "Q": [ 7, 8, 9, 10, 11, 5 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$18": {
+          "hide_name": 1,
+          "type": "$sdff",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "00",
+            "WIDTH": "00000000000000000000000000000010"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:45.5-54.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 13, 14 ],
+            "Q": [ 12, 4 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$eq$/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:39$1": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:39.25-39.41"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 12, 4 ],
+            "B": [ "1", "1" ],
+            "Y": [ 6 ]
+          }
+        }
+      },
+      "netnames": {
+        "$add$/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:50$3_Y": {
+          "hide_name": 1,
+          "bits": [ 13, 14 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:50.25-50.40"
+          }
+        },
+        "$add$/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:52$4_Y": {
+          "hide_name": 1,
+          "bits": [ 15, 16, 17, 18, 19, 20 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:52.28-52.42"
+          }
+        },
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:26.25-26.29"
+          }
+        },
+        "bclk_cnt": {
+          "hide_name": 0,
+          "bits": [ 12, 4 ],
+          "attributes": {
+            "init": "00",
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:32.17-32.25"
+          }
+        },
+        "bclk_fall": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:28.25-28.34"
+          }
+        },
+        "bit_cnt": {
+          "hide_name": 0,
+          "bits": [ 7, 8, 9, 10, 11, 5 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:29.25-29.32"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:24.25-24.30"
+          }
+        },
+        "lrck": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:27.25-27.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "/Users/christianscaff/Documents/Academics/Columbia/Spring_26/CSEE4840/Project/Embedded-Real-Time-Room-EQ-Correction/src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:25.25-25.30"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,812 @@
+{
+  "creator": "Yosys 0.62+91 (git sha1 fb653c418-dirty, aarch64-apple-darwin23.5-clang++ 18.1.8 -fPIC -O3)",
+  "modules": {
+    "i2s_clock_gen": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:23.1-56.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "bclk": {
+          "direction": "output",
+          "bits": [ 4 ]
+        },
+        "lrck": {
+          "direction": "output",
+          "bits": [ 5 ]
+        },
+        "bclk_fall": {
+          "direction": "output",
+          "bits": [ 6 ]
+        },
+        "bit_cnt": {
+          "direction": "output",
+          "bits": [ 7, 8, 9, 10, 11, 12 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:26.25-26.29"
+          }
+        },
+        "bclk_fall": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:28.25-28.34"
+          }
+        },
+        "bit_cnt": {
+          "hide_name": 0,
+          "bits": [ 7, 8, 9, 10, 11, 12 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:29.25-29.32"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:24.25-24.30"
+          }
+        },
+        "lrck": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:27.25-27.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:25.25-25.30"
+          }
+        }
+      }
+    },
+    "i2s_shift_register": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:21.1-44.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "data_in": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "load": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "shift": {
+          "direction": "input",
+          "bits": [ 29 ]
+        },
+        "serial_out": {
+          "direction": "output",
+          "bits": [ 30 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:22.25-22.30"
+          }
+        },
+        "data_in": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:24.25-24.32"
+          }
+        },
+        "load": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:25.25-25.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:23.25-23.30"
+          }
+        },
+        "serial_out": {
+          "hide_name": 0,
+          "bits": [ 30 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:27.25-27.35"
+          }
+        },
+        "shift": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:26.25-26.30"
+          }
+        }
+      }
+    },
+    "i2s_tx": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:21.1-89.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "left_sample": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "right_sample": {
+          "direction": "input",
+          "bits": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ]
+        },
+        "bclk": {
+          "direction": "output",
+          "bits": [ 52 ]
+        },
+        "lrck": {
+          "direction": "output",
+          "bits": [ 53 ]
+        },
+        "dacdat": {
+          "direction": "output",
+          "bits": [ 54 ]
+        }
+      },
+      "cells": {
+        "$auto$ff.cc:337:slice$29": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "000000000000000000000000",
+            "WIDTH": "00000000000000000000000000011000"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:50.5-58.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+            "EN": [ 55 ],
+            "Q": [ 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$31": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "000000000000000000000000",
+            "WIDTH": "00000000000000000000000000011000"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:50.5-58.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ],
+            "EN": [ 55 ],
+            "Q": [ 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54$2": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000110",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000110",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54.35-54.51"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 104, 105, 106, 107, 108, 109 ],
+            "B": [ "0", "1", "1", "1", "1", "1" ],
+            "Y": [ 110 ]
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70$4": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000110",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000110",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70.37-70.53"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 104, 105, 106, 107, 108, 109 ],
+            "B": [ "1", "1", "1", "1", "1", "1" ],
+            "Y": [ 111 ]
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71$6": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000110",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000110",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71.37-71.53"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 104, 105, 106, 107, 108, 109 ],
+            "B": [ "1", "1", "1", "1", "1", "0" ],
+            "Y": [ 112 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54$3": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54.22-54.51"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 113 ],
+            "B": [ 110 ],
+            "Y": [ 55 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70$5": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70.23-70.54"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 113 ],
+            "B": [ 111 ],
+            "Y": [ 114 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71$7": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71.23-71.54"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 113 ],
+            "B": [ 112 ],
+            "Y": [ 115 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$10": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.23-73.44"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 113 ],
+            "B": [ 116 ],
+            "Y": [ 117 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$12": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.23-74.43"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 117 ],
+            "B": [ 118 ],
+            "Y": [ 119 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$14": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.23-75.44"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 119 ],
+            "B": [ 120 ],
+            "Y": [ 121 ]
+          }
+        },
+        "$logic_not$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$9": {
+          "hide_name": 1,
+          "type": "$logic_not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.36-73.44"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 122 ],
+            "Y": [ 116 ]
+          }
+        },
+        "$logic_or$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:72$8": {
+          "hide_name": 1,
+          "type": "$logic_or",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:72.23-72.46"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 114 ],
+            "B": [ 115 ],
+            "Y": [ 122 ]
+          }
+        },
+        "$ne$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:74$11": {
+          "hide_name": 1,
+          "type": "$reduce_bool",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000110",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:74.27-74.42"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 104, 105, 106, 107, 108, 109 ],
+            "Y": [ 118 ]
+          }
+        },
+        "$ne$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:75$13": {
+          "hide_name": 1,
+          "type": "$ne",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000110",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000110",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:75.27-75.43"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 104, 105, 106, 107, 108, 109 ],
+            "B": [ "0", "0", "0", "0", "0", "1" ],
+            "Y": [ 120 ]
+          }
+        },
+        "$ternary$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:77$15": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000011000"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:77.30-77.64"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103 ],
+            "B": [ 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79 ],
+            "S": [ 114 ],
+            "Y": [ 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146 ]
+          }
+        },
+        "clock_gen_inst": {
+          "hide_name": 0,
+          "type": "i2s_clock_gen",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:36.19-43.6"
+          },
+          "port_directions": {
+            "bclk": "output",
+            "bclk_fall": "output",
+            "bit_cnt": "output",
+            "clock": "input",
+            "lrck": "output",
+            "reset": "input"
+          },
+          "connections": {
+            "bclk": [ 52 ],
+            "bclk_fall": [ 113 ],
+            "bit_cnt": [ 104, 105, 106, 107, 108, 109 ],
+            "clock": [ 2 ],
+            "lrck": [ 53 ],
+            "reset": [ 3 ]
+          }
+        },
+        "shift_reg_inst": {
+          "hide_name": 0,
+          "type": "i2s_shift_register",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:80.24-87.6"
+          },
+          "port_directions": {
+            "clock": "input",
+            "data_in": "input",
+            "load": "input",
+            "reset": "input",
+            "serial_out": "output",
+            "shift": "input"
+          },
+          "connections": {
+            "clock": [ 2 ],
+            "data_in": [ 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146 ],
+            "load": [ 122 ],
+            "reset": [ 3 ],
+            "serial_out": [ 54 ],
+            "shift": [ 121 ]
+          }
+        }
+      },
+      "netnames": {
+        "$eq$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54$2_Y": {
+          "hide_name": 1,
+          "bits": [ 110 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54.35-54.51"
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70$4_Y": {
+          "hide_name": 1,
+          "bits": [ 111 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70.37-70.53"
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71$6_Y": {
+          "hide_name": 1,
+          "bits": [ 112 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71.37-71.53"
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54$3_Y": {
+          "hide_name": 1,
+          "bits": [ 55 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:54.22-54.51"
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$10_Y": {
+          "hide_name": 1,
+          "bits": [ 117 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.23-73.44"
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$12_Y": {
+          "hide_name": 1,
+          "bits": [ 119 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.23-74.43"
+          }
+        },
+        "$logic_not$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73$9_Y": {
+          "hide_name": 1,
+          "bits": [ 116 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.36-73.44"
+          }
+        },
+        "$ne$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:74$11_Y": {
+          "hide_name": 1,
+          "bits": [ 118 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:74.27-74.42"
+          }
+        },
+        "$ne$src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:75$13_Y": {
+          "hide_name": 1,
+          "bits": [ 120 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:75.27-75.43"
+          }
+        },
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 52 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:26.25-26.29"
+          }
+        },
+        "bclk_fall": {
+          "hide_name": 0,
+          "bits": [ 113 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:32.18-32.27"
+          }
+        },
+        "bit_cnt": {
+          "hide_name": 0,
+          "bits": [ 104, 105, 106, 107, 108, 109 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:33.18-33.25"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:22.25-22.30"
+          }
+        },
+        "dacdat": {
+          "hide_name": 0,
+          "bits": [ 54 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:28.25-28.31"
+          }
+        },
+        "do_load": {
+          "hide_name": 0,
+          "bits": [ 122 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:72.10-72.17"
+          }
+        },
+        "do_shift": {
+          "hide_name": 0,
+          "bits": [ 121 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:73.10-73.18"
+          }
+        },
+        "left_hold": {
+          "hide_name": 0,
+          "bits": [ 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:48.18-48.27"
+          }
+        },
+        "left_sample": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:24.25-24.36"
+          }
+        },
+        "load_left": {
+          "hide_name": 0,
+          "bits": [ 114 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:70.10-70.19"
+          }
+        },
+        "load_right": {
+          "hide_name": 0,
+          "bits": [ 115 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:71.10-71.20"
+          }
+        },
+        "lrck": {
+          "hide_name": 0,
+          "bits": [ 53 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:27.25-27.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:23.25-23.30"
+          }
+        },
+        "right_hold": {
+          "hide_name": 0,
+          "bits": [ 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:48.29-48.39"
+          }
+        },
+        "right_sample": {
+          "hide_name": 0,
+          "bits": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:25.25-25.37"
+          }
+        },
+        "shift_data": {
+          "hide_name": 0,
+          "bits": [ 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:77.17-77.27"
+          }
+        }
+      }
+    }
+  }
+}

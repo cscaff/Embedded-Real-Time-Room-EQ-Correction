@@ -114,6 +114,9 @@ Upon `start` assertion, the module uses an internal 8-bit clock divider to conve
 
 The internal 32-bit phase signal is accumulated at increasing frequencies in the `phase_accumulator` module before being used to look up the associated sine amplitude value in `sine_lookup`. The resulting amplitude is outputted to the I2S TX module for transmission to the audio codec. When the sweep reaches 20 KHz, the amplitude cuts to 0 and a `done` signal is asserted.
 
+![sweep_generator schematic](../../schematics/sweep_generator.svg)
+*Sweep Generator — 8-bit clock divider driving phase_accumulator and sine_lookup, with LUT write port and amplitude/done outputs.*
+
 ### Phase Accumulator
 
 The phase accumulator generates a 32-bit phase value that increases exponentially over time, driving the sine lookup with a continuously rising frequency. Starting at 20 Hz, the output frequency continuously doubles roughly, reaching 20 kHz after a 10-second sweep. When the upper frequency threshold is crossed, `done` latches high and accumulation stops.
@@ -135,6 +138,9 @@ The accumulator maintains a 64-bit Q32.32 fixed-point register (`increment`) tha
 2. **Phase accumulation** — the integer part of `increment` is added to the 32-bit `phase` register. Natural 32-bit overflow provides seamless phase wrapping with no additional logic.
 
 On reset, `increment` is loaded with `INCREMENT_START = 1,789,570` (the Q32.32 encoding of the 20 Hz initial step size) and `phase` is cleared to zero. `done` is asserted and held once `increment[63:32]` reaches `INC_STOP = 1,789,569,707`, the threshold corresponding to a 20 kHz step size `(20000/48000) × 2^32`.
+
+![phase_accumulator schematic](../../schematics/phase_accumulator.svg)
+*Phase Accumulator — Q32.32 exponential sweep logic; increment register grows each sample until INC_STOP, asserting done.*
 
 ### Sine Lookup
 
@@ -180,6 +186,9 @@ Each `sample_en` pulse advances a 5-state pipeline to produce one output sample:
 
 At 12.288 MHz with 256 clock cycles per 48 kHz sample period, the 5-cycle pipeline completes well before the next `sample_en` pulse.
 
+![sine_lookup schematic](../../schematics/sine_lookup.svg)
+*Sine Lookup — 5-stage interpolation pipeline; quadrant mirror logic and sine_lut BRAM read port.*
+
 ### Sine LUT
 
 The sine LUT is a true dual-port block RAM storing 1024 entries of 24-bit signed sine values, representing one quarter-wave of a full sine period. Port A is write-only and driven by the 50 MHz system clock, used exclusively at startup to load pre-computed values from the HPS. Port B is read-only and driven by the 12.288 MHz audio clock, used by the `sine_lookup` interpolation pipeline during the sweep. The two ports operate in entirely separate clock domains; correct operation depends on all Port A writes completing before any Port B reads begin, which is guaranteed by system-level sequencing.
@@ -203,6 +212,9 @@ On each rising edge of `clk_a`, if `we_a` is high, `din_a` is written into `mem[
 #### Port B — Read
 
 On each rising edge of `clk_b`, `dout_b` is registered from `mem[addr_b]`, giving a one-cycle read latency. The `sine_lookup` pipeline accounts for this latency with its explicit wait states at pipeline stages 1 and 3.
+
+![sine_lut schematic](../../schematics/sine_lut.svg)
+*Sine LUT — true dual-port 1024×24-bit BRAM; port A write at 50 MHz, port B read at 12.288 MHz.*
 
 ### Calibration Engine
 
@@ -244,6 +256,9 @@ On `start`, a `running` latch arms the FFT input gate. Samples arriving from `sa
 
 A consumer MUX on the FIFO read port selects between two drain paths: `fft_to_fifo_ready` (backpressure from the FFT core) in normal mode, or `fifo_hps_pop` (one-cycle pulses from the HPS) in HPS mode. The reset path uses a 2-FF synchronizer on `sysclk` to derive `reset_n` from the async `aclr`, ensuring a glitch-free active-low reset for the FFT IP core.
 
+![calibration_engine schematic](../../schematics/calibration_engine.svg)
+*Calibration Engine — CDC bridge from audio domain; sample_fifo, sample_fft, and fft_result_ram pipeline with HPS read mux.*
+
 ### Sample FIFO
 
 The sample FIFO captures incoming I2S audio samples on the bit clock domain and makes them available to the FFT pipeline on the 50 MHz system clock domain. It wraps a Quartus-generated dual-clock FIFO (`capture_fifo`) with write and read request logic, using the falling edge of `lrclk` to clock in one 24-bit sample per stereo frame and backpressure from the FFT consumer to control the read side.
@@ -272,6 +287,9 @@ The read side is entirely driven by backpressure. `data_valid` is the logical in
 #### Clock Domain Crossing
 
 The underlying `capture_fifo` is a Quartus DCFIFO primitive with `bclk` as the write clock and `sysclk` as the read clock. All gray-code pointer synchronization is handled internally by the IP, so no additional CDC logic is required in this module.
+
+![sample_fifo schematic](../../schematics/sample_fifo.svg)
+*Sample FIFO — wraps Quartus DCFIFO; write on lrclk falling edge (bclk domain), read driven by FFT backpressure or HPS pop (sysclk domain).*
 
 ### Sample FFT
 
@@ -313,6 +331,9 @@ Several inputs to the underlying IP are tied to constants in this module:
 
 The core is instantiated as bidirectional (FFT + IFFT) solely because Quartus requires the bidirectional variant to support variable streaming with fixed-point precision. Only the forward direction is exercised.
 
+![sample_fft schematic](../../schematics/sample_fft.svg)
+*Sample FFT — wraps Quartus 8192-point FFT IP; 13-bit sample counter generates SOP/EOP framing for variable streaming.*
+
 ### FFT Result RAM
 
 The FFT result RAM receives the complex frequency-domain bins from the FFT core and stores them in two 8192-entry 24-bit arrays — one for real parts, one for imaginary parts. Only 4097 entries are used per array. However, a 23-bit array is insufficient for such size. A sequential write pointer traverses the arrays as valid bins arrive, and `fft_done` latches high on the end-of-packet signal to notify the HPS that the full frame is ready. The HPS then reads any bin by supplying a 13-bit address, with a one-cycle read latency.
@@ -341,6 +362,9 @@ Bins are written only when `fft_valid` is high. On `data_sop`, the write pointer
 
 Reads are synchronous with a one-cycle latency: `rd_real` and `rd_imag` reflect `ram_real[rd_addr]` and `ram_imag[rd_addr]` on the clock edge following the address being presented.
 
+![fft_result_ram schematic](../../schematics/fft_result_ram.svg)
+*FFT Result RAM — dual 8192×24-bit BRAMs storing real and imaginary FFT output; write pointer resets on SOP, fft_done latches on EOP.*
+
 ### I2S Transmitter
 
 The I2S transmitter serializes stereo 24-bit parallel audio samples to the WM8731 codec using the standard Philips I2S format — MSB-first, 24 data bits followed by 8 padding bits per channel, with a 1-bit delay relative to the `lrck` frame boundary. The module runs entirely in the 12.288 MHz clock domain; `bclk` and `lrck` are data outputs driven by the module.
@@ -368,6 +392,9 @@ The I2S transmitter serializes stereo 24-bit parallel audio samples to the WM873
 
 Both input samples are latched into hold registers two bit-clock cycles before the end of each frame (`bit_cnt == 62`), ensuring the inputs are stable before the upcoming load. The shift register is then loaded with the left channel at `bit_cnt == 63` and with the right channel at `bit_cnt == 31`. On all other falling `bclk` edges — except the two delay slots at `bit_cnt == 0` and `bit_cnt == 32` — the shift register shifts by one, advancing the next data bit onto `dacdat`. The two delay slots implement the 1-bit I2S framing delay, holding the MSB on the output for an extra cycle after each channel load before shifting begins.
 
+![i2s_tx schematic](../../schematics/i2s_tx.svg)
+*I2S Transmitter — i2s_clock_gen drives bclk/lrck timing; i2s_shift_register serializes left and right 24-bit samples with 1-bit framing delay.*
+
 ### I2S Clock Generator
 
 The I2S clock generator derives a bit clock `BCLK` and frame clock `LRCK` from the 12.288 MHz system clock. These are outputted as data signals within the system clock domain.
@@ -383,6 +410,9 @@ The I2S clock generator derives a bit clock `BCLK` and frame clock `LRCK` from t
 | Output | `bclk_fall` | 1 | One-cycle strobe that fires one master-clock cycle before `bclk` falls; used by `i2s_tx` to time data shifts |
 | Output | `bit_cnt` | 6 | Position within the current 64-bit I2S frame (0–63); increments on each `bclk_fall` and wraps naturally |
 
+![i2s_clock_gen schematic](../../schematics/i2s_clock_gen.svg)
+*I2S Clock Generator — 2-bit bclk_cnt divides 12.288 MHz by 4 to produce 3.072 MHz bclk; bit_cnt[5] drives lrck.*
+
 ### I2S Shift Register
 
 Parallel-to-serial shift register for I2S data transmission. Loads a 24-bit sample and shifts it out MSB-first, one bit per shift pulse.  After 24 shifts, zeros pad the output.
@@ -397,6 +427,9 @@ Parallel-to-serial shift register for I2S data transmission. Loads a 24-bit samp
 | Input | `load` | 1 | One-cycle pulse — loads `data_in`; takes priority over `shift` |
 | Input | `shift` | 1 | One-cycle pulse — shifts register left by 1, zero-fills LSB |
 | Output | `serial_out` | 1 | MSB of shift register (combinational) |
+
+![i2s_shift_register schematic](../../schematics/i2s_shift_register.svg)
+*I2S Shift Register — parallel-load shift register; load has priority over shift, serial_out is combinational MSB.*
 
 ### I2S RX
 
@@ -415,6 +448,9 @@ This I2S receiver module deserializes stereo 24-bit audio from the WM8731 codec.
 | Input | `adcdat` | 1 | Serial ADC data from codec (`AUD_ADCDAT`) |
 | Output | `left_sample` | 24 | Deserialized left channel sample, updated once per frame |
 | Output | `right_sample` | 24 | Deserialized right channel sample, updated once per frame |
+
+![i2s_rx schematic](../../schematics/i2s_rx.svg)
+*I2S Receiver — deserializes WM8731 ADC output; bclk/lrck treated as data inputs, samples captured on detected rising edges.*
 
 ## 2. Resource Utilization
 

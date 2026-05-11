@@ -297,6 +297,7 @@ static void fifo_test(void)
 
 /* ── Full calibration (Stage 2+3) ─────────────────────────── */
 
+// We capture 46 FFT frames
 #define MAX_FRAMES   64
 #define BINS_PER_FRAME (FFT_SIZE / 2 + 1)  /* 4097 */
 

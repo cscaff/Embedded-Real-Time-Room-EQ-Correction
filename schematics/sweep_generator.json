@@ -1,0 +1,790 @@
+{
+  "creator": "Yosys 0.62+91 (git sha1 fb653c418-dirty, aarch64-apple-darwin23.5-clang++ 18.1.8 -fPIC -O3)",
+  "modules": {
+    "phase_accumulator": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:14.1-60.10"
+      },
+      "parameter_default_values": {
+        "INCREMENT_START": "00000000000110110100111010000010",
+        "INC_STOP": "01101010101010101010101010101011",
+        "K_FRAC": "00000000000000001111000101110010"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "sample_en": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "phase": {
+          "direction": "output",
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ]
+        },
+        "done": {
+          "direction": "output",
+          "bits": [ 37 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:23.18-23.23"
+          }
+        },
+        "done": {
+          "hide_name": 0,
+          "bits": [ 37 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:27.23-27.27"
+          }
+        },
+        "phase": {
+          "hide_name": 0,
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:26.23-26.28"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:24.18-24.23"
+          }
+        },
+        "sample_en": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:25.18-25.27"
+          }
+        }
+      }
+    },
+    "sine_lookup": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:17.1-128.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "sample_en": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "phase": {
+          "direction": "input",
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ]
+        },
+        "amplitude": {
+          "direction": "output",
+          "bits": [ 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 ]
+        },
+        "clk_sys": {
+          "direction": "input",
+          "bits": [ 61 ]
+        },
+        "we_lut": {
+          "direction": "input",
+          "bits": [ 62 ]
+        },
+        "addr_lut": {
+          "direction": "input",
+          "bits": [ 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ]
+        },
+        "din_lut": {
+          "direction": "input",
+          "bits": [ 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "addr_lut": {
+          "hide_name": 0,
+          "bits": [ 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:37.18-37.26"
+          }
+        },
+        "amplitude": {
+          "hide_name": 0,
+          "bits": [ 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:33.23-33.32"
+          }
+        },
+        "clk_sys": {
+          "hide_name": 0,
+          "bits": [ 61 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:35.18-35.25"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:29.18-29.23"
+          }
+        },
+        "din_lut": {
+          "hide_name": 0,
+          "bits": [ 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:38.18-38.25"
+          }
+        },
+        "phase": {
+          "hide_name": 0,
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:32.18-32.23"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:30.18-30.23"
+          }
+        },
+        "sample_en": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:31.18-31.27"
+          }
+        },
+        "we_lut": {
+          "hide_name": 0,
+          "bits": [ 62 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:36.18-36.24"
+          }
+        }
+      }
+    },
+    "sine_lut": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/memory/sine_lut.sv:26.1-52.10"
+      },
+      "ports": {
+        "clk_a": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "we_a": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "addr_a": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
+        },
+        "din_a": {
+          "direction": "input",
+          "bits": [ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37 ]
+        },
+        "clk_b": {
+          "direction": "input",
+          "bits": [ 38 ]
+        },
+        "addr_b": {
+          "direction": "input",
+          "bits": [ 39, 40, 41, 42, 43, 44, 45, 46, 47, 48 ]
+        },
+        "dout_b": {
+          "direction": "output",
+          "bits": [ 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "addr_a": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:30.25-30.31"
+          }
+        },
+        "addr_b": {
+          "hide_name": 0,
+          "bits": [ 39, 40, 41, 42, 43, 44, 45, 46, 47, 48 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:35.25-35.31"
+          }
+        },
+        "clk_a": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:28.25-28.30"
+          }
+        },
+        "clk_b": {
+          "hide_name": 0,
+          "bits": [ 38 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:34.25-34.30"
+          }
+        },
+        "din_a": {
+          "hide_name": 0,
+          "bits": [ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:31.25-31.30"
+          }
+        },
+        "dout_b": {
+          "hide_name": 0,
+          "bits": [ 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:36.25-36.31"
+          }
+        },
+        "we_a": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:29.25-29.29"
+          }
+        }
+      }
+    },
+    "sweep_generator": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:19.1-94.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "amplitude": {
+          "direction": "output",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "clk_sys": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "we_lut": {
+          "direction": "input",
+          "bits": [ 29 ]
+        },
+        "addr_lut": {
+          "direction": "input",
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ]
+        },
+        "din_lut": {
+          "direction": "input",
+          "bits": [ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 ]
+        },
+        "start": {
+          "direction": "input",
+          "bits": [ 64 ]
+        },
+        "done": {
+          "direction": "output",
+          "bits": [ 65 ]
+        }
+      },
+      "cells": {
+        "$add$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:64$7": {
+          "hide_name": 1,
+          "type": "$add",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000001000",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000001000"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:64.26-64.40"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 66, 67, 68, 69, 70, 71, 72, 73 ],
+            "B": [ "1" ],
+            "Y": [ 74, 75, 76, 77, 78, 79, 80, 81 ]
+          }
+        },
+        "$and$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$4": {
+          "hide_name": 1,
+          "type": "$and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.26-63.60"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 82 ],
+            "B": [ 83 ],
+            "Y": [ 84 ]
+          }
+        },
+        "$and$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$6": {
+          "hide_name": 1,
+          "type": "$and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.26-63.68"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 84 ],
+            "B": [ 85 ],
+            "Y": [ 86 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$31": {
+          "hide_name": 1,
+          "type": "$sdff",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "00000000",
+            "WIDTH": "00000000000000000000000000001000"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:53.5-66.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 74, 75, 76, 77, 78, 79, 80, 81 ],
+            "Q": [ 66, 67, 68, 69, 70, 71, 72, 73 ],
+            "SRST": [ 87 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$34": {
+          "hide_name": 1,
+          "type": "$sdff",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:53.5-66.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 86 ],
+            "Q": [ 88 ],
+            "SRST": [ 87 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$38": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:53.5-66.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ "1" ],
+            "EN": [ 64 ],
+            "Q": [ 83 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$opt_dff.cc:277:combine_resets$33": {
+          "hide_name": 1,
+          "type": "$reduce_or",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 3, 64 ],
+            "Y": [ 87 ]
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$3": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000001000",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000001000",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.27-63.44"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 66, 67, 68, 69, 70, 71, 72, 73 ],
+            "B": [ "1", "1", "1", "1", "1", "1", "1", "1" ],
+            "Y": [ 82 ]
+          }
+        },
+        "$logic_not$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$5": {
+          "hide_name": 1,
+          "type": "$logic_not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.63-63.68"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 65 ],
+            "Y": [ 85 ]
+          }
+        },
+        "$or$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:51$1": {
+          "hide_name": 1,
+          "type": "$or",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:51.33-51.46"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 3 ],
+            "B": [ 64 ],
+            "Y": [ 89 ]
+          }
+        },
+        "$ternary$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:72$8": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000011000"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:72.24-72.57"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113 ],
+            "B": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+            "S": [ 65 ],
+            "Y": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+          }
+        },
+        "lookup": {
+          "hide_name": 0,
+          "type": "sine_lookup",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:82.17-92.6"
+          },
+          "port_directions": {
+            "addr_lut": "input",
+            "amplitude": "output",
+            "clk_sys": "input",
+            "clock": "input",
+            "din_lut": "input",
+            "phase": "input",
+            "reset": "input",
+            "sample_en": "input",
+            "we_lut": "input"
+          },
+          "connections": {
+            "addr_lut": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ],
+            "amplitude": [ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113 ],
+            "clk_sys": [ 28 ],
+            "clock": [ 2 ],
+            "din_lut": [ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 ],
+            "phase": [ 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145 ],
+            "reset": [ 3 ],
+            "sample_en": [ 88 ],
+            "we_lut": [ 29 ]
+          }
+        },
+        "mac": {
+          "hide_name": 0,
+          "type": "phase_accumulator",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:74.23-80.6"
+          },
+          "port_directions": {
+            "clock": "input",
+            "done": "output",
+            "phase": "output",
+            "reset": "input",
+            "sample_en": "input"
+          },
+          "connections": {
+            "clock": [ 2 ],
+            "done": [ 65 ],
+            "phase": [ 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145 ],
+            "reset": [ 89 ],
+            "sample_en": [ 88 ]
+          }
+        }
+      },
+      "netnames": {
+        "$add$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:64$7_Y": {
+          "hide_name": 1,
+          "bits": [ 74, 75, 76, 77, 78, 79, 80, 81 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:64.26-64.40"
+          }
+        },
+        "$and$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$4_Y": {
+          "hide_name": 1,
+          "bits": [ 84 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.26-63.60"
+          }
+        },
+        "$and$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$6_Y": {
+          "hide_name": 1,
+          "bits": [ 86 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.26-63.68"
+          }
+        },
+        "$auto$opt_dff.cc:275:combine_resets$32": {
+          "hide_name": 1,
+          "bits": [ 87 ],
+          "attributes": {
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$3_Y": {
+          "hide_name": 1,
+          "bits": [ 82 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.27-63.44"
+          }
+        },
+        "$logic_not$src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63$5_Y": {
+          "hide_name": 1,
+          "bits": [ 85 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:63.63-63.68"
+          }
+        },
+        "addr_lut": {
+          "hide_name": 0,
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:37.20-37.28"
+          }
+        },
+        "amplitude": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:34.20-34.29"
+          }
+        },
+        "amplitude_internal": {
+          "hide_name": 0,
+          "bits": [ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:71.17-71.35"
+          }
+        },
+        "clk_div": {
+          "hide_name": 0,
+          "bits": [ 66, 67, 68, 69, 70, 71, 72, 73 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:43.17-43.24"
+          }
+        },
+        "clk_sys": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:35.20-35.27"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:32.20-32.25"
+          }
+        },
+        "din_lut": {
+          "hide_name": 0,
+          "bits": [ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:38.20-38.27"
+          }
+        },
+        "done": {
+          "hide_name": 0,
+          "bits": [ 65 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:40.20-40.24"
+          }
+        },
+        "phase": {
+          "hide_name": 0,
+          "bits": [ 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:68.17-68.22"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:33.20-33.25"
+          }
+        },
+        "sample_en": {
+          "hide_name": 0,
+          "bits": [ 88 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:44.17-44.26"
+          }
+        },
+        "start": {
+          "hide_name": 0,
+          "bits": [ 64 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:39.20-39.25"
+          }
+        },
+        "sweep_active": {
+          "hide_name": 0,
+          "bits": [ 83 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:47.11-47.23"
+          }
+        },
+        "sweep_reset_internal": {
+          "hide_name": 0,
+          "bits": [ 89 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:51.10-51.30"
+          }
+        },
+        "we_lut": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:36.20-36.26"
+          }
+        }
+      }
+    }
+  }
+}
