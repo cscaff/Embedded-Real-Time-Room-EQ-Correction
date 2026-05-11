@@ -4,7 +4,7 @@
 
 Every listening room colors the sound played inside it: room modes boost or cancel specific frequencies, speaker placement tilts the stereo image, absorptive materials roll off highs. We propose to build a room-equalization device on the DE1-SoC that measures a particular room's magnitude response, designs a compensating FIR filter, and writes the resulting filter to a file for reuse. 
 
-## 2. System Architecture
+## 2. Hardware System Architecture
 
 ### Room EQ Peripheral
 
@@ -76,6 +76,19 @@ All submodules share `audio_clk` and a synchronized reset `sweep_reset` derived 
 | `fft_rd_addr` | Register write logic | `calibration_engine` |
 | `fft_rd_real`, `fft_rd_imag` | `calibration_engine` | `readdata` (offsets 7, 8) |
 | `fifo_data_out` | `calibration_engine` | `readdata` (offset 10), popped by `chipselect & read & address==10` |
+
+### Clock Generator PLL
+
+The Clock Generator PLL is a Quartus `altera_pll` IP core configured to synthesize a 12.288 MHz audio clock from the 50 MHz system reference clock. This frequency is the standard master clock for the WM8731 codec (256x oversampling at 48 kHz). All I2S and sweep generator logic is clocked from `outclk_0`.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `refclk` | 1 | 50 MHz system reference clock |
+| Input | `rst` | 1 | Active-high reset |
+| Output | `outclk_0` | 1 | 12.288 MHz audio clock output |
+| Output | `locked` | 1 | High when PLL has achieved phase lock |
 
 ### Sweep Generator
 
@@ -402,3 +415,15 @@ This I2S receiver module deserializes stereo 24-bit audio from the WM8731 codec.
 | Input | `adcdat` | 1 | Serial ADC data from codec (`AUD_ADCDAT`) |
 | Output | `left_sample` | 24 | Deserialized left channel sample, updated once per frame |
 | Output | `right_sample` | 24 | Deserialized right channel sample, updated once per frame |
+
+## 2. Resource Utilization
+
+## 3. Software System Architecture
+
+## 4. Demo 
+
+
+
+**TODO: Resource Utilization and Timing Closure**
+**Software Side**
+**Block Diagram**

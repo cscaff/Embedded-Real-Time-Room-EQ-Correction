@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
+   sodipodi:docname="sweep_gen.svg"
+   inkscape:export-filename="sweep_gen.png"
+   inkscape:export-xdpi="249.34346"
+   inkscape:export-ydpi="249.34346"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:s="https://github.com/nturley/netlistsvg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.3133257"
+     inkscape:cx="370.43363"
+     inkscape:cy="466.75399"
+     inkscape:window-width="1520"
+     inkscape:window-height="707"
+     inkscape:window-x="230"
+     inkscape:window-y="53"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g3"
+       inkscape:export-filename="g3.png"
+       inkscape:export-xdpi="374.0152"
+       inkscape:export-ydpi="374.0152">
+      <g
+         s:type="inputExt"
+         transform="matrix(0.16979632,0,0,0.16458717,48.134842,126.99139)"
+         s:width="30"
+         s:height="20"
+         id="cell_clock-6-1">
+        <text
+           x="15"
+           y="-4"
+           class="nodelabel cell_clock"
+           s:attribute="ref"
+           id="text56-9-3"
+           style="font-weight:bold;font-size:10px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none">start</text>
+        <s:alias
+           val="$_inputExt_" />
+        <path
+           d="M 0,0 V 20 H 15 L 30,10 15,0 Z"
+           class="cell_clock"
+           id="path56-4-9" />
+        <g
+           s:x="28"
+           s:y="10"
+           s:pid="Y"
+           id="g56-1-73" />
+        <text
+           xml:space="preserve"
+           style="font-weight:bold;font-size:303.88px;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#1a1a1a;stroke:#000000;stroke-width:2.18339;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+           x="56.024117"
+           y="41.044373"
+           id="text2-7"
+           transform="scale(0.98454109,1.0157016)"><tspan
+             sodipodi:role="line"
+             id="tspan2-5"
+             style="stroke-width:2.18339"
+             x="56.024117"
+             y="41.044373" /></text>
+      </g>
+      <path
+         style="fill:#1a1a1a;stroke:#000000;stroke-width:0.365;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         d="M 62.966716,128.63064 H 52.830661"
+         id="path2-3-0"
+         sodipodi:nodetypes="cc" />
+    </g>
+    <g
+       id="g6-9"
+       transform="matrix(-1,0,0,1,196.13933,-0.24576754)">
+      <g
+         s:type="inputExt"
+         transform="matrix(0.16979632,0,0,0.16458717,48.101485,110.17812)"
+         s:width="30"
+         s:height="20"
+         id="cell_clock-2">
+        <text
+           x="-14.951172"
+           y="-4"
+           class="nodelabel cell_clock"
+           s:attribute="ref"
+           id="text56-91"
+           style="font-weight:bold;font-size:10px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none"
+           transform="scale(-1,1)">amplitude</text>
+        <s:alias
+           val="$_inputExt_" />
+        <path
+           d="M 0,0 V 20 H 15 L 30,10 15,0 Z"
+           class="cell_clock"
+           id="path56-0" />
+        <g
+           s:x="28"
+           s:y="10"
+           s:pid="Y"
+           id="g56-9" />
+      </g>
+      <path
+         style="fill:#1a1a1a;stroke:#000000;stroke-width:0.365;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         d="M 62.933359,111.81737 H 52.797304"
+         id="path2-30" />
+    </g>
+    <rect
+       style="fill:#008080;stroke:#4ab4b2;stroke-width:3.81255;stroke-linejoin:bevel;stroke-opacity:1"
+       id="rect1"
+       width="69.806503"
+       height="39.576027"
+       x="63.158764"
+       y="106.78496"
+       ry="5.3037338" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.328001;stroke-linejoin:bevel;stroke-opacity:1"
+       d="m 135.11008,111.57162 h -8.17172"
+       id="path3" />
+    <g
+       s:type="inputExt"
+       transform="matrix(0.26458333,0,0,0.26458333,47.719646,116.22024)"
+       s:width="30"
+       s:height="20"
+       id="cell_reset">
+      <s:alias
+         val="$_inputExt_" />
+      <g
+         s:x="28"
+         s:y="10"
+         s:pid="Y"
+         id="g57" />
+    </g>
+    <rect
+       style="fill:#ff9955;fill-opacity:1;stroke:#fe6700;stroke-width:0.532521;stroke-linejoin:bevel;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect6"
+       width="28.781452"
+       height="20.285553"
+       x="68.304405"
+       y="111.10981"
+       ry="1.960178" />
+    <rect
+       style="fill:#ff9955;fill-opacity:1;stroke:#fe6700;stroke-width:0.587977;stroke-linejoin:bevel;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect6-9"
+       width="24.032001"
+       height="29.618084"
+       x="103.67472"
+       y="110.89783"
+       ry="2.8619735" />
+    <g
+       id="g6-6"
+       transform="matrix(0.61723412,0,0,0.61723412,32.926976,45.179584)">
+      <g
+         s:type="inputExt"
+         transform="matrix(0.16979632,0,0,0.16458717,48.101485,110.17812)"
+         s:width="30"
+         s:height="20"
+         id="cell_clock-5">
+        <path
+           style="fill:#1a1a1a;stroke:#000000;stroke-width:2.61508;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+           d="m 384.05261,11.037871 h -52.85658 m 58.99789,0.189982 h -52.85656"
+           id="path2-5" />
+        <text
+           x="15.910445"
+           y="-4"
+           class="nodelabel cell_clock"
+           s:attribute="ref"
+           id="text56-0"
+           style="font-weight:bold;font-size:10px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none">phase</text>
+        <text
+           x="360.97821"
+           y="5.7710514"
+           class="nodelabel cell_clock"
+           s:attribute="ref"
+           id="text56-0-9"
+           style="font-weight:bold;font-size:10px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none">phase</text>
+        <s:alias
+           val="$_inputExt_" />
+        <path
+           d="M 0,0 V 20 H 15 L 30,10 15,0 Z"
+           class="cell_clock"
+           id="path56-45" />
+        <g
+           s:x="28"
+           s:y="10"
+           s:pid="Y"
+           id="g56-12" />
+      </g>
+      <path
+         style="fill:#1a1a1a;stroke:#000000;stroke-width:0.166355;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         d="m 56.45249,111.82004 h -3.655186 m 4.079877,0.0112 h -3.655186"
+         id="path2-37" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-weight:bold;font-size:3.52777778px;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.442;stroke-linejoin:bevel;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       x="86.64286"
+       y="123.43923"
+       id="text8"><tspan
+         sodipodi:role="line"
+         id="tspan8"
+         style="stroke-width:0.442;font-size:3.52777778px" /></text>
+    <text
+       x="98.590164"
+       y="103.51087"
+       class="nodelabel cell_clk_sys"
+       s:attribute="ref"
+       id="text59"
+       style="font-weight:bold;font-size:6.37109px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.637109">Calibration Engine</text>
+    <text
+       x="82.398216"
+       y="120.97441"
+       class="nodelabel cell_clk_sys"
+       s:attribute="ref"
+       id="text59-4"
+       style="font-weight:bold;font-size:2.67941px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.267942">phase_accumulator</text>
+    <text
+       x="116.4292"
+       y="125.3952"
+       class="nodelabel cell_clk_sys"
+       s:attribute="ref"
+       id="text59-4-7"
+       style="font-weight:bold;font-size:2.83336px;font-family:'Courier New', monospace;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.283336">sine_lookup</text>
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.37537;stroke-linejoin:bevel;stroke-opacity:1"
+       d="m 61.187256,128.6337 6.812222,-0.0584"
+       id="path1" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.328001;stroke-linejoin:bevel;stroke-opacity:1"
+       d="M 127.22767,111.61669 Z"
+       id="path2" />
+  </g>
+</svg>
