@@ -6,6 +6,77 @@ Every listening room colors the sound played inside it: room modes boost or canc
 
 ## 2. System Architecture
 
+### Room EQ Peripheral
+
+The Room EQ Peripheral is the top-level Avalon memory-mapped peripheral that integrates all hardware submodules. It exposes a 32-bit register interface to the HPS, manages a 3-state FSM controlling the sweep and capture flow, and bridges two clock domains — the 50 MHz system clock (`clk`) and the 12.288 MHz PLL audio clock (`audio_clk`) — with dedicated synchronizers. Audio conduit signals connect directly to the WM8731 codec pins on the DE1-SoC.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `clk` | 1 | 50 MHz system clock from Platform Designer |
+| Input | `reset` | 1 | Active high system reset |
+| Input | `writedata` | 32 | Data from HPS write |
+| Output | `readdata` | 32 | Data returned to HPS on read |
+| Input | `write` | 1 | Avalon write strobe |
+| Input | `read` | 1 | Avalon read strobe |
+| Input | `chipselect` | 1 | Peripheral select |
+| Input | `address` | 4 | Register word offset (0–15) |
+| Input | `audio_clk` | 1 | 12.288 MHz audio clock from PLL |
+| Output | `AUD_XCK` | 1 | Master clock forwarded to codec |
+| Output | `AUD_BCLK` | 1 | I2S bit clock to codec |
+| Output | `AUD_DACDAT` | 1 | I2S DAC serial data to codec |
+| Output | `AUD_DACLRCK` | 1 | I2S DAC frame clock to codec |
+| Output | `AUD_ADCLRCK` | 1 | I2S ADC frame clock to codec (tied to `AUD_DACLRCK`) |
+| Input | `AUD_ADCDAT` | 1 | I2S ADC serial data from codec |
+
+#### Register Map
+
+| Offset | Bits | Access | Name | Description |
+|--------|------|--------|------|-------------|
+| 0 | `[0]` | W | `CTRL` | `sweep_start` — one-cycle pulse to begin sweep; self-clears |
+| 0 | `[1]` | R/W | `CTRL` | `fifo_hps_mode` — 1 = HPS drains FIFO directly, 0 = FFT drains |
+| 1 | `[3:0]` | R | `STATUS` | FSM state — 0 = IDLE, 1 = SWEEP, 2 = DONE |
+| 1 | `[4]` | R | `STATUS` | `fft_done` — high when FFT frame is complete and result RAM is valid |
+| 1 | `[5]` | R | `STATUS` | `fifo_empty` — high when sample FIFO holds no data |
+| 2 | — | — | — | Reserved |
+| 3 | `[31:0]` | R | `VERSION` | Hardware version — reads `32'h0001_0000` |
+| 4 | `[9:0]` | W | `LUT_ADDR` | Write address for sine LUT initialization (0–1023) |
+| 5 | `[23:0]` | W | `LUT_DATA` | Write data for sine LUT — writing this register pulses `we_lut` |
+| 6 | `[12:0]` | R/W | `FFT_ADDR` | Read address into FFT result RAM (0–8191) |
+| 7 | `[23:0]` | R | `FFT_RDATA` | Real part of FFT bin at `FFT_ADDR` |
+| 8 | `[23:0]` | R | `FFT_IDATA` | Imaginary part of FFT bin at `FFT_ADDR` |
+| 9 | `[23:0]` | R | `ADC_LEFT` | Latest left-channel sample from I2S RX |
+| 10 | `[23:0]` | R | `FIFO_RDATA` | Pop-on-read from sample FIFO (showahead) |
+
+#### FSM
+
+The peripheral contains a 3-state FSM clocked by `clk`.
+
+| State | Description | Transitions |
+|-------|-------------|-------------|
+| `IDLE` | Waiting for HPS trigger | --> `SWEEP` on `sweep_start` write |
+| `SWEEP` | Sweep active; calibration engine armed | --> `DONE` on rising edge of `sweep_done` (synchronized from audio domain) |
+| `DONE` | FFT complete; result RAM available to HPS | --> `SWEEP` on `sweep_start` (allows re-trigger without full reset) |
+
+On entering `SWEEP` from either `IDLE` or `DONE`, a one-cycle `calibrate_start` pulse is issued to arm the calibration engine's FFT pipeline.
+
+#### Submodule Wiring
+
+All submodules share `audio_clk` and a synchronized reset `sweep_reset` derived from the system `reset` via a 2-FF async-reset synchronizer in the audio domain.
+
+`sweep_start` from the HPS (50 MHz domain) is transferred to the audio domain using a toggle synchronizer: the system clock toggles a flip-flop on each `sweep_start` pulse, and a 3-stage synchronizer in the audio domain detects the edge, producing a single-cycle `sweep_start_audio` pulse. `sweep_done` travels the other direction — a 2-FF synchronizer brings it from the audio domain back to `clk` for the FSM.
+
+| Connection | From | To |
+|------------|------|----|
+| `amplitude` | `sweep_generator` | `i2s_tx` (both left and right channels) |
+| `bclk_int`, `lrck_int` | `i2s_tx` | `i2s_rx`, `calibration_engine`, codec pins |
+| `rx_left` | `i2s_rx` | `calibration_engine.left_chan` |
+| `we_lut`, `lut_addr`, `lut_data` | Register write logic | `sweep_generator` |
+| `fft_rd_addr` | Register write logic | `calibration_engine` |
+| `fft_rd_real`, `fft_rd_imag` | `calibration_engine` | `readdata` (offsets 7, 8) |
+| `fifo_data_out` | `calibration_engine` | `readdata` (offset 10), popped by `chipselect & read & address==10` |
+
 ### Sweep Generator
 
 The sweep generator module orchestrates the frequency sweep from 20 Hz to 20 KHz. On a start signal, the module resets and begins the sweep, outputting 24-bit signed sine values until 20 KHz is reached where a done signal is asserted. 
@@ -257,3 +328,77 @@ Bins are written only when `fft_valid` is high. On `data_sop`, the write pointer
 
 Reads are synchronous with a one-cycle latency: `rd_real` and `rd_imag` reflect `ram_real[rd_addr]` and `ram_imag[rd_addr]` on the clock edge following the address being presented.
 
+### I2S Transmitter
+
+The I2S transmitter serializes stereo 24-bit parallel audio samples to the WM8731 codec using the standard Philips I2S format — MSB-first, 24 data bits followed by 8 padding bits per channel, with a 1-bit delay relative to the `lrck` frame boundary. The module runs entirely in the 12.288 MHz clock domain; `bclk` and `lrck` are data outputs driven by the module.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `clock` | 1 | 12.288 MHz master clock from PLL |
+| Input | `reset` | 1 | Active high synchronous reset |
+| Input | `left_sample` | 24 | Signed 24-bit left channel audio sample |
+| Input | `right_sample` | 24 | Signed 24-bit right channel audio sample |
+| Output | `bclk` | 1 | 3.072 MHz bit clock --> codec `AUD_BCLK` |
+| Output | `lrck` | 1 | 48 kHz frame clock --> codec `AUD_DACLRCK` |
+| Output | `dacdat` | 1 | Serial data --> codec `AUD_DACDAT` |
+
+#### Submodules
+
+| Submodule | Function |
+|-----------|----------|
+| `i2s_clock_gen` | Divides the 12.288 MHz master clock to generate `bclk` (3.072 MHz) and `lrck` (48 kHz), along with a `bclk_fall` strobe and a 6-bit `bit_cnt` (0–63) that tracks position within each 64-cycle stereo frame |
+| `i2s_shift_register` | 24-bit parallel-load shift register that serializes one channel's sample MSB-first onto `dacdat` |
+
+#### Data Flow
+
+Both input samples are latched into hold registers two bit-clock cycles before the end of each frame (`bit_cnt == 62`), ensuring the inputs are stable before the upcoming load. The shift register is then loaded with the left channel at `bit_cnt == 63` and with the right channel at `bit_cnt == 31`. On all other falling `bclk` edges — except the two delay slots at `bit_cnt == 0` and `bit_cnt == 32` — the shift register shifts by one, advancing the next data bit onto `dacdat`. The two delay slots implement the 1-bit I2S framing delay, holding the MSB on the output for an extra cycle after each channel load before shifting begins.
+
+### I2S Clock Generator
+
+The I2S clock generator derives a bit clock `BCLK` and frame clock `LRCK` from the 12.288 MHz system clock. These are outputted as data signals within the system clock domain.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `clock` | 1 | 12.288 MHz master clock from PLL |
+| Input | `reset` | 1 | Active high synchronous reset |
+| Output | `bclk` | 1 | 3.072 MHz bit clock (12.288 MHz / 4) --> codec `AUD_BCLK` |
+| Output | `lrck` | 1 | 48 kHz frame clock (`bclk` / 64) — low = left channel, high = right channel --> codec `AUD_DACLRCK` |
+| Output | `bclk_fall` | 1 | One-cycle strobe that fires one master-clock cycle before `bclk` falls; used by `i2s_tx` to time data shifts |
+| Output | `bit_cnt` | 6 | Position within the current 64-bit I2S frame (0–63); increments on each `bclk_fall` and wraps naturally |
+
+### I2S Shift Register
+
+Parallel-to-serial shift register for I2S data transmission. Loads a 24-bit sample and shifts it out MSB-first, one bit per shift pulse.  After 24 shifts, zeros pad the output.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `clock` | 1 | 12.288 MHz master clock |
+| Input | `reset` | 1 | Active high synchronous reset — clears shift register to zero |
+| Input | `data_in` | 24 | Parallel data to load |
+| Input | `load` | 1 | One-cycle pulse — loads `data_in`; takes priority over `shift` |
+| Input | `shift` | 1 | One-cycle pulse — shifts register left by 1, zero-fills LSB |
+| Output | `serial_out` | 1 | MSB of shift register (combinational) |
+
+### I2S RX
+
+This I2S receiver module deserializes stereo 24-bit audio from the WM8731 codec. It expects Philips I2S format: 1-bit delay, MSB-first, with 24 bits of data and 8 garbage bits per channel.
+
+`bclk` and `lrck` are shared with the I2S transmitter and treated as data signals in the 12.288 MHz clock domain. The receiver derives rising and falling edge strobes from `bclk` by registering it against the master clock. A 6-bit `bit_cnt` mirrors the transmitter's counter, incrementing on each `bclk` falling edge. Serial data on `adcdat` is sampled on `bclk` rising edges: the left channel occupies `bit_cnt` 1–24 (one cycle after `lrck` falls, per the 1-bit I2S delay) and the right channel occupies `bit_cnt` 33–56. Each channel is shifted MSB-first into a 24-bit accumulator and latched into the output register on its final bit.
+
+#### Interface
+
+| Direction | Signal | Width | Description |
+|-----------|--------|-------|-------------|
+| Input | `clock` | 1 | 12.288 MHz master clock |
+| Input | `reset` | 1 | Active high synchronous reset |
+| Input | `bclk` | 1 | 3.072 MHz bit clock from `i2s_tx` — sampled as data |
+| Input | `lrck` | 1 | 48 kHz frame clock from `i2s_tx` — low = left channel, high = right channel |
+| Input | `adcdat` | 1 | Serial ADC data from codec (`AUD_ADCDAT`) |
+| Output | `left_sample` | 24 | Deserialized left channel sample, updated once per frame |
+| Output | `right_sample` | 24 | Deserialized right channel sample, updated once per frame |
