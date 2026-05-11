@@ -12,7 +12,7 @@
  *     -B          No mic boost
  *     -f FILE     Read sweep data from CSV file instead of running sweep
  *     -o FILE     Write correction taps to file (default: correction_taps.csv)
- *     -e FREQ     Analysis end frequency in Hz (default: 5000)
+ *     -e FREQ     Analysis end frequency in Hz (default: 20000)
  *     -s STRENGTH Correction strength 0.0-1.0 (default: 0.5)
  *     -d DB       Max correction dB (default: 12)
  *     -t TAPS     Number of FIR taps (default: 511)
@@ -489,7 +489,7 @@ int main(int argc, char *argv[])
 {
     const char *input_file = NULL;
     const char *output_file = "correction_taps.csv";
-    int end_hz = 5000;
+    int end_hz = 20000;
     double strength = 0.5;
     double max_db = 12;
     int n_taps = 511;

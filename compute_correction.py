@@ -54,17 +54,23 @@ for b in range(1, n_bins):
     H_mag[b] *= (freq_hz / 1000.0)  # normalize relative to 1 kHz
 
 # Smooth H(f) with a log-spaced moving average
-def log_smooth(x, frac=0.05):
-    """Smooth with a window that grows with frequency."""
+def third_octave_smooth(x, hz_per_bin):
+    """1/3 octave smoothing — standard for room acoustics.
+    Each bin is averaged with neighbors spanning 1/3 octave around it."""
     out = np.copy(x)
-    for i in range(len(x)):
-        width = max(1, int(i * frac))
-        lo = max(0, i - width)
-        hi = min(len(x), i + width + 1)
-        out[i] = np.mean(x[lo:hi])
+    for i in range(1, len(x)):
+        freq = i * hz_per_bin
+        if freq < 20:
+            continue
+        # 1/3 octave: from freq / 2^(1/6) to freq * 2^(1/6)
+        f_lo = freq / (2 ** (1/6))
+        f_hi = freq * (2 ** (1/6))
+        bin_lo = max(1, int(f_lo / hz_per_bin))
+        bin_hi = min(len(x), int(f_hi / hz_per_bin) + 1)
+        out[i] = np.mean(x[bin_lo:bin_hi])
     return out
 
-H_smooth = log_smooth(H_mag, frac=0.10)
+H_smooth = third_octave_smooth(H_mag, hz_per_bin)
 
 # ── Compute correction filter ───────────────────────────────
 # Target flat — the mic response is reasonable, so the slope
@@ -72,7 +78,7 @@ H_smooth = log_smooth(H_mag, frac=0.10)
 
 # Correction range: 60 Hz - 5 kHz
 correction_lo_hz = 60
-correction_hi_hz = 5000
+correction_hi_hz = 15000
 correction_lo_bin = int(correction_lo_hz / hz_per_bin)
 correction_hi_bin = int(correction_hi_hz / hz_per_bin)
 
@@ -91,7 +97,7 @@ max_boost = 10 ** (max_boost_db / 20)
 max_cut = 10 ** (-max_cut_db / 20)
 
 # Correction strength: 0.0 = no correction, 1.0 = fully flat
-strength = 0.5
+strength = 0.65
 
 correction_mag = np.ones(n_bins)
 for b in range(correction_lo_bin, correction_hi_bin):
@@ -226,8 +232,8 @@ freq = np.arange(n_bins) * hz_per_bin
 
 # Room response
 ax = axes[0, 0]
-ax.plot(freq[:n_bins//2], 20*np.log10(H_mag[:n_bins//2] + 1), alpha=0.4, label='Raw')
-ax.plot(freq[:n_bins//2], 20*np.log10(H_smooth[:n_bins//2] + 1), label='Smoothed')
+ax.plot(freq[:n_bins], 20*np.log10(H_mag[:n_bins] + 1), alpha=0.4, label='Raw')
+ax.plot(freq[:n_bins], 20*np.log10(H_smooth[:n_bins] + 1), label='Smoothed')
 ax.set_xscale('log')
 ax.set_xlim(20, 20000)
 ax.set_xlabel('Frequency (Hz)')
@@ -238,7 +244,7 @@ ax.grid(True, alpha=0.3)
 
 # Correction curve
 ax = axes[0, 1]
-ax.plot(freq[:n_bins//2], 20*np.log10(correction_mag[:n_bins//2] + 0.001))
+ax.plot(freq[:n_bins], 20*np.log10(correction_mag[:n_bins] + 0.001))
 ax.set_xscale('log')
 ax.set_xlim(20, 20000)
 ax.set_xlabel('Frequency (Hz)')
@@ -258,9 +264,9 @@ ax.grid(True, alpha=0.3)
 # Corrected vs original response
 ax = axes[1, 1]
 # Compute corrected response: H_corrected = H * Correction
-H_corrected = H_smooth[:n_bins//2] * correction_mag[:n_bins//2]
-ax.plot(freq[:n_bins//2], 20*np.log10(H_smooth[:n_bins//2] + 1), label='Original')
-ax.plot(freq[:n_bins//2], 20*np.log10(H_corrected + 1), label='Corrected')
+H_corrected = H_smooth[:n_bins] * correction_mag[:n_bins]
+ax.plot(freq[:n_bins], 20*np.log10(H_smooth[:n_bins] + 1), label='Original')
+ax.plot(freq[:n_bins], 20*np.log10(H_corrected + 1), label='Corrected')
 ax.set_xscale('log')
 ax.set_xlim(20, 20000)
 ax.set_xlabel('Frequency (Hz)')
