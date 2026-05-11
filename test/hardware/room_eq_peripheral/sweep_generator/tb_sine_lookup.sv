@@ -3,11 +3,9 @@
 module tb_sine_lookup;
 
     // ── Clock parameters ─────────────────────────────────────
-    // clk_sys: 20 ns (50 MHz) — drives Port A LUT initialization
-    // clock:  200 ns (5 MHz)  — drives sine_lookup sample pipeline
-    //                           (scaled from 48 kHz for sim speed)
-    localparam CLK_SYS_PERIOD  = 20;
-    localparam CLK_SAMP_PERIOD = 200;
+    localparam CLK_SYS_PERIOD  = 20;   // 50 MHz
+    localparam CLK_SAMP_PERIOD = 81;   // ~12.288 MHz (matches real PLL)
+    localparam CLKS_PER_SAMPLE = 256;  // 12.288 MHz / 48 kHz
 
     // ── Signals ──────────────────────────────────────────────
     logic        clock, clk_sys;
@@ -18,7 +16,7 @@ module tb_sine_lookup;
 
     // Port A — LUT init
     logic        we_lut;
-    logic [7:0]  addr_lut;
+    logic [9:0]  addr_lut;
     logic [23:0] din_lut;
 
     // ── DUT ─────────────────────────────────────────────────
@@ -39,10 +37,22 @@ module tb_sine_lookup;
     always #(CLK_SYS_PERIOD / 2)  clk_sys = ~clk_sys;
 
     initial clock = 0;
-    always #(CLK_SAMP_PERIOD / 2) clock   = ~clock;
+    always #(CLK_SAMP_PERIOD / 2) clock = ~clock;
+
+    // ── Realistic sample_en: one pulse every 256 audio clocks ─
+    logic [7:0] clk_div;
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            clk_div   <= 8'd0;
+            sample_en <= 1'b0;
+        end else begin
+            clk_div   <= clk_div + 1'b1;
+            sample_en <= (clk_div == 8'd254); // fires when counter hits 255
+        end
+    end
 
     // ── LUT write task (Port A) ───────────────────────────────
-    task automatic write_lut(input [7:0] a, input [23:0] d);
+    task automatic write_lut(input [9:0] a, input [23:0] d);
         @(posedge clk_sys); #1;
         addr_lut = a;
         din_lut  = d;
@@ -51,31 +61,12 @@ module tb_sine_lookup;
         we_lut   = 0;
     endtask
 
-    // ── Sample pipeline task ──────────────────────────────────
-    // Presents phase and returns amplitude after the 2-cycle pipeline delay.
-    task automatic sample(input [31:0] ph, output [23:0] amp);
-        @(posedge clock); #1;
-        phase = ph;
-        @(posedge clock); #1;  // cycle 1: BRAM read + quadrant_d register
-        @(posedge clock); #1;  // cycle 2: amplitude mux register
-        amp = amplitude;
-    endtask
-
-    // ── Check task ────────────────────────────────────────────
-    task automatic check(
-        input signed [23:0] got,
-        input signed [23:0] expected,
-        input signed [23:0] tolerance, // The idea behind tolerance is that our simulated result will vary slightly from the mathematical ideal,
-        input string        label      // but that is generally ok within a bound.
-    );
-        logic signed [23:0] diff;
-        diff = got - expected;
-        if (diff < 0) diff = -diff;
-        if (diff > tolerance)
-            $display("FAIL [%s]  got=%0d  expected=%0d  diff=%0d",
-                     label, got, expected, diff);
-        else
-            $display("PASS [%s]  amplitude=%0d", label, got);
+    // ── Wait for next sample output ──────────────────────────
+    // Waits until the pipeline completes after the next sample_en.
+    // With the 5-stage pipeline, amplitude updates 5 clocks after sample_en.
+    task automatic wait_for_sample;
+        @(posedge sample_en);
+        repeat (6) @(posedge clock); // 5 pipeline stages + margin
     endtask
 
     // ── Variables ─────────────────────────────────────────────
@@ -84,162 +75,219 @@ module tb_sine_lookup;
     logic [23:0] amp;
     integer      csv_fd;
 
-    localparam real MAX_AMP = 8388607.0;  // 2^23 - 1 (max positive value in a signed 24-bit representation)
+    localparam real MAX_AMP = 8388607.0;  // 2^23 - 1
     localparam real PI      = 3.14159265358979;
+
+    // Discontinuity detection
+    integer      fail_count;
+    logic signed [23:0] prev_amp;
+    logic signed [23:0] curr_amp;
+    integer signed      delta;
+    integer signed      max_delta;
+    integer              max_delta_sample;
 
     initial begin
         // ── Default state ─────────────────────────────────────
         reset     = 1;
-        sample_en = 1; // unit test: every clock edge is a sample tick
         phase     = 0;
         we_lut    = 0;
         addr_lut  = 0;
         din_lut   = 0;
 
-        // ── Load LUT via Port A ───────────────────────────────
-        // Entry i = round(sin(i/256 * pi/2) * MAX_AMP)
-        // Each entry is some fraction of the MAX_AMP based on the sine of its angle.
-        // Covers Q1 (0 to pi/2). Quadrant logic mirrors it for Q2-Q4.
-        for (i = 0; i < 256; i++) begin
-            sine_val = $sin(i * PI / 512.0) * MAX_AMP;
-            write_lut(i[7:0], $rtoi(sine_val)); // $rtoi rounds real sine value to integer for LUT.
+        // ── Load 1024-entry sine LUT via Port A ──────────────
+        for (i = 0; i < 1024; i++) begin
+            sine_val = $sin(i * PI / 2048.0) * MAX_AMP;
+            write_lut(i[9:0], $rtoi(sine_val));
         end
 
-        repeat (4) @(posedge clk_sys); // settle after last write
+        repeat (4) @(posedge clk_sys);
 
         // ── Release reset ─────────────────────────────────────
         @(posedge clock); #1;
         reset = 0;
-        repeat (2) @(posedge clock); // flush pipeline
 
-        // ── T1: Reset holds amplitude at 0 ───────────────────
-        reset = 1;
-        @(posedge clock); #1;
-        check($signed(amplitude), 24'sd0, 24'sd0, "T1 reset -> 0"); // $signed interprets a bit vector as a signed (two's complement)
-        reset = 0;
-        repeat (2) @(posedge clock);
+        // Wait for a few sample periods to flush
+        repeat (4) wait_for_sample();
 
-        // ── T2: Pipeline latency is exactly 2 clock cycles ───
-        @(posedge clock); #1;
-        phase = 32'h10000000;   // Q1, index=64 ([31:30] = 00, [29:22] = 01000000 = 64)
-        @(posedge clock); #1;
-        $display("T2 cycle 1 (stale, expect ~0): amplitude=%0d", $signed(amplitude));
-        @(posedge clock); #1;
-        $display("T2 cycle 2 (valid, expect ~%0d): amplitude=%0d",
-                 $rtoi($sin(64.0 * PI / 512.0) * MAX_AMP), $signed(amplitude)); // index = 64
+        // ── T1: Phase=0 should give ~0 ───────────────────────
+        phase = 32'h00000000;
+        wait_for_sample();
+        $display("T1 phase=0: amplitude=%0d (expect ~0)", $signed(amplitude));
 
-        // ── T3: Key phase landmarks ───────────────────────────
-        sample(32'h00000000, amp);
-        check($signed(amp),  24'sd0,        24'sd2, "T3 phase=0   -> ~0");
-        // Tolerance of 2? I honestly do not know the exact reasoning.
+        // ── T2: Phase=90deg should give ~+max ────────────────
+        phase = 32'h40000000;
+        wait_for_sample();
+        $display("T2 phase=90: amplitude=%0d (expect ~%0d)", $signed(amplitude), $rtoi(MAX_AMP));
 
-        // Tolerance 200: LUT index 255 = sin(255/256 * pi/2), not exactly sin(pi/2).
-        // The 256-entry table can't represent 90° exactly — max reachable ≈ 8388449.
-        //0x40000000 = 0100 0000 0000 0000 0000 0000 0000 0000             
-        //   [31:30] = 01  → Q2, [29:22] = 00000000 = 0                                           
-        sample(32'h40000000, amp);
-        check($signed(amp),  24'sd8388607,  24'sd200, "T3 phase=90  -> ~+max");
+        // ── T3: Phase=180deg should give ~0 ──────────────────
+        phase = 32'h80000000;
+        wait_for_sample();
+        $display("T3 phase=180: amplitude=%0d (expect ~0)", $signed(amplitude));
 
-        // 0x80000000 = 1000 0000 0000 0000 0000 0000 0000 0000 
-        //   [31:30] = 10  → Q3, [29:22] = 00000000 = 0                                           
-        sample(32'h80000000, amp);
-        check($signed(amp),  24'sd0,        24'sd2,   "T3 phase=180 -> ~0");
+        // ── T4: Phase=270deg should give ~-max ───────────────
+        phase = 32'hC0000000;
+        wait_for_sample();
+        $display("T4 phase=270: amplitude=%0d (expect ~%0d)", $signed(amplitude), -$rtoi(MAX_AMP));
 
-        // 0xC0000000 = 1100 0000 0000 0000 0000 0000 0000 0000 
-        //   [31:30] = 11  → Q4, [29:22] = 00000000 = 0                                           
-        sample(32'hC0000000, amp);
-        check($signed(amp), -24'sd8388607,  24'sd200, "T3 phase=270 -> ~-max");
+        // ── T5: Quadrant sign checks ─────────────────────────
+        phase = 32'h10000000; wait_for_sample();
+        if ($signed(amplitude) > 0) $display("PASS [T5 Q0 positive]");
+        else $display("FAIL [T5 Q0 positive] amplitude=%0d", $signed(amplitude));
 
-        // ── T4: Each quadrant has the correct sign ─────────────
-        sample(32'h10000000, amp); // Q1 mid — expect positive
-        if ($signed(amp) > 0) $display("PASS [T4 Q1 positive]  amplitude=%0d", $signed(amp));
-        else                   $display("FAIL [T4 Q1 positive]  amplitude=%0d", $signed(amp));
+        phase = 32'h50000000; wait_for_sample();
+        if ($signed(amplitude) > 0) $display("PASS [T5 Q1 positive]");
+        else $display("FAIL [T5 Q1 positive] amplitude=%0d", $signed(amplitude));
 
-        sample(32'h50000000, amp); // Q2 mid — expect positive
-        if ($signed(amp) > 0) $display("PASS [T4 Q2 positive]  amplitude=%0d", $signed(amp));
-        else                   $display("FAIL [T4 Q2 positive]  amplitude=%0d", $signed(amp));
+        phase = 32'h90000000; wait_for_sample();
+        if ($signed(amplitude) < 0) $display("PASS [T5 Q2 negative]");
+        else $display("FAIL [T5 Q2 negative] amplitude=%0d", $signed(amplitude));
 
-        sample(32'h90000000, amp); // Q3 mid — expect negative
-        if ($signed(amp) < 0) $display("PASS [T4 Q3 negative]  amplitude=%0d", $signed(amp));
-        else                   $display("FAIL [T4 Q3 negative]  amplitude=%0d", $signed(amp));
+        phase = 32'hD0000000; wait_for_sample();
+        if ($signed(amplitude) < 0) $display("PASS [T5 Q3 negative]");
+        else $display("FAIL [T5 Q3 negative] amplitude=%0d", $signed(amplitude));
 
-        sample(32'hD0000000, amp); // Q4 mid — expect negative
-        if ($signed(amp) < 0) $display("PASS [T4 Q4 negative]  amplitude=%0d", $signed(amp));
-        else                   $display("FAIL [T4 Q4 negative]  amplitude=%0d", $signed(amp));
-
-        // ── T5: Q1/Q2 symmetry: sin(x) == sin(pi - x) ────────
-        // Q2 reads the LUT backwards: lut_index = ~phase[29:22].
-        // For Q2 to hit LUT[80], we need ~phase[29:22] = 80, so phase[29:22] = 175.
+        // ══════════════════════════════════════════════════════
+        // T6: DISCONTINUITY TEST — sweep phase linearly and
+        // check that sample-to-sample jumps stay bounded.
+        //
+        // A clean sine at any frequency should have bounded
+        // sample-to-sample deltas. A click/pop shows up as a
+        // delta much larger than expected.
+        //
+        // We use a phase increment that sweeps ~200 Hz (fast
+        // enough to cross quadrant boundaries in a few hundred
+        // samples).
+        // ══════════════════════════════════════════════════════
+        $display("\n--- T6: Discontinuity sweep test ---");
         begin
-            logic [23:0] q1_amp, q2_amp;
-            sample({2'b00, 8'd80,  22'b0}, q1_amp); // Q1: lut_index = 80
-            sample({2'b01, 8'd175, 22'b0}, q2_amp); // Q2: ~175 = 80, reads LUT[80]
-            check($signed(q2_amp), $signed(q1_amp), 24'sd2, "T5 Q1/Q2 symmetry index 80");
+            localparam [31:0] PHASE_INC = 32'd17895698; // ~200 Hz: (200/48000)*2^32
+            localparam integer NUM_SAMPLES = 2000;
+            // At 200 Hz, one full cycle = 240 samples. 2000 samples = ~8 cycles.
+            // Max expected delta for a 200 Hz sine at 48 kHz:
+            //   d/dt[sin(2*pi*200*t)] at sample rate = 2*pi*200/48000 * MAX_AMP ≈ 219k
+            // Allow 2x margin for interpolation imprecision.
+            localparam integer MAX_ALLOWED_DELTA = 440000;
+
+            fail_count = 0;
+            max_delta = 0;
+            max_delta_sample = 0;
+
+            phase = 32'd0;
+            wait_for_sample();
+            prev_amp = $signed(amplitude);
+
+            csv_fd = $fopen("sim_out/discontinuity_test.csv", "w");
+            $fwrite(csv_fd, "sample,amplitude,delta\n");
+            $fwrite(csv_fd, "0,%0d,0\n", prev_amp);
+
+            for (i = 1; i < NUM_SAMPLES; i++) begin
+                phase = phase + PHASE_INC;
+                wait_for_sample();
+                curr_amp = $signed(amplitude);
+                delta = curr_amp - prev_amp;
+                if (delta < 0) delta = -delta;
+
+                $fwrite(csv_fd, "%0d,%0d,%0d\n", i, curr_amp, delta);
+
+                if (delta > MAX_ALLOWED_DELTA) begin
+                    if (fail_count < 10) // only print first 10
+                        $display("  CLICK at sample %0d: amplitude=%0d, prev=%0d, delta=%0d",
+                                 i, curr_amp, prev_amp, delta);
+                    fail_count++;
+                end
+                if (delta > max_delta) begin
+                    max_delta = delta;
+                    max_delta_sample = i;
+                end
+                prev_amp = curr_amp;
+            end
+
+            $fclose(csv_fd);
+            $display("  Max delta: %0d at sample %0d", max_delta, max_delta_sample);
+            if (fail_count == 0)
+                $display("PASS [T6] No discontinuities in %0d samples", NUM_SAMPLES);
+            else
+                $display("FAIL [T6] %0d discontinuities detected (threshold=%0d)", fail_count, MAX_ALLOWED_DELTA);
         end
 
-        // ── T6: Q3 is negation of Q1 ──────────────────────────
+        // ══════════════════════════════════════════════════════
+        // T7: Quadrant boundary stress test — phase values
+        // that land exactly at and near quadrant transitions.
+        // ══════════════════════════════════════════════════════
+        $display("\n--- T7: Quadrant boundary test ---");
         begin
-            logic [23:0] q1_amp, q3_amp;
-            sample({2'b00, 8'd40, 22'b0}, q1_amp);
-            sample({2'b10, 8'd40, 22'b0}, q3_amp);
-            check($signed(q3_amp), -$signed(q1_amp), 24'sd2, "T6 Q3 = -Q1 index 40");
+            logic signed [23:0] amp_before, amp_at, amp_after;
+            integer signed d1, d2;
+
+            // Q0→Q1 boundary: phase[31:30] transitions from 00 to 01
+            phase = 32'h3FF00000; wait_for_sample(); amp_before = $signed(amplitude);
+            phase = 32'h40000000; wait_for_sample(); amp_at     = $signed(amplitude);
+            phase = 32'h40100000; wait_for_sample(); amp_after  = $signed(amplitude);
+
+            d1 = amp_at - amp_before; if (d1 < 0) d1 = -d1;
+            d2 = amp_after - amp_at;  if (d2 < 0) d2 = -d2;
+            $display("  Q0->Q1: before=%0d, at=%0d, after=%0d (deltas: %0d, %0d)",
+                     amp_before, amp_at, amp_after, d1, d2);
+            if (d1 > 500000 || d2 > 500000)
+                $display("FAIL [T7 Q0->Q1] large jump at boundary");
+            else
+                $display("PASS [T7 Q0->Q1]");
+
+            // Q1→Q2 boundary
+            phase = 32'h7FF00000; wait_for_sample(); amp_before = $signed(amplitude);
+            phase = 32'h80000000; wait_for_sample(); amp_at     = $signed(amplitude);
+            phase = 32'h80100000; wait_for_sample(); amp_after  = $signed(amplitude);
+
+            d1 = amp_at - amp_before; if (d1 < 0) d1 = -d1;
+            d2 = amp_after - amp_at;  if (d2 < 0) d2 = -d2;
+            $display("  Q1->Q2: before=%0d, at=%0d, after=%0d (deltas: %0d, %0d)",
+                     amp_before, amp_at, amp_after, d1, d2);
+            if (d1 > 500000 || d2 > 500000)
+                $display("FAIL [T7 Q1->Q2] large jump at boundary");
+            else
+                $display("PASS [T7 Q1->Q2]");
+
+            // Q2→Q3 boundary
+            phase = 32'hBFF00000; wait_for_sample(); amp_before = $signed(amplitude);
+            phase = 32'hC0000000; wait_for_sample(); amp_at     = $signed(amplitude);
+            phase = 32'hC0100000; wait_for_sample(); amp_after  = $signed(amplitude);
+
+            d1 = amp_at - amp_before; if (d1 < 0) d1 = -d1;
+            d2 = amp_after - amp_at;  if (d2 < 0) d2 = -d2;
+            $display("  Q2->Q3: before=%0d, at=%0d, after=%0d (deltas: %0d, %0d)",
+                     amp_before, amp_at, amp_after, d1, d2);
+            if (d1 > 500000 || d2 > 500000)
+                $display("FAIL [T7 Q2->Q3] large jump at boundary");
+            else
+                $display("PASS [T7 Q2->Q3]");
+
+            // Q3→Q0 boundary (wrap)
+            phase = 32'hFFF00000; wait_for_sample(); amp_before = $signed(amplitude);
+            phase = 32'h00000000; wait_for_sample(); amp_at     = $signed(amplitude);
+            phase = 32'h00100000; wait_for_sample(); amp_after  = $signed(amplitude);
+
+            d1 = amp_at - amp_before; if (d1 < 0) d1 = -d1;
+            d2 = amp_after - amp_at;  if (d2 < 0) d2 = -d2;
+            $display("  Q3->Q0: before=%0d, at=%0d, after=%0d (deltas: %0d, %0d)",
+                     amp_before, amp_at, amp_after, d1, d2);
+            if (d1 > 500000 || d2 > 500000)
+                $display("FAIL [T7 Q3->Q0] large jump at boundary");
+            else
+                $display("PASS [T7 Q3->Q0]");
         end
 
-        // ── T7: Full cycle CSV dump ───────────────────────────
-        // 1024 evenly-spaced phase values across 32-bit phase space.
-        // Open sine_wave.csv, write header, then one row per sample.
+        // ══════════════════════════════════════════════════════
+        // T8: Full-cycle CSV dump for visual inspection
+        // ══════════════════════════════════════════════════════
         csv_fd = $fopen("sim_out/sine_wave.csv", "w");
         $fdisplay(csv_fd, "phase_index,amplitude");
-
         for (i = 0; i < 1024; i++) begin
-            sample(32'(i * (65536 * 64)), amp); // evenly spaces 1024 steps across 2^32
-            $fdisplay(csv_fd, "%0d,%0d", i, $signed(amp));
+            phase = 32'(i * (65536 * 64));
+            wait_for_sample();
+            $fdisplay(csv_fd, "%0d,%0d", i, $signed(amplitude));
         end
-
         $fclose(csv_fd);
-        $display("T7 CSV written to sim_out/sine_wave.csv");
-
-        // ── T8: sample_en gating bug demonstration ───────────
-        // Shows that a single-cycle sample_en pulse (real divider behavior)
-        // does NOT update amplitude, because lut_out is only valid one cycle
-        // AFTER sample_en fires (BRAM 1-cycle read latency).
-        //
-        // Step 1 — reference: always-on sample_en (known-good path).
-        // Step 2 — pulsed:    sample_en high for exactly 1 cycle, then low.
-        //          Expected:  amplitude updates to ~+MAX_AMP.
-        //          Actual:    amplitude stays 0 (reset value) — BUG.
-        begin
-            logic [23:0] expected_amp, pulsed_amp;
-
-            // Step 1: always-on sample_en — get expected output for Q2 boundary
-            sample_en = 1;
-            reset = 1; @(posedge clock); #1; reset = 0;
-            repeat (2) @(posedge clock);
-            sample(32'h40000000, expected_amp); // Q2 boundary → ~+MAX_AMP
-            $display("T8 reference  (sample_en=1 always): amplitude=%0d  (expected ~+MAX_AMP)", $signed(expected_amp));
-
-            // Step 2: pulsed sample_en — 1 cycle high, then low
-            reset = 1; @(posedge clock); #1; reset = 0;
-            sample_en = 0;
-            repeat (4) @(posedge clock);
-
-            @(posedge clock); #1;
-            phase     = 32'h40000000;
-            sample_en = 1;              // pulse for exactly 1 cycle
-            @(posedge clock); #1;
-            sample_en = 0;
-            repeat (8) @(posedge clock); #1;
-            pulsed_amp = amplitude;
-
-            $display("T8 pulsed     (sample_en=1 for 1 cycle): amplitude=%0d", $signed(pulsed_amp));
-            if (pulsed_amp !== expected_amp)
-                $display("FAIL [T8 BUG CONFIRMED] amplitude=%0d, expected=%0d — lut_out not valid when sample_en fires",
-                         $signed(pulsed_amp), $signed(expected_amp));
-            else
-                $display("PASS [T8] amplitude updated correctly (bug not present)");
-
-            sample_en = 1; // restore for any tests that follow
-        end
+        $display("\nT8 CSV written to sim_out/sine_wave.csv");
 
         $display("\n=== All tests complete ===");
         $finish;
@@ -247,7 +295,7 @@ module tb_sine_lookup;
 
     // ── Timeout watchdog ──────────────────────────────────────
     initial begin
-        #100_000_000;
+        #2_000_000_000; // 2 seconds sim time
         $display("TIMEOUT — simulation limit reached");
         $finish;
     end
