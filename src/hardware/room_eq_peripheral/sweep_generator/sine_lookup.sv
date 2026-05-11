@@ -1,16 +1,15 @@
 // ==================== MODULE INTERFACE ====================
-// Sine lookup with linear interpolation using dual BRAMs.
+// Sine lookup with linear interpolation between adjacent LUT entries.
+// Eliminates staircase aliasing at high frequencies where the phase
+// increment skips many LUT entries per sample.
 //
-// Two copies of the sine LUT read index0 and index1 simultaneously,
-// eliminating any pipeline timing issues. The interpolation is purely
-// combinational between two registered BRAM outputs.
+// Pipeline (3 stages after sample_en):
+//   Cycle 0: present addr_b = index0 to BRAM
+//   Cycle 1: latch lut_out0, present addr_b = index1
+//   Cycle 2: latch lut_out1, interpolate, apply quadrant, output
 //
-// Pipeline (2 cycles, same as original):
-//   Cycle 0 (sample_en): addr_b updates for both BRAMs
-//   Cycle 1: BRAM outputs settle (1-cycle read latency)
-//   Next sample_en: latch interpolated result
-//
-// Uses 2x BRAM (48 Kbits out of 4M available = 1.2%).
+// At 12.288 MHz with 256 clocks per sample, the 3-cycle pipeline
+// completes well before the next sample_en.
 // ===========================================================
 
 module sine_lookup(
@@ -39,113 +38,80 @@ module sine_lookup(
     // ── Phase decomposition ─────────────────────────────────
     wire [1:0]  quadrant  = phase[31:30];
     wire [9:0]  raw_index = phase[29:20];
-    wire [9:0]  frac_bits = phase[19:10];  // 10-bit fraction between entries
+    wire [9:0]  frac_bits = phase[19:10];  // fractional part between LUT entries
 
-    // Quarter-wave mirror with clamped next index
-    wire [9:0]  index0 = (quadrant[0]) ? ~raw_index : raw_index;
-    wire [9:0]  next_fwd = (raw_index == 10'd1023) ? 10'd1023 : (raw_index + 10'd1);
-    wire [9:0]  next_rev = (raw_index == 10'd0)    ? 10'd1023 : (~raw_index - 10'd1);
-    wire [9:0]  index1 = (quadrant[0]) ? next_rev : next_fwd;
+    // Quarter-wave mirror: in Q2/Q4 read backwards
+    wire [9:0]  index0 = (quadrant[0]) ? ~raw_index       : raw_index;
+    wire [9:0]  index1 = (quadrant[0]) ? (~raw_index - 1) : (raw_index + 1);
 
-    // ── Dual BRAMs — both written identically, read different addresses ──
-    wire [23:0] lut_out0;  // value at index0
-    wire [23:0] lut_out1;  // value at index1
+    // ── BRAM ────────────────────────────────────────────────
+    wire [23:0] lut_out;
+    reg  [9:0]  bram_addr;
 
-    sine_lut lut0 (
+    sine_lut lut (
         .clk_a  (clk_sys),
         .we_a   (we_lut),
         .addr_a (addr_lut),
         .din_a  (din_lut),
         .clk_b  (clock),
-        .addr_b (index0),
-        .dout_b (lut_out0)
+        .addr_b (bram_addr),
+        .dout_b (lut_out)
     );
 
-    sine_lut lut1 (
-        .clk_a  (clk_sys),
-        .we_a   (we_lut),
-        .addr_a (addr_lut),
-        .din_a  (din_lut),
-        .clk_b  (clock),
-        .addr_b (index1),
-        .dout_b (lut_out1)
-    );
+    // ── Interpolation pipeline ──────────────────────────────
+    // State: 0=idle, 1=reading index0, 2=reading index1, 3=interpolate
+    reg [1:0] pipe_state;
+    reg [23:0] val0;          // LUT value at index0
+    reg [1:0]  quad_saved;    // quadrant saved at sample_en
+    reg [9:0]  frac_saved;    // fractional bits saved at sample_en
 
-    // ── Interpolation (registered pipeline) ────────────────
-    // Stage 1: register BRAM outputs and diff (on any clock, always running)
-    // Stage 2: register product
-    // Stage 3: register final interp result
-    // These registers break the long combinational path (multiply + add)
-    // so it meets timing at 12.288 MHz.
-
-    reg signed [24:0] r_val0;
-    reg signed [24:0] r_diff;
-    reg [9:0]  r_frac;
-    reg [1:0]  r_quad1;  // quadrant delayed 1 cycle
-    reg [1:0]  r_quad2;  // quadrant delayed 2 cycles
-    reg [1:0]  r_quad3;  // quadrant delayed 3 cycles
-
-    // Stage 1: capture BRAM outputs, compute diff
     always @(posedge clock or posedge reset) begin
         if (reset) begin
-            r_val0  <= 0;
-            r_diff  <= 0;
-            r_frac  <= 0;
-            r_quad1 <= 0;
+            pipe_state <= 2'd0;
+            bram_addr  <= 10'd0;
+            val0       <= 24'd0;
+            quad_saved <= 2'b00;
+            frac_saved <= 10'd0;
+            amplitude  <= 24'd0;
         end else begin
-            r_val0  <= {1'b0, lut_out0};
-            r_diff  <= {1'b0, lut_out1} - {1'b0, lut_out0};
-            r_frac  <= frac_bits;
-            r_quad1 <= quadrant;
-        end
-    end
+            case (pipe_state)
+                2'd0: begin
+                    if (sample_en) begin
+                        // Stage 0: present index0 to BRAM
+                        bram_addr  <= index0;
+                        quad_saved <= quadrant;
+                        frac_saved <= frac_bits;
+                        pipe_state <= 2'd1;
+                    end
+                end
+                2'd1: begin
+                    // Stage 1: lut_out has val at index0, present index1
+                    val0       <= lut_out;
+                    bram_addr  <= index1;
+                    pipe_state <= 2'd2;
+                end
+                2'd2: begin
+                    // Stage 2: lut_out has val at index1, interpolate
+                    // lerp = val0 + frac * (val1 - val0) / 1024
+                    // Using signed arithmetic for the difference
+                    begin
+                        reg signed [24:0] diff;
+                        reg signed [34:0] product;
+                        reg signed [24:0] interp;
+                        diff    = {1'b0, lut_out} - {1'b0, val0};
+                        product = diff * $signed({1'b0, frac_saved});
+                        interp  = {1'b0, val0} + product[34:10];  // divide by 1024
 
-    // Stage 2: multiply
-    reg signed [34:0] r_product;
-    reg signed [24:0] r_val0_d;
-
-    always @(posedge clock or posedge reset) begin
-        if (reset) begin
-            r_product <= 0;
-            r_val0_d  <= 0;
-            r_quad2   <= 0;
-        end else begin
-            r_product <= r_diff * {1'b0, r_frac};
-            r_val0_d  <= r_val0;
-            r_quad2   <= r_quad1;
-        end
-    end
-
-    // Stage 3: add and clamp
-    reg [23:0] r_interp;
-
-    always @(posedge clock or posedge reset) begin
-        if (reset) begin
-            r_interp <= 0;
-            r_quad3  <= 0;
-        end else begin
-            reg signed [24:0] sum;
-            sum = r_val0_d + (r_product >>> 10);
-            r_interp <= sum[24] ? 24'd0 : sum[23:0];
-            r_quad3  <= r_quad2;
-        end
-    end
-
-    // ── Output: apply quadrant sign ─────────────────────────
-    // r_interp and r_quad3 are stable and registered.
-    // Update amplitude on sample_en (once per 256 clocks).
-    // The 3-stage interpolation pipeline runs continuously and
-    // settles well before the next sample_en.
-
-    always @(posedge clock or posedge reset) begin
-        if (reset) begin
-            amplitude <= 24'd0;
-        end else if (sample_en) begin
-            case (r_quad3)
-                2'b00: amplitude <=  r_interp;
-                2'b01: amplitude <=  r_interp;
-                2'b10: amplitude <= -r_interp;
-                2'b11: amplitude <= -r_interp;
+                        case (quad_saved)
+                            2'b00: amplitude <=  interp[23:0];
+                            2'b01: amplitude <=  interp[23:0];
+                            2'b10: amplitude <= -interp[23:0];
+                            2'b11: amplitude <= -interp[23:0];
+                        endcase
+                    end
+                    pipe_state <= 2'd0;
+                end
+                default: pipe_state <= 2'd0;
             endcase
         end
     end
