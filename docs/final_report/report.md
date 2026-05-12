@@ -612,6 +612,21 @@ This I2S receiver module deserializes stereo 24-bit audio from the WM8731 codec.
 
 ## 2. Resource Utilization
 
+The following utilization figures are from the last successful Quartus compile targeting the De1 SoC Cyclone V.
+
+| Resource | Used | Total | Utilization |
+|----------|------|-------|-------------|
+| Logic (ALMs) | 5,912 | 32,070 | 18% |
+| Registers | 12,607 | — | — |
+| Pins | 362 | 457 | 79% |
+| Block memory bits | 1,557,532 | 4,065,280 | 38% |
+| RAM Blocks | 222 | 397 | 56% |
+| DSP Blocks | 21 | 87 | 24% |
+| PLLs | 1 | 6 | 17% |
+| DLLs | 1 | 4 | 25% |
+
+Logic is comfortable at 18%. RAM blocks at 56% is the highest pressure resource, driven primarily by the FFT IP core and the dual 8192-entry result RAM. Pins are at 79% — the design cannot accommodate significantly more I/O without pin budget constraints.
+
 ## 3. Software System Architecture
 
 ### HPS–FPGA Interface
