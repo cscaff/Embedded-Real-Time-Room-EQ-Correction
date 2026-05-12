@@ -630,7 +630,6 @@ The following utilization figures are from the last successful Quartus compile t
 | PLLs | 1 | 6 | 17% |
 | DLLs | 1 | 4 | 25% |
 
-Logic is comfortable at 18%. RAM blocks at 56% is the highest pressure resource, driven primarily by the FFT IP core and the dual 8192-entry result RAM. Pins are at 79% — the design cannot accommodate significantly more I/O without pin budget constraints.
 
 ## 3. Software System Architecture
 
