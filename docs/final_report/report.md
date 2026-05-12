@@ -2,13 +2,111 @@
 
 ## 1. Introduction
 
-Every listening room colors the sound played inside it: room modes boost or cancel specific frequencies, speaker placement tilts the stereo image, absorptive materials roll off highs. We propose to build a room-equalization device on the DE1-SoC that measures a particular room's magnitude response, designs a compensating FIR filter, and writes the resulting filter to a file for reuse. 
+Every listening room colors the sound played inside it: room modes boost or cancel specific frequencies, speaker placement tilts the stereo image, absorptive materials roll off highs. We propose to build a room-equalization device on the DE1-SoC that measures a particular room's magnitude response, designs a compensating FIR filter, and writes the resulting filter to a file for reuse.
+
+The system operates in two phases. In the **measurement phase**, a logarithmic sine sweep from 60 Hz to 20 kHz is generated entirely in FPGA hardware and played through the WM8731 codec's DAC to the room speakers. The room's acoustic response is simultaneously captured by a condenser microphone through the codec's ADC. As samples arrive over I2S, a hardware calibration engine streams them into an 8192-point FFT running on the FPGA fabric, accumulating up to 64 frequency-domain frames. In the **analysis phase**, the ARM HPS reads the FFT bins over the lightweight HPS-to-FPGA bridge, computes a correction curve by inverting the measured response, and designs a linear-phase FIR filter via an inverse FFT. The resulting tap coefficients are written to a CSV file for downstream use.
+
+Key hardware components include: a custom `room_eq_peripheral` Avalon MM slave integrating the sweep generator, I2S transmitter and receiver, and calibration engine; a Quartus PLL synthesizing the 12.288 MHz codec master clock; a 1024-entry quarter-wave sine LUT in BRAM initialized by the HPS at startup; a Quartus DCFIFO bridging the I2S bit-clock domain to the 50 MHz system clock; and a Quartus FFT II IP core performing the 8192-point transform. The HPS software (`room_analyze`) handles codec initialization over I2C, LUT loading, sweep triggering, frame capture, and all DSP post-processing using FFTW.
 
 ## 2. Hardware System Architecture
+
+```mermaid
+flowchart LR
+  subgraph HPS["ARM HPS (Linux)"]
+    APP["room_analyze<br/>calibrate · compute FIR taps"]
+    MMAP["/dev/mem mmap"]
+  end
+
+  subgraph FPGA["FPGA Fabric"]
+    PERIPH["room_eq_peripheral"]
+    PLL["clock_gen (PLL)"]
+  end
+
+  subgraph CODEC["WM8731 Codec"]
+    I2C_IN["I2C regs"]
+    ADC["24-bit ADC"]
+    DAC["24-bit DAC"]
+    SER["I2S serializer"]
+  end
+
+  subgraph ANALOG["Analog"]
+    MIC["Condenser mic"]
+    SPK["Speakers"]
+  end
+
+  APP --> MMAP
+  MMAP <-->|AXI, 32-bit| PERIPH
+  MMAP -->|I2C via PCA9157S mux| I2C_IN
+
+  PERIPH -->|I2S TX| SER
+  SER -->|I2S RX| PERIPH
+  PLL -->|XCK 12.288 MHz| CODEC
+  PLL -->|audio_clk 12.288 MHz| PERIPH
+
+  MIC --> ADC
+  DAC --> SPK
+
+  classDef hps    fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef fpga   fill:#dcfce7,stroke:#166534,color:#14532d
+  classDef codec  fill:#fef3c7,stroke:#a16207,color:#713f12
+  classDef analog fill:#f3f4f6,stroke:#4b5563,color:#1f2937
+
+  class APP,MMAP hps
+  class PERIPH,PLL fpga
+  class I2C_IN,ADC,DAC,SER codec
+  class MIC,SPK analog
+```
 
 ### Room EQ Peripheral
 
 The Room EQ Peripheral is the top-level Avalon memory-mapped peripheral that integrates all hardware submodules. It exposes a 32-bit register interface to the HPS, manages a 3-state FSM controlling the sweep and capture flow, and bridges two clock domains — the 50 MHz system clock (`clk`) and the 12.288 MHz PLL audio clock (`audio_clk`) — with dedicated synchronizers. Audio conduit signals connect directly to the WM8731 codec pins on the DE1-SoC.
+
+```mermaid
+flowchart TB
+  HPS(["Avalon MM Slave"])
+  CODEC(["WM8731 Codec"])
+
+  subgraph room_eq_peripheral
+    REG["Register Map"]
+    FSM["FSM: IDLE / SWEEP / DONE"]
+    SWP["sweep_generator"]
+    I2STX["i2s_tx"]
+    I2SRX["i2s_rx"]
+    CAL["calibration_engine"]
+  end
+
+  HPS <-->|32-bit Avalon MM| REG
+
+  REG -->|sweep_start| FSM
+  REG -->|we_lut, lut_addr, lut_data| SWP
+  REG -->|fft_rd_addr, fifo_hps_mode, fifo_hps_pop| CAL
+  CAL -->|fft_rd_real, fft_rd_imag, fft_done, fifo_data_out, fifo_empty| REG
+  I2SRX -->|rx_left| REG
+
+  FSM -->|sweep_start_audio| SWP
+  FSM -->|calibrate_start| CAL
+  SWP -->|sweep_done| FSM
+
+  SWP -->|amplitude| I2STX
+  I2STX -.->|bclk, lrck| I2SRX
+  I2STX -.->|bclk, lrck| CAL
+  I2SRX -->|rx_left| CAL
+
+  I2STX -->|I2S TX| CODEC
+  CODEC -->|I2S RX| I2SRX
+
+  classDef hps   fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef ctrl  fill:#dcfce7,stroke:#166534,color:#14532d
+  classDef sweep fill:#ffedd5,stroke:#c2410c,color:#7c2d12
+  classDef cal   fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+  classDef codec fill:#fef3c7,stroke:#a16207,color:#713f12
+
+  class HPS hps
+  class REG,FSM ctrl
+  class SWP,I2STX sweep
+  class I2SRX,CAL cal
+  class CODEC codec
+```
 
 #### Interface
 
@@ -93,6 +191,39 @@ The Clock Generator PLL is a Quartus `altera_pll` IP core configured to synthesi
 ### Sweep Generator
 
 The sweep generator module orchestrates the frequency sweep from 20 Hz to 20 KHz. On a start signal, the module resets and begins the sweep, outputting 24-bit signed sine values until 20 KHz is reached where a done signal is asserted. 
+
+```mermaid
+flowchart TB
+  PARENT(["room_eq_peripheral"])
+
+  subgraph sweep_generator
+    DIV["8-bit Clock Divider<br/>(12.288 MHz to 48 kHz sample_en)"]
+    PA["phase_accumulator"]
+    SL["sine_lookup"]
+    AMP["amplitude mux<br/>(zero when done)"]
+  end
+
+  PARENT -->|start| DIV
+  PARENT -->|we_lut, addr_lut, din_lut| SL
+  PARENT -->|clk_sys| SL
+
+  DIV -->|sample_en| PA
+  DIV -->|sample_en| SL
+  PA -->|phase| SL
+  PA -->|done| AMP
+  SL -->|amplitude_internal| AMP
+
+  AMP -->|amplitude| PARENT
+  PA -->|done| PARENT
+
+  classDef parent fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef ctrl   fill:#dcfce7,stroke:#166534,color:#14532d
+  classDef sweep  fill:#ffedd5,stroke:#c2410c,color:#7c2d12
+
+  class PARENT parent
+  class DIV,AMP ctrl
+  class PA,SL sweep
+```
 
 #### Interface
 
@@ -219,6 +350,33 @@ On each rising edge of `clk_b`, `dout_b` is registered from `mem[addr_b]`, givin
 ### Calibration Engine
 
 The calibration engine captures the room's acoustic response by recording the microphone signal during a frequency sweep, streaming the samples through an FFT, and storing the resulting frequency-domain bins in a dual-port RAM for the HPS to read. It bridges two clock domains — the I2S bit clock (`bclk`) and the 50 MHz system clock (`sysclk`) — using a sample FIFO, and supports two drain modes: automatic FFT processing or direct HPS readout.
+
+```mermaid
+flowchart TB
+  PARENT(["room_eq_peripheral"])
+
+  subgraph calibration_engine
+    FIFO["sample_fifo"]
+    FFT["sample_fft"]
+    RAM["fft_result_ram"]
+  end
+
+  PARENT -->|bclk, lrclk, left_chan| FIFO
+  PARENT -->|rd_addr| RAM
+
+  FIFO -->|data, valid| FFT
+  FFT -->|sink_ready| FIFO
+  FFT -->|real, imag, valid, sop, eop| RAM
+
+  RAM -->|rd_real, rd_imag, fft_done| PARENT
+  FIFO -->|fifo_data_out, fifo_empty| PARENT
+
+  classDef parent fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef cal    fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+
+  class PARENT parent
+  class FIFO,FFT,RAM cal
+```
 
 #### Interface
 
@@ -505,13 +663,51 @@ The program executes the following stages in order.
 
 For each frequency bin, the peak magnitude across all captured frames is selected: `max(sqrt(re² + im²))`. Bins are then scaled by `freq_hz / 1000` to compensate for the 1/f energy distribution of a logarithmic sweep. The resulting spectrum is smoothed with a proportional-bandwidth (10%) sliding window to reduce noise before subsequent stages.
 
+```
+for each bin b in 0..BINS_PER_FRAME:
+    H_mag[b] = max over all frames of sqrt(re² + im²)
+    H_mag[b] *= (b * 48000/8192) / 1000.0   // 1/f compensation
+
+for each bin b:
+    H_smooth[b] = average of H_mag[b-w .. b+w]  // w = max(1, b * 0.10)
+```
+
 **5. Correction Curve Computation** (`compute_correction`)
 
 The mean level of the smoothed response is computed over the target correction range (default 60 Hz – 20 kHz). Each bin's correction gain is set to the inverse of its normalized response (`1 / H_norm`), clamped to ±`max_db` (default ±12 dB), then blended toward unity by `strength` (default 0.5): `c = 1 + strength * (c - 1)`. Bins outside the correction range are set to unity gain.
 
+```
+H_mean = average of H_smooth[lo_bin .. hi_bin]
+
+for each bin b in lo_bin..hi_bin:
+    H_norm = H_smooth[b] / H_mean
+    c = 1.0 / H_norm                     // invert room response
+    c = clamp(c, 10^(-max_db/20), 10^(max_db/20))
+    c = 1.0 + strength * (c - 1.0)       // blend toward unity
+    correction[b] = c
+
+// bins outside [lo_bin, hi_bin] remain 1.0
+```
+
 **6. FIR Tap Computation** (`compute_fir_taps`)
 
 The correction gain array (real-valued, one entry per bin) is treated as a half-complex frequency-domain spectrum and transformed to the time domain with FFTW's `c2r` inverse FFT. The center `n_taps` samples (default 511) are extracted from the wrap-around impulse response, multiplied by a Hanning window, and normalized so the DC gain equals 1. The result is a linear-phase FIR filter whose frequency response approximates the target correction curve.
+
+```
+freq_buf[b] = correction[b] + 0j   // for b in 0..BINS_PER_FRAME
+
+time_buf = IFFT(freq_buf)           // FFTW c2r, length 8192
+
+// unwrap wrap-around order into linear-phase center
+taps[0..half-1]  = time_buf[8192-half .. 8191] / 8192
+taps[half..n-1]  = time_buf[0 .. half]         / 8192
+
+// Hanning window
+taps[i] *= 0.5 * (1 - cos(2π*i / (n_taps-1)))
+
+// normalize DC gain to 1
+taps /= sum(taps)
+```
 
 **7. Output**
 
@@ -519,8 +715,18 @@ The `n_taps` tap coefficients are written one per line to a CSV file (default `c
 
 ## 4. Demo
 
+The figure below shows a complete sample run of the system on a real room.
 
+![Room EQ Correction Filter — Computed from Hardware FFT Data](../../docs/assets/correction_filter.jpeg)
 
-**TODO: Resource Utilization and Timing Closure**
-**Software Side**
-**Block Diagram**
+The top-left panel shows the raw and smoothed room response (55–85 dB, 60 Hz–20 kHz), revealing a broad peak in the 3–10 kHz range. The top-right panel shows the resulting correction curve, boosting low frequencies by up to +6.5 dB and attenuating the high-frequency peak by up to −6 dB, clamped to ±12 dB. The bottom-left panel shows the 511-tap Hanning-windowed FIR impulse response, symmetric about tap 256. The bottom-right panel overlays the original and corrected responses, confirming a noticeably flatter magnitude across the full band.
+
+## 5. Project Roles and Lessons
+
+### Jacob Boxerman
+
+### Roland List
+
+### Christian Scaff
+
+## 6. Source Code
