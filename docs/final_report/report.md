@@ -1,5 +1,10 @@
 # CSEE 4840 Room EQ Correction Report
 
+*CSEE4840: Embedded Systems Project*
+Jacob Boxerman (JIB2137) • Roland List (RJL2184) • Christian Scaff (CTS2148)
+May 11, 2026
+
+
 ## 1. Introduction
 
 Every listening room colors the sound played inside it: room modes boost or cancel specific frequencies, speaker placement tilts the stereo image, absorptive materials roll off highs. We propose to build a room-equalization device on the DE1-SoC that measures a particular room's magnitude response, designs a compensating FIR filter, and writes the resulting filter to a file for reuse.
