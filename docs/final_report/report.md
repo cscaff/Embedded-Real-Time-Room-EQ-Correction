@@ -742,11 +742,22 @@ The top-left panel shows the raw and smoothed room response (55–85 dB, 60 Hz�
 
 ## 5. Project Roles and Lessons
 
-### Jacob Boxerman
+### Jacob Boxerman and Roland List
 
-### Roland List
+- Developed I2S TX, I2S RX, Room EQ Peripheral Top Module, HPS software, and overall FPGA hardware synthesis and integration including hardware debugging.
 
 ### Christian Scaff
+
+- Developed FFT Results RAM, Sine LUT, Calibration Engine, Sweep Generator, Questa Simulations and Testing, Presentation.
+
+### Lessons
+
+- Define a more detailed plan earlier. Our initial design document left many details up for decision at implementation time. This lead to issues with:
+  - Sine Sweep Generation Sound Issues: Tackling Aliasing and crackling based on granularity of sine LUT and read timing. 
+  - Implementation Mistakes:  FSM initially implmeneted to only call calibration engine once, not a continous capture through the sweep. This was a result of ambiguity in the design document.
+- Start earlier: Many small issues can arise and cause set backs.
+  - Different Qaurtus Versions used between computers led to IP cores targeting incorrect devices. This led to a long period of having to cleanly re-integrate IP cores with Qaurtus.
+  - Kernel module code was thrown out in favor for a prototype-style `/dev/mem` because we could not get our device tree to function properly with our device and ran out of time.
 
 ## 6. Source Code
 
@@ -1380,7 +1391,7 @@ int main(int argc, char *argv[])
 
 ### sine_lut.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // True Dual-Port BRAM: 1024 entries x 24-bit wide.
 // Port A: 50 MHz system clock — write-only (used for startup initialization).
@@ -1437,7 +1448,7 @@ endmodule
 
 ### fft_results_ram.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Inputs:
 // - sysclk: 50 MHz system clock.
@@ -1537,7 +1548,7 @@ endmodule
 
 ### room_eq_peripheral.sv
 
-```
+```verilog
 /*
  * Avalon memory-mapped peripheral for Real-Time Room EQ Correction
  *
@@ -1812,7 +1823,7 @@ endmodule
 
 ### calibration_engine.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Inputs:
 // - sysclk: 50 MHz system clock.
@@ -1969,7 +1980,7 @@ endmodule
 
 ### sample_fft.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Inputs:
 // - sysclk: 50 MHz system clock.
@@ -2089,7 +2100,7 @@ endmodule
 
 ### sample_fifo.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Inputs:
 // - bclk: I2S Bit Clock (3.072 MHz)
@@ -2177,7 +2188,7 @@ endmodule
 
 ### i2s_rx.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // I2S receiver.  Deserializes stereo 24-bit audio from the
 // WM8731 codec (Philips I2S format: 1-bit delay, MSB-first,
@@ -2265,7 +2276,7 @@ endmodule
 
 ### i2s_tx.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Top-level I2S transmitter.  Accepts stereo 24-bit parallel
 // samples and serializes them to the WM8731 codec using standard
@@ -2359,7 +2370,7 @@ endmodule
 
 ### i2s_shift_regiser.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Parallel-to-serial shift register for I2S data transmission.
 // Loads a 24-bit sample and shifts it out MSB-first, one bit
@@ -2408,7 +2419,7 @@ endmodule
 
 ### i2s_clock_gen.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Derives I2S bit clock (BCLK) and frame clock (LRCK) from the
 // 12.288 MHz master clock.  Both outputs are data signals toggled
@@ -2469,7 +2480,7 @@ endmodule
 
 ### sweep_generator.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Inputs:
 // - clock:    12.288 MHz PLL Generated Clock
@@ -2576,7 +2587,7 @@ endmodule
 
 ### sine_lookup.sv
 
-```
+```verilog
 // ==================== MODULE INTERFACE ====================
 // Sine lookup with linear interpolation between adjacent LUT entries.
 // Eliminates staircase aliasing at high frequencies where the phase
@@ -2709,7 +2720,7 @@ endmodule
 
 ### phase_accumulator.sv
 
-```
+```verilog
 // The Following code was inspired by: https://github.com/samiyaalizaidi/Direct-Digital-Synthesizer/blob/main/phase_accumulator.v
 // ==================== MODULE INTERFACE ====================
 // Inputs:
@@ -2774,7 +2785,7 @@ endmodule
 
 ### soc_system_top.sv
 
-```
+```verilog
 // ==================================================================
 // Copyright (c) 2013 by Terasic Technologies Inc.
 // ==================================================================
