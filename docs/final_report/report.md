@@ -9,7 +9,7 @@ May 11, 2026
 
 Every listening room colors the sound played inside it: room modes boost or cancel specific frequencies, speaker placement tilts the stereo image, absorptive materials roll off highs. We propose to build a room-equalization device on the DE1-SoC that measures a particular room's magnitude response, designs a compensating FIR filter, and writes the resulting filter to a file for reuse.
 
-The system operates in two phases. In the **measurement phase**, a logarithmic sine sweep from 60 Hz to 20 kHz is generated entirely in FPGA hardware and played through the WM8731 codec's DAC to the room speakers. The room's acoustic response is simultaneously captured by a condenser microphone through the codec's ADC. As samples arrive over I2S, a hardware calibration engine streams them into an 8192-point FFT running on the FPGA fabric, accumulating up to 64 frequency-domain frames. In the **analysis phase**, the ARM HPS reads the FFT bins over the lightweight HPS-to-FPGA bridge, computes a correction curve by inverting the measured response, and designs a linear-phase FIR filter via an inverse FFT. The resulting tap coefficients are written to a CSV file for downstream use.
+The system operates in two phases. In the **measurement phase**, a logarithmic sine sweep from 60 Hz to 20 kHz is generated entirely in FPGA hardware and played through the WM8731 codec's DAC to the room speakers. The room's acoustic response is simultaneously captured by a microphone through the codec's ADC. As samples arrive over I2S, a hardware calibration engine streams them into an 8192-point FFT running on the FPGA fabric, accumulating up to 64 frequency-domain frames. In the **analysis phase**, the ARM HPS reads the FFT bins over the lightweight HPS-to-FPGA bridge, computes a correction curve by inverting the measured response, and designs a linear-phase FIR filter via an inverse FFT. The resulting tap coefficients are written to a CSV file for downstream use.
 
 Key hardware components include: a custom `room_eq_peripheral` Avalon MM slave integrating the sweep generator, I2S transmitter and receiver, and calibration engine; a Quartus PLL synthesizing the 12.288 MHz codec master clock; a 1024-entry quarter-wave sine LUT in BRAM initialized by the HPS at startup; a Quartus DCFIFO bridging the I2S bit-clock domain to the 50 MHz system clock; and a Quartus FFT II IP core performing the 8192-point transform. The HPS software (`room_analyze`) handles codec initialization over I2C, LUT loading, sweep triggering, frame capture, and all DSP post-processing using FFTW.
 
@@ -35,7 +35,7 @@ flowchart LR
   end
 
   subgraph ANALOG["Analog"]
-    MIC["Condenser mic"]
+    MIC["Microphone"]
     SPK["Speakers"]
   end
 
@@ -161,7 +161,7 @@ The peripheral contains a 3-state FSM clocked by `clk`.
 | `IDLE` | Waiting for HPS trigger | --> `SWEEP` on `sweep_start` write |
 | `SWEEP` | Sweep active; calibration engine armed | --> `DONE` on rising edge of `sweep_done` (synchronized from audio domain) |
 | `DONE` | FFT complete; result RAM available to HPS | --> `SWEEP` on `sweep_start` (allows re-trigger without full reset) |
-
+ 
 On entering `SWEEP` from either `IDLE` or `DONE`, a one-cycle `calibrate_start` pulse is issued to arm the calibration engine's FFT pipeline.
 
 #### Submodule Wiring
@@ -805,6 +805,7 @@ Embedded-Real-Time-Room-EQ-Correction/
  *     -s STRENGTH Correction strength 0.0-1.0 (default: 0.5)
  *     -d DB       Max correction dB (default: 12)
  *     -t TAPS     Number of FIR taps (default: 511)
+ *     -w FILE     Write captured sweep data to CSV (default: none)
  */
 
 #include <stdio.h>
@@ -978,7 +979,18 @@ static int capture_sweep(void)
     return n;
 }
 
-// Non-hardware capture test.
+static void save_sweep_csv(const char *fname, int n_frames)
+{
+    FILE *f = fopen(fname, "w");
+    if (!f) { perror(fname); return; }
+    fprintf(f, "frame,bin,real,imag\n");
+    for (int fr = 0; fr < n_frames; fr++)
+        for (int b = 0; b < BINS_PER_FRAME; b++)
+            fprintf(f, "%d,%d,%d,%d\n", fr, b, frame_real[fr][b], frame_imag[fr][b]);
+    fclose(f);
+    fprintf(stderr, "Sweep data saved to %s\n", fname);
+}
+
 static int load_sweep_csv(const char *fname)
 {
     FILE *f = fopen(fname, "r");
@@ -1011,13 +1023,20 @@ static double H_mag[BINS_PER_FRAME];  /* room response magnitude */
 static double H_smooth[BINS_PER_FRAME];
 static double correction[BINS_PER_FRAME];
 
-static void log_smooth(double *out, const double *in, int len, double frac)
+/* 1/3-octave smoothing — matches compute_correction.py third_octave_smooth().
+ * Each bin is averaged with neighbors spanning 1/3 octave around it:
+ * window from freq / 2^(1/6) to freq * 2^(1/6). */
+static void third_octave_smooth(double *out, const double *in, int len,
+                                 double hz_per_bin)
 {
+    static const double SIXTH_ROOT_2 = 1.12246204831; /* 2^(1/6) */
     for (int i = 0; i < len; i++) {
-        int w = (int)(i * frac);
-        if (w < 1) w = 1;
-        int lo = i - w; if (lo < 0) lo = 0;
-        int hi = i + w + 1; if (hi > len) hi = len;
+        double freq = i * hz_per_bin;
+        if (freq < 20) { out[i] = in[i]; continue; }
+        int lo = (int)(freq / SIXTH_ROOT_2 / hz_per_bin);
+        int hi = (int)(freq * SIXTH_ROOT_2 / hz_per_bin) + 1;
+        if (lo < 1) lo = 1;
+        if (hi > len) hi = len;
         double sum = 0;
         for (int j = lo; j < hi; j++) sum += in[j];
         out[i] = sum / (hi - lo);
@@ -1043,35 +1062,34 @@ static void compute_room_response(int n_frames)
     /* Compensate for log sweep energy (1/f) */
     for (int b = 1; b < BINS_PER_FRAME; b++) {
         double freq_hz = b * hz_per_bin;
-        H_mag[b] *= (freq_hz / 1000.0); // Normalization Heuristic 
+        H_mag[b] *= (freq_hz / 1000.0);
     }
 
     /* Smooth */
-    log_smooth(H_smooth, H_mag, BINS_PER_FRAME, 0.10);
+    third_octave_smooth(H_smooth, H_mag, BINS_PER_FRAME, hz_per_bin);
 }
 
 static void compute_correction(int lo_hz, int hi_hz, double max_db,
                                 double strength)
 {
     double hz_per_bin = 48000.0 / FFT_SIZE;
-    // Convert Hz to bin indices, with safety checks.
     int lo_bin = (int)(lo_hz / hz_per_bin);
     int hi_bin = (int)(hi_hz / hz_per_bin);
-    // Clamp to valid range
     if (hi_bin > BINS_PER_FRAME) hi_bin = BINS_PER_FRAME;
 
-    /* Mean level in correction range */
+    /* Mean level over fixed 100-3000 Hz reference band (matches Python) */
+    int mean_lo_bin = (int)(100.0 / hz_per_bin);
+    int mean_hi_bin = (int)(3000.0 / hz_per_bin);
     double sum = 0;
     int count = 0;
-    for (int b = lo_bin; b < hi_bin; b++) {
+    for (int b = mean_lo_bin; b < mean_hi_bin; b++) {
         if (H_smooth[b] > 0) { sum += H_smooth[b]; count++; }
     }
-    double H_mean = sum / count; // Target level for correction.
-    fprintf(stderr, "Target level: %.1f dB (mean of %d-%d Hz)\n",
-            20 * log10(H_mean + 1), lo_hz, hi_hz);
+    double H_mean = sum / count;
+    fprintf(stderr, "Target level: %.1f dB (mean of 100-3000 Hz)\n",
+            20 * log10(H_mean + 1));
 
     /* Compute correction per bin */
-    // Convert dB to linear gain limits.
     double max_boost = pow(10, max_db / 20.0);
     double max_cut = pow(10, -max_db / 20.0);
 
@@ -1079,15 +1097,12 @@ static void compute_correction(int lo_hz, int hi_hz, double max_db,
         correction[b] = 1.0;
 
     for (int b = lo_bin; b < hi_bin; b++) {
-        // Normalized response at this bin (relative to target level).
         double H_norm = H_smooth[b] / H_mean;
         if (H_norm > 0.001) {
-            // Invert Room Response
             double c = 1.0 / H_norm;
-            if (c > max_boost) c = max_boost; // Clamping 
-            if (c < max_cut) c = max_cut; // Clamping
-            // Apply strength control (0.0 = no correction, 1.0 = full correction)
-            c = 1.0 + strength * (c - 1.0); 
+            if (c > max_boost) c = max_boost;
+            if (c < max_cut) c = max_cut;
+            c = 1.0 + strength * (c - 1.0);
             correction[b] = c;
         }
     }
@@ -1115,10 +1130,8 @@ static double *compute_fir_taps(int n_taps)
     double *taps = calloc(n_taps, sizeof(double));
     int half = n_taps / 2;
 
-    // FFTW's r2c output is in "wrap-around" order, so we take the end and the beginning of time_buf.
     for (int i = 0; i < half; i++)
         taps[i] = time_buf[FFT_SIZE - half + i] / FFT_SIZE;
-    // Places second half of the impulse after the first half.
     for (int i = 0; i <= half; i++)
         taps[half + i] = time_buf[i] / FFT_SIZE;
 
@@ -1287,8 +1300,9 @@ int main(int argc, char *argv[])
 {
     const char *input_file = NULL;
     const char *output_file = "correction_taps.csv";
+    const char *sweep_out_file = NULL;
     int end_hz = 20000;
-    double strength = 0.5;
+    double strength = 0.65;
     double max_db = 12;
     int n_taps = 511;
 
@@ -1301,6 +1315,7 @@ int main(int argc, char *argv[])
         else if (strcmp(argv[i], "-s") == 0 && i+1 < argc) strength = atof(argv[++i]);
         else if (strcmp(argv[i], "-d") == 0 && i+1 < argc) max_db = atof(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i+1 < argc) n_taps = atoi(argv[++i]);
+        else if (strcmp(argv[i], "-w") == 0 && i+1 < argc) sweep_out_file = argv[++i];
     }
     /* Ensure odd number of taps */
     if (n_taps % 2 == 0) n_taps++;
@@ -1325,6 +1340,8 @@ int main(int argc, char *argv[])
         room_eq_base = (volatile uint32_t *)((uint8_t *)base + ROOM_EQ_OFFSET);
         hw_codec_init();
         n_frames = capture_sweep();
+        if (sweep_out_file)
+            save_sweep_csv(sweep_out_file, n_frames);
         munmap(base, LW_BRIDGE_SPAN);
         close(fd);
     }

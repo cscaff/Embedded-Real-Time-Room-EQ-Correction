@@ -1,0 +1,3714 @@
+{
+  "creator": "Yosys 0.62+91 (git sha1 fb653c418-dirty, aarch64-apple-darwin23.5-clang++ 18.1.8 -fPIC -O3)",
+  "modules": {
+    "calibration_engine": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:23.1-152.10"
+      },
+      "ports": {
+        "sysclk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "bclk": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "lrclk": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "aclr": {
+          "direction": "input",
+          "bits": [ 5 ]
+        },
+        "start": {
+          "direction": "input",
+          "bits": [ 6 ]
+        },
+        "left_chan": {
+          "direction": "input",
+          "bits": [ 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ]
+        },
+        "rd_addr": {
+          "direction": "input",
+          "bits": [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43 ]
+        },
+        "rd_real": {
+          "direction": "output",
+          "bits": [ 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ]
+        },
+        "rd_imag": {
+          "direction": "output",
+          "bits": [ 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91 ]
+        },
+        "fft_done": {
+          "direction": "output",
+          "bits": [ 92 ]
+        },
+        "fifo_hps_mode": {
+          "direction": "input",
+          "bits": [ 93 ]
+        },
+        "fifo_hps_pop": {
+          "direction": "input",
+          "bits": [ 94 ]
+        },
+        "fifo_data_out": {
+          "direction": "output",
+          "bits": [ 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118 ]
+        },
+        "fifo_data_valid": {
+          "direction": "output",
+          "bits": [ 119 ]
+        },
+        "fifo_empty": {
+          "direction": "output",
+          "bits": [ 120 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "aclr": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:46.11-46.15"
+          }
+        },
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:44.11-44.15"
+          }
+        },
+        "fft_done": {
+          "hide_name": 0,
+          "bits": [ 92 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:56.12-56.20"
+          }
+        },
+        "fifo_data_out": {
+          "hide_name": 0,
+          "bits": [ 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:61.19-61.32"
+          }
+        },
+        "fifo_data_valid": {
+          "hide_name": 0,
+          "bits": [ 119 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:62.19-62.34"
+          }
+        },
+        "fifo_empty": {
+          "hide_name": 0,
+          "bits": [ 120 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:63.19-63.29"
+          }
+        },
+        "fifo_hps_mode": {
+          "hide_name": 0,
+          "bits": [ 93 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:59.19-59.32"
+          }
+        },
+        "fifo_hps_pop": {
+          "hide_name": 0,
+          "bits": [ 94 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:60.19-60.31"
+          }
+        },
+        "left_chan": {
+          "hide_name": 0,
+          "bits": [ 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:50.18-50.27"
+          }
+        },
+        "lrclk": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:45.11-45.16"
+          }
+        },
+        "rd_addr": {
+          "hide_name": 0,
+          "bits": [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:53.18-53.25"
+          }
+        },
+        "rd_imag": {
+          "hide_name": 0,
+          "bits": [ 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:55.19-55.26"
+          }
+        },
+        "rd_real": {
+          "hide_name": 0,
+          "bits": [ 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:54.19-54.26"
+          }
+        },
+        "start": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:47.11-47.16"
+          }
+        },
+        "sysclk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/calibration_engine.sv:43.11-43.17"
+          }
+        }
+      }
+    },
+    "capture_fft": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "lab3-hw/capture_fft.v:6.1-83.10"
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset_n": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "sink_valid": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "sink_ready": {
+          "direction": "output",
+          "bits": [ 5 ]
+        },
+        "sink_error": {
+          "direction": "input",
+          "bits": [ 6, 7 ]
+        },
+        "sink_sop": {
+          "direction": "input",
+          "bits": [ 8 ]
+        },
+        "sink_eop": {
+          "direction": "input",
+          "bits": [ 9 ]
+        },
+        "sink_real": {
+          "direction": "input",
+          "bits": [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 ]
+        },
+        "sink_imag": {
+          "direction": "input",
+          "bits": [ 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 ]
+        },
+        "fftpts_in": {
+          "direction": "input",
+          "bits": [ 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71 ]
+        },
+        "inverse": {
+          "direction": "input",
+          "bits": [ 72 ]
+        },
+        "source_valid": {
+          "direction": "output",
+          "bits": [ 73 ]
+        },
+        "source_ready": {
+          "direction": "input",
+          "bits": [ 74 ]
+        },
+        "source_error": {
+          "direction": "output",
+          "bits": [ 75, 76 ]
+        },
+        "source_sop": {
+          "direction": "output",
+          "bits": [ 77 ]
+        },
+        "source_eop": {
+          "direction": "output",
+          "bits": [ 78 ]
+        },
+        "source_real": {
+          "direction": "output",
+          "bits": [ 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102 ]
+        },
+        "source_imag": {
+          "direction": "output",
+          "bits": [ 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126 ]
+        },
+        "fftpts_out": {
+          "direction": "output",
+          "bits": [ 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:7.19-7.22"
+          }
+        },
+        "fftpts_in": {
+          "hide_name": 0,
+          "bits": [ 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:16.19-16.28"
+          }
+        },
+        "fftpts_out": {
+          "hide_name": 0,
+          "bits": [ 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:25.19-25.29"
+          }
+        },
+        "inverse": {
+          "hide_name": 0,
+          "bits": [ 72 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:17.19-17.26"
+          }
+        },
+        "reset_n": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:8.19-8.26"
+          }
+        },
+        "sink_eop": {
+          "hide_name": 0,
+          "bits": [ 9 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:13.19-13.27"
+          }
+        },
+        "sink_error": {
+          "hide_name": 0,
+          "bits": [ 6, 7 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:11.19-11.29"
+          }
+        },
+        "sink_imag": {
+          "hide_name": 0,
+          "bits": [ 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:15.19-15.28"
+          }
+        },
+        "sink_ready": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:10.19-10.29"
+          }
+        },
+        "sink_real": {
+          "hide_name": 0,
+          "bits": [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:14.19-14.28"
+          }
+        },
+        "sink_sop": {
+          "hide_name": 0,
+          "bits": [ 8 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:12.19-12.27"
+          }
+        },
+        "sink_valid": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:9.19-9.29"
+          }
+        },
+        "source_eop": {
+          "hide_name": 0,
+          "bits": [ 78 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:22.19-22.29"
+          }
+        },
+        "source_error": {
+          "hide_name": 0,
+          "bits": [ 75, 76 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:20.19-20.31"
+          }
+        },
+        "source_imag": {
+          "hide_name": 0,
+          "bits": [ 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:24.19-24.30"
+          }
+        },
+        "source_ready": {
+          "hide_name": 0,
+          "bits": [ 74 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:19.19-19.31"
+          }
+        },
+        "source_real": {
+          "hide_name": 0,
+          "bits": [ 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:23.19-23.30"
+          }
+        },
+        "source_sop": {
+          "hide_name": 0,
+          "bits": [ 77 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:21.19-21.29"
+          }
+        },
+        "source_valid": {
+          "hide_name": 0,
+          "bits": [ 73 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fft.v:18.19-18.31"
+          }
+        }
+      }
+    },
+    "capture_fifo": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "lab3-hw/capture_fifo.v:40.1-106.10"
+      },
+      "ports": {
+        "aclr": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "data": {
+          "direction": "input",
+          "bits": [ 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+        },
+        "rdclk": {
+          "direction": "input",
+          "bits": [ 27 ]
+        },
+        "rdreq": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "wrclk": {
+          "direction": "input",
+          "bits": [ 29 ]
+        },
+        "wrreq": {
+          "direction": "input",
+          "bits": [ 30 ]
+        },
+        "q": {
+          "direction": "output",
+          "bits": [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54 ]
+        },
+        "rdempty": {
+          "direction": "output",
+          "bits": [ 55 ]
+        },
+        "wrfull": {
+          "direction": "output",
+          "bits": [ 56 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "aclr": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:51.10-51.14"
+          }
+        },
+        "data": {
+          "hide_name": 0,
+          "bits": [ 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:52.16-52.20"
+          }
+        },
+        "q": {
+          "hide_name": 0,
+          "bits": [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:57.17-57.18"
+          }
+        },
+        "rdclk": {
+          "hide_name": 0,
+          "bits": [ 27 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:53.10-53.15"
+          }
+        },
+        "rdempty": {
+          "hide_name": 0,
+          "bits": [ 55 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:58.11-58.18"
+          }
+        },
+        "rdreq": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:54.10-54.15"
+          }
+        },
+        "wrclk": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:55.10-55.15"
+          }
+        },
+        "wrfull": {
+          "hide_name": 0,
+          "bits": [ 56 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:59.11-59.17"
+          }
+        },
+        "wrreq": {
+          "hide_name": 0,
+          "bits": [ 30 ],
+          "attributes": {
+            "src": "lab3-hw/capture_fifo.v:56.10-56.15"
+          }
+        }
+      }
+    },
+    "fft_result_ram": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/memory/fft_results_ram.sv:18.1-95.10"
+      },
+      "ports": {
+        "sysclk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset_n": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "fft_real": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "fft_imag": {
+          "direction": "input",
+          "bits": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ]
+        },
+        "fft_valid": {
+          "direction": "input",
+          "bits": [ 52 ]
+        },
+        "data_eop": {
+          "direction": "input",
+          "bits": [ 53 ]
+        },
+        "data_sop": {
+          "direction": "input",
+          "bits": [ 54 ]
+        },
+        "rd_addr": {
+          "direction": "input",
+          "bits": [ 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ]
+        },
+        "rd_real": {
+          "direction": "output",
+          "bits": [ 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91 ]
+        },
+        "rd_imag": {
+          "direction": "output",
+          "bits": [ 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115 ]
+        },
+        "fft_done": {
+          "direction": "output",
+          "bits": [ 116 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "data_eop": {
+          "hide_name": 0,
+          "bits": [ 53 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:41.11-41.19"
+          }
+        },
+        "data_sop": {
+          "hide_name": 0,
+          "bits": [ 54 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:42.11-42.19"
+          }
+        },
+        "fft_done": {
+          "hide_name": 0,
+          "bits": [ 116 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:48.16-48.24"
+          }
+        },
+        "fft_imag": {
+          "hide_name": 0,
+          "bits": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:39.18-39.26"
+          }
+        },
+        "fft_real": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:38.18-38.26"
+          }
+        },
+        "fft_valid": {
+          "hide_name": 0,
+          "bits": [ 52 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:40.11-40.20"
+          }
+        },
+        "rd_addr": {
+          "hide_name": 0,
+          "bits": [ 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:45.18-45.25"
+          }
+        },
+        "rd_imag": {
+          "hide_name": 0,
+          "bits": [ 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:47.23-47.30"
+          }
+        },
+        "rd_real": {
+          "hide_name": 0,
+          "bits": [ 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:46.23-46.30"
+          }
+        },
+        "reset_n": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:35.11-35.18"
+          }
+        },
+        "sysclk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/memory/fft_results_ram.sv:34.11-34.17"
+          }
+        }
+      }
+    },
+    "i2s_clock_gen": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:23.1-56.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "bclk": {
+          "direction": "output",
+          "bits": [ 4 ]
+        },
+        "lrck": {
+          "direction": "output",
+          "bits": [ 5 ]
+        },
+        "bclk_fall": {
+          "direction": "output",
+          "bits": [ 6 ]
+        },
+        "bit_cnt": {
+          "direction": "output",
+          "bits": [ 7, 8, 9, 10, 11, 12 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:26.25-26.29"
+          }
+        },
+        "bclk_fall": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:28.25-28.34"
+          }
+        },
+        "bit_cnt": {
+          "hide_name": 0,
+          "bits": [ 7, 8, 9, 10, 11, 12 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:29.25-29.32"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:24.25-24.30"
+          }
+        },
+        "lrck": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:27.25-27.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_clock_gen.sv:25.25-25.30"
+          }
+        }
+      }
+    },
+    "i2s_rx": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:22.1-83.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "bclk": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "lrck": {
+          "direction": "input",
+          "bits": [ 5 ]
+        },
+        "adcdat": {
+          "direction": "input",
+          "bits": [ 6 ]
+        },
+        "left_sample": {
+          "direction": "output",
+          "bits": [ 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ]
+        },
+        "right_sample": {
+          "direction": "output",
+          "bits": [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "adcdat": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:27.25-27.31"
+          }
+        },
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:25.25-25.29"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:23.25-23.30"
+          }
+        },
+        "left_sample": {
+          "hide_name": 0,
+          "bits": [ 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:28.25-28.36"
+          }
+        },
+        "lrck": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:26.25-26.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:24.25-24.30"
+          }
+        },
+        "right_sample": {
+          "hide_name": 0,
+          "bits": [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_rx/i2s_rx.sv:29.25-29.37"
+          }
+        }
+      }
+    },
+    "i2s_shift_register": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:21.1-44.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "data_in": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "load": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "shift": {
+          "direction": "input",
+          "bits": [ 29 ]
+        },
+        "serial_out": {
+          "direction": "output",
+          "bits": [ 30 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:22.25-22.30"
+          }
+        },
+        "data_in": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:24.25-24.32"
+          }
+        },
+        "load": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:25.25-25.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:23.25-23.30"
+          }
+        },
+        "serial_out": {
+          "hide_name": 0,
+          "bits": [ 30 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:27.25-27.35"
+          }
+        },
+        "shift": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_shift_register.sv:26.25-26.30"
+          }
+        }
+      }
+    },
+    "i2s_tx": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:21.1-89.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "left_sample": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "right_sample": {
+          "direction": "input",
+          "bits": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ]
+        },
+        "bclk": {
+          "direction": "output",
+          "bits": [ 52 ]
+        },
+        "lrck": {
+          "direction": "output",
+          "bits": [ 53 ]
+        },
+        "dacdat": {
+          "direction": "output",
+          "bits": [ 54 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 52 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:26.25-26.29"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:22.25-22.30"
+          }
+        },
+        "dacdat": {
+          "hide_name": 0,
+          "bits": [ 54 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:28.25-28.31"
+          }
+        },
+        "left_sample": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:24.25-24.36"
+          }
+        },
+        "lrck": {
+          "hide_name": 0,
+          "bits": [ 53 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:27.25-27.29"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:23.25-23.30"
+          }
+        },
+        "right_sample": {
+          "hide_name": 0,
+          "bits": [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/i2s_tx/i2s_tx.sv:25.25-25.37"
+          }
+        }
+      }
+    },
+    "phase_accumulator": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:14.1-60.10"
+      },
+      "parameter_default_values": {
+        "INCREMENT_START": "00000000000110110100111010000010",
+        "INC_STOP": "01101010101010101010101010101011",
+        "K_FRAC": "00000000000000001111000101110010"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "sample_en": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "phase": {
+          "direction": "output",
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ]
+        },
+        "done": {
+          "direction": "output",
+          "bits": [ 37 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:23.18-23.23"
+          }
+        },
+        "done": {
+          "hide_name": 0,
+          "bits": [ 37 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:27.23-27.27"
+          }
+        },
+        "phase": {
+          "hide_name": 0,
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:26.23-26.28"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:24.18-24.23"
+          }
+        },
+        "sample_en": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/phase_accumulator.sv:25.18-25.27"
+          }
+        }
+      }
+    },
+    "room_eq_peripheral": {
+      "attributes": {
+        "top": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:34.1-270.10"
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "writedata": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35 ]
+        },
+        "readdata": {
+          "direction": "output",
+          "bits": [ 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ]
+        },
+        "write": {
+          "direction": "input",
+          "bits": [ 68 ]
+        },
+        "read": {
+          "direction": "input",
+          "bits": [ 69 ]
+        },
+        "chipselect": {
+          "direction": "input",
+          "bits": [ 70 ]
+        },
+        "address": {
+          "direction": "input",
+          "bits": [ 71, 72, 73, 74 ]
+        },
+        "audio_clk": {
+          "direction": "input",
+          "bits": [ 75 ]
+        },
+        "AUD_XCK": {
+          "direction": "output",
+          "bits": [ 75 ]
+        },
+        "AUD_BCLK": {
+          "direction": "output",
+          "bits": [ 76 ]
+        },
+        "AUD_DACDAT": {
+          "direction": "output",
+          "bits": [ 77 ]
+        },
+        "AUD_DACLRCK": {
+          "direction": "output",
+          "bits": [ 78 ]
+        },
+        "AUD_ADCLRCK": {
+          "direction": "output",
+          "bits": [ 78 ]
+        },
+        "AUD_ADCDAT": {
+          "direction": "input",
+          "bits": [ 79 ]
+        }
+      },
+      "cells": {
+        "$auto$ff.cc:337:slice$151": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:105.5-108.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 80 ],
+            "EN": [ 81 ],
+            "Q": [ 82 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$152": {
+          "hide_name": 1,
+          "type": "$sdff",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:152.5-179.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 83 ],
+            "Q": [ 84 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$167": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:199.5-225.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 4 ],
+            "EN": [ 85 ],
+            "Q": [ 81 ],
+            "SRST": [ 86 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$169": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:199.5-225.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 5 ],
+            "EN": [ 87 ],
+            "Q": [ 88 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$173": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0000000000",
+            "WIDTH": "00000000000000000000000000001010"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:199.5-225.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ],
+            "EN": [ 89 ],
+            "Q": [ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$176": {
+          "hide_name": 1,
+          "type": "$dffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "WIDTH": "00000000000000000000000000011000"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:199.5-225.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+            "EN": [ 100 ],
+            "Q": [ 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$182": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0000000000000",
+            "WIDTH": "00000000000000000000000000001101"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:199.5-225.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ],
+            "EN": [ 125 ],
+            "Q": [ 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$185": {
+          "hide_name": 1,
+          "type": "$sdff",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:199.5-225.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 139 ],
+            "Q": [ 140 ],
+            "SRST": [ 86 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$194": {
+          "hide_name": 1,
+          "type": "$sdff",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:152.5-179.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 141 ],
+            "Q": [ 142 ],
+            "SRST": [ 143 ]
+          }
+        },
+        "$auto$ff.cc:337:slice$199": {
+          "hide_name": 1,
+          "type": "$sdffe",
+          "parameters": {
+            "CLK_POLARITY": "00000000000000000000000000000001",
+            "EN_POLARITY": "00000000000000000000000000000001",
+            "SRST_POLARITY": "00000000000000000000000000000001",
+            "SRST_VALUE": "0000",
+            "WIDTH": "00000000000000000000000000000100"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:152.5-179.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "EN": "input",
+            "Q": "output",
+            "SRST": "input"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 144, 145, 146, 147 ],
+            "EN": [ 148 ],
+            "Q": [ 149, 150, 151, 152 ],
+            "SRST": [ 3 ]
+          }
+        },
+        "$auto$opt_dff.cc:235:make_patterns_logic$157": {
+          "hide_name": 1,
+          "type": "$ne",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 153, 154 ],
+            "B": [ "0", "1" ],
+            "Y": [ 155 ]
+          }
+        },
+        "$auto$opt_dff.cc:235:make_patterns_logic$159": {
+          "hide_name": 1,
+          "type": "$reduce_bool",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000011",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 156, 154, 157 ],
+            "Y": [ 158 ]
+          }
+        },
+        "$auto$opt_dff.cc:235:make_patterns_logic$201": {
+          "hide_name": 1,
+          "type": "$ne",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 159, 81 ],
+            "B": [ "1", "0" ],
+            "Y": [ 160 ]
+          }
+        },
+        "$auto$opt_dff.cc:252:make_patterns_logic$171": {
+          "hide_name": 1,
+          "type": "$reduce_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 161, 85 ],
+            "Y": [ 87 ]
+          }
+        },
+        "$auto$opt_dff.cc:252:make_patterns_logic$175": {
+          "hide_name": 1,
+          "type": "$reduce_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 161, 162 ],
+            "Y": [ 89 ]
+          }
+        },
+        "$auto$opt_dff.cc:252:make_patterns_logic$180": {
+          "hide_name": 1,
+          "type": "$reduce_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000011",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 163, 161, 164 ],
+            "Y": [ 100 ]
+          }
+        },
+        "$auto$opt_dff.cc:252:make_patterns_logic$184": {
+          "hide_name": 1,
+          "type": "$reduce_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 161, 165 ],
+            "Y": [ 125 ]
+          }
+        },
+        "$auto$opt_dff.cc:252:make_patterns_logic$203": {
+          "hide_name": 1,
+          "type": "$reduce_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000011",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 160, 158, 155 ],
+            "Y": [ 148 ]
+          }
+        },
+        "$auto$opt_dff.cc:277:combine_resets$166": {
+          "hide_name": 1,
+          "type": "$reduce_or",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 166, 3 ],
+            "Y": [ 86 ]
+          }
+        },
+        "$auto$opt_dff.cc:277:combine_resets$198": {
+          "hide_name": 1,
+          "type": "$reduce_or",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 167, 3 ],
+            "Y": [ 143 ]
+          }
+        },
+        "$auto$opt_dff.cc:81:create_not$163": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 161 ],
+            "Y": [ 166 ]
+          }
+        },
+        "$auto$opt_dff.cc:81:create_not$177": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 3 ],
+            "Y": [ 163 ]
+          }
+        },
+        "$auto$opt_dff.cc:81:create_not$195": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 159 ],
+            "Y": [ 167 ]
+          }
+        },
+        "$auto$opt_reduce.cc:131:opt_pmux$192": {
+          "hide_name": 1,
+          "type": "$reduce_or",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000010",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 156, 157 ],
+            "Y": [ 159 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150$11": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150.25-150.55"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 83 ],
+            "B": [ 168 ],
+            "Y": [ 153 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:184$14": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:184.13-184.31"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 70 ],
+            "B": [ 69 ],
+            "Y": [ 169 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:206$16": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:206.22-206.41"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 70 ],
+            "B": [ 68 ],
+            "Y": [ 161 ]
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:86$3": {
+          "hide_name": 1,
+          "type": "$logic_and",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:86.33-86.73"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 169 ],
+            "B": [ 170 ],
+            "Y": [ 171 ]
+          }
+        },
+        "$logic_not$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150$10": {
+          "hide_name": 1,
+          "type": "$logic_not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150.39-150.55"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 84 ],
+            "Y": [ 168 ]
+          }
+        },
+        "$not$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:107$5": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:107.53-107.72"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 82 ],
+            "Y": [ 80 ]
+          }
+        },
+        "$procdff$140": {
+          "hide_name": 1,
+          "type": "$adff",
+          "parameters": {
+            "ARST_POLARITY": "1",
+            "ARST_VALUE": "1",
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:127.5-135.8"
+          },
+          "port_directions": {
+            "ARST": "input",
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "ARST": [ 3 ],
+            "CLK": [ 75 ],
+            "D": [ "0" ],
+            "Q": [ 172 ]
+          }
+        },
+        "$procdff$143": {
+          "hide_name": 1,
+          "type": "$adff",
+          "parameters": {
+            "ARST_POLARITY": "1",
+            "ARST_VALUE": "1",
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:127.5-135.8"
+          },
+          "port_directions": {
+            "ARST": "input",
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "ARST": [ 3 ],
+            "CLK": [ 75 ],
+            "D": [ 172 ],
+            "Q": [ 173 ]
+          }
+        },
+        "$procdff$144": {
+          "hide_name": 1,
+          "type": "$dff",
+          "parameters": {
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:120.5-123.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 174 ],
+            "Q": [ 175 ]
+          }
+        },
+        "$procdff$145": {
+          "hide_name": 1,
+          "type": "$dff",
+          "parameters": {
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:120.5-123.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "CLK": [ 2 ],
+            "D": [ 175 ],
+            "Q": [ 83 ]
+          }
+        },
+        "$procdff$146": {
+          "hide_name": 1,
+          "type": "$dff",
+          "parameters": {
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:110.5-114.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "CLK": [ 75 ],
+            "D": [ 82 ],
+            "Q": [ 176 ]
+          }
+        },
+        "$procdff$147": {
+          "hide_name": 1,
+          "type": "$dff",
+          "parameters": {
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:110.5-114.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "CLK": [ 75 ],
+            "D": [ 176 ],
+            "Q": [ 177 ]
+          }
+        },
+        "$procdff$148": {
+          "hide_name": 1,
+          "type": "$dff",
+          "parameters": {
+            "CLK_POLARITY": "1",
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:110.5-114.8"
+          },
+          "port_directions": {
+            "CLK": "input",
+            "D": "input",
+            "Q": "output"
+          },
+          "connections": {
+            "CLK": [ 75 ],
+            "D": [ 177 ],
+            "Q": [ 178 ]
+          }
+        },
+        "$procmux$105": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:162.25-162.36|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:162.21-165.24"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "0" ],
+            "B": [ "1" ],
+            "S": [ 81 ],
+            "Y": [ 141 ]
+          }
+        },
+        "$procmux$113": {
+          "hide_name": 1,
+          "type": "$pmux",
+          "parameters": {
+            "S_WIDTH": "00000000000000000000000000000010",
+            "WIDTH": "00000000000000000000000000000100"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:170.20-170.20|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:160.13-177.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "x", "x", "x", "x" ],
+            "B": [ 179, 180, 181, 182, 183, 184, 185, 186 ],
+            "S": [ 159, 154 ],
+            "Y": [ 144, 145, 146, 147 ]
+          }
+        },
+        "$procmux$114_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:170.20-170.20|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:160.13-177.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 149, 150, 151, 152 ],
+            "B": [ "0", "1", "0", "0" ],
+            "Y": [ 156 ]
+          }
+        },
+        "$procmux$115": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000000100"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:168.25-168.36|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:168.21-169.39"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "x", "x", "x", "x" ],
+            "B": [ "0", "1", "0", "0" ],
+            "S": [ 153 ],
+            "Y": [ 183, 184, 185, 186 ]
+          }
+        },
+        "$procmux$117_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:166.20-166.20|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:160.13-177.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 149, 150, 151, 152 ],
+            "B": [ "1", "0", "0", "0" ],
+            "Y": [ 154 ]
+          }
+        },
+        "$procmux$118": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000000100"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:162.25-162.36|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:162.21-165.24"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "x", "x", "x", "x" ],
+            "B": [ "1", "0", "0", "0" ],
+            "S": [ 81 ],
+            "Y": [ 179, 180, 181, 182 ]
+          }
+        },
+        "$procmux$120_CMP0": {
+          "hide_name": 1,
+          "type": "$logic_not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:160.25-160.25|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:160.13-177.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 149, 150, 151, 152 ],
+            "Y": [ 157 ]
+          }
+        },
+        "$procmux$26": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:213.53-213.53|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:208.13-220.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "0" ],
+            "B": [ "1" ],
+            "S": [ 164 ],
+            "Y": [ 139 ]
+          }
+        },
+        "$procmux$44_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:213.53-213.53|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:208.13-220.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "1", "0", "1", "0" ],
+            "Y": [ 164 ]
+          }
+        },
+        "$procmux$54_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:212.20-212.20|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:208.13-220.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "0", "0", "1", "0" ],
+            "Y": [ 162 ]
+          }
+        },
+        "$procmux$84": {
+          "hide_name": 1,
+          "type": "$pmux",
+          "parameters": {
+            "S_WIDTH": "00000000000000000000000000001000",
+            "WIDTH": "00000000000000000000000000100000"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:192.53-192.53|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+            "B": [ 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, "0", "0", "0", "0", "0", "0", "0", "0", 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, "0", "0", "0", "0", "0", "0", "0", "0", 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, "0", "0", "0", "0", "0", "0", "0", "0", 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, "0", "0", "0", "0", "0", "0", "0", "0", 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", 149, 150, 151, 152, 283, 284, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", 88, "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+            "S": [ 170, 285, 286, 287, 165, 288, 289, 85 ],
+            "Y": [ 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321 ]
+          }
+        },
+        "$procmux$85_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:192.53-192.53|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "0", "1", "0", "1" ],
+            "Y": [ 170 ]
+          }
+        },
+        "$procmux$86_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:191.57-191.57|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "1", "0", "0", "1" ],
+            "Y": [ 285 ]
+          }
+        },
+        "$procmux$87_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:190.57-190.57|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "0", "0", "0", "1" ],
+            "Y": [ 286 ]
+          }
+        },
+        "$procmux$88_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:189.58-189.58|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "1", "1", "1", "0" ],
+            "Y": [ 287 ]
+          }
+        },
+        "$procmux$89_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:188.51-188.51|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "0", "1", "1", "0" ],
+            "Y": [ 165 ]
+          }
+        },
+        "$procmux$90_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:187.74-187.74|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "1", "1", "0", "0" ],
+            "Y": [ 288 ]
+          }
+        },
+        "$procmux$91_CMP0": {
+          "hide_name": 1,
+          "type": "$eq",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:186.66-186.66|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "B": [ "1", "0", "0", "0" ],
+            "Y": [ 289 ]
+          }
+        },
+        "$procmux$92_CMP0": {
+          "hide_name": 1,
+          "type": "$logic_not",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000100",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.27-185.27|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:185.13-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 71, 72, 73, 74 ],
+            "Y": [ 85 ]
+          }
+        },
+        "$procmux$96": {
+          "hide_name": 1,
+          "type": "$mux",
+          "parameters": {
+            "WIDTH": "00000000000000000000000000100000"
+          },
+          "attributes": {
+            "full_case": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:184.13-184.31|src/hardware/room_eq_peripheral/room_eq_peripheral.sv:184.9-195.20"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "S": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+            "B": [ 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321 ],
+            "S": [ 169 ],
+            "Y": [ 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ]
+          }
+        },
+        "$xor$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:116$7": {
+          "hide_name": 1,
+          "type": "$xor",
+          "parameters": {
+            "A_SIGNED": "00000000000000000000000000000000",
+            "A_WIDTH": "00000000000000000000000000000001",
+            "B_SIGNED": "00000000000000000000000000000000",
+            "B_WIDTH": "00000000000000000000000000000001",
+            "Y_WIDTH": "00000000000000000000000000000001"
+          },
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:116.30-116.51"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": [ 177 ],
+            "B": [ 178 ],
+            "Y": [ 322 ]
+          }
+        },
+        "calib_inst": {
+          "hide_name": 0,
+          "type": "calibration_engine",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:252.24-268.6"
+          },
+          "port_directions": {
+            "aclr": "input",
+            "bclk": "input",
+            "fft_done": "output",
+            "fifo_data_out": "output",
+            "fifo_data_valid": "output",
+            "fifo_empty": "output",
+            "fifo_hps_mode": "input",
+            "fifo_hps_pop": "input",
+            "left_chan": "input",
+            "lrclk": "input",
+            "rd_addr": "input",
+            "rd_imag": "output",
+            "rd_real": "output",
+            "start": "input",
+            "sysclk": "input"
+          },
+          "connections": {
+            "aclr": [ 173 ],
+            "bclk": [ 76 ],
+            "fft_done": [ 283 ],
+            "fifo_data_out": [ 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210 ],
+            "fifo_data_valid": [ 323 ],
+            "fifo_empty": [ 284 ],
+            "fifo_hps_mode": [ 88 ],
+            "fifo_hps_pop": [ 171 ],
+            "left_chan": [ 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234 ],
+            "lrclk": [ 78 ],
+            "rd_addr": [ 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138 ],
+            "rd_imag": [ 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258 ],
+            "rd_real": [ 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282 ],
+            "start": [ 142 ],
+            "sysclk": [ 2 ]
+          }
+        },
+        "i2s_inst": {
+          "hide_name": 0,
+          "type": "i2s_tx",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:241.12-249.6"
+          },
+          "port_directions": {
+            "bclk": "output",
+            "clock": "input",
+            "dacdat": "output",
+            "left_sample": "input",
+            "lrck": "output",
+            "reset": "input",
+            "right_sample": "input"
+          },
+          "connections": {
+            "bclk": [ 76 ],
+            "clock": [ 75 ],
+            "dacdat": [ 77 ],
+            "left_sample": [ 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347 ],
+            "lrck": [ 78 ],
+            "reset": [ 173 ],
+            "right_sample": [ 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347 ]
+          }
+        },
+        "rx_inst": {
+          "hide_name": 0,
+          "type": "i2s_rx",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:91.12-99.6"
+          },
+          "port_directions": {
+            "adcdat": "input",
+            "bclk": "input",
+            "clock": "input",
+            "left_sample": "output",
+            "lrck": "input",
+            "reset": "input",
+            "right_sample": "output"
+          },
+          "connections": {
+            "adcdat": [ 79 ],
+            "bclk": [ 76 ],
+            "clock": [ 75 ],
+            "left_sample": [ 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234 ],
+            "lrck": [ 78 ],
+            "reset": [ 173 ],
+            "right_sample": [ 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371 ]
+          }
+        },
+        "sweep_inst": {
+          "hide_name": 0,
+          "type": "sweep_generator",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:228.21-238.6"
+          },
+          "port_directions": {
+            "addr_lut": "input",
+            "amplitude": "output",
+            "clk_sys": "input",
+            "clock": "input",
+            "din_lut": "input",
+            "done": "output",
+            "reset": "input",
+            "start": "input",
+            "we_lut": "input"
+          },
+          "connections": {
+            "addr_lut": [ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 ],
+            "amplitude": [ 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347 ],
+            "clk_sys": [ 2 ],
+            "clock": [ 75 ],
+            "din_lut": [ 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124 ],
+            "done": [ 174 ],
+            "reset": [ 173 ],
+            "start": [ 322 ],
+            "we_lut": [ 140 ]
+          }
+        }
+      },
+      "netnames": {
+        "$2\\readdata[31:0]": {
+          "hide_name": 1,
+          "bits": [ 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:182.16-182.16"
+          }
+        },
+        "$auto$opt_dff.cc:234:make_patterns_logic$156": {
+          "hide_name": 1,
+          "bits": [ 155 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:234:make_patterns_logic$158": {
+          "hide_name": 1,
+          "bits": [ 158 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:234:make_patterns_logic$200": {
+          "hide_name": 1,
+          "bits": [ 160 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:251:make_patterns_logic$170": {
+          "hide_name": 1,
+          "bits": [ 87 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:251:make_patterns_logic$174": {
+          "hide_name": 1,
+          "bits": [ 89 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:251:make_patterns_logic$179": {
+          "hide_name": 1,
+          "bits": [ 100 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:251:make_patterns_logic$183": {
+          "hide_name": 1,
+          "bits": [ 125 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:251:make_patterns_logic$202": {
+          "hide_name": 1,
+          "bits": [ 148 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:275:combine_resets$165": {
+          "hide_name": 1,
+          "bits": [ 86 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_dff.cc:275:combine_resets$197": {
+          "hide_name": 1,
+          "bits": [ 143 ],
+          "attributes": {
+          }
+        },
+        "$auto$opt_reduce.cc:137:opt_pmux$191": {
+          "hide_name": 1,
+          "bits": [ 159 ],
+          "attributes": {
+          }
+        },
+        "$auto$rtlil.cc:3339:Not$164": {
+          "hide_name": 1,
+          "bits": [ 166 ],
+          "attributes": {
+          }
+        },
+        "$auto$rtlil.cc:3339:Not$178": {
+          "hide_name": 1,
+          "bits": [ 163 ],
+          "attributes": {
+          }
+        },
+        "$auto$rtlil.cc:3339:Not$196": {
+          "hide_name": 1,
+          "bits": [ 167 ],
+          "attributes": {
+          }
+        },
+        "$eq$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:86$2_Y": {
+          "hide_name": 1,
+          "bits": [ 170 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:86.56-86.72"
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:184$14_Y": {
+          "hide_name": 1,
+          "bits": [ 169 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:184.13-184.31"
+          }
+        },
+        "$logic_and$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:206$16_Y": {
+          "hide_name": 1,
+          "bits": [ 161 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:206.22-206.41"
+          }
+        },
+        "$logic_not$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150$10_Y": {
+          "hide_name": 1,
+          "bits": [ 168 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150.39-150.55"
+          }
+        },
+        "$not$src/hardware/room_eq_peripheral/room_eq_peripheral.sv:107$5_Y": {
+          "hide_name": 1,
+          "bits": [ 80 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:107.53-107.72"
+          }
+        },
+        "$procmux$101_Y": {
+          "hide_name": 1,
+          "bits": [ 141 ],
+          "attributes": {
+          }
+        },
+        "$procmux$104_CMP": {
+          "hide_name": 1,
+          "bits": [ 156 ],
+          "attributes": {
+          }
+        },
+        "$procmux$107_CMP": {
+          "hide_name": 1,
+          "bits": [ 157 ],
+          "attributes": {
+          }
+        },
+        "$procmux$111_Y": {
+          "hide_name": 1,
+          "bits": [ 179, 180, 181, 182 ],
+          "attributes": {
+          }
+        },
+        "$procmux$113_Y": {
+          "hide_name": 1,
+          "bits": [ 144, 145, 146, 147 ],
+          "attributes": {
+          }
+        },
+        "$procmux$115_Y": {
+          "hide_name": 1,
+          "bits": [ 183, 184, 185, 186 ],
+          "attributes": {
+          }
+        },
+        "$procmux$117_CMP": {
+          "hide_name": 1,
+          "bits": [ 154 ],
+          "attributes": {
+          }
+        },
+        "$procmux$26_Y": {
+          "hide_name": 1,
+          "bits": [ 139 ],
+          "attributes": {
+          }
+        },
+        "$procmux$27_CMP": {
+          "hide_name": 1,
+          "bits": [ 164 ],
+          "attributes": {
+          }
+        },
+        "$procmux$35_CMP": {
+          "hide_name": 1,
+          "bits": [ 165 ],
+          "attributes": {
+          }
+        },
+        "$procmux$54_CMP": {
+          "hide_name": 1,
+          "bits": [ 162 ],
+          "attributes": {
+          }
+        },
+        "$procmux$65_CMP": {
+          "hide_name": 1,
+          "bits": [ 85 ],
+          "attributes": {
+          }
+        },
+        "$procmux$86_CMP": {
+          "hide_name": 1,
+          "bits": [ 285 ],
+          "attributes": {
+          }
+        },
+        "$procmux$87_CMP": {
+          "hide_name": 1,
+          "bits": [ 286 ],
+          "attributes": {
+          }
+        },
+        "$procmux$88_CMP": {
+          "hide_name": 1,
+          "bits": [ 287 ],
+          "attributes": {
+          }
+        },
+        "$procmux$90_CMP": {
+          "hide_name": 1,
+          "bits": [ 288 ],
+          "attributes": {
+          }
+        },
+        "$procmux$91_CMP": {
+          "hide_name": 1,
+          "bits": [ 289 ],
+          "attributes": {
+          }
+        },
+        "AUD_ADCDAT": {
+          "hide_name": 0,
+          "bits": [ 79 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:54.25-54.35"
+          }
+        },
+        "AUD_ADCLRCK": {
+          "hide_name": 0,
+          "bits": [ 78 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:53.25-53.36"
+          }
+        },
+        "AUD_BCLK": {
+          "hide_name": 0,
+          "bits": [ 76 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:50.25-50.33"
+          }
+        },
+        "AUD_DACDAT": {
+          "hide_name": 0,
+          "bits": [ 77 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:51.25-51.35"
+          }
+        },
+        "AUD_DACLRCK": {
+          "hide_name": 0,
+          "bits": [ 78 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:52.25-52.36"
+          }
+        },
+        "AUD_XCK": {
+          "hide_name": 0,
+          "bits": [ 75 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:49.25-49.32"
+          }
+        },
+        "address": {
+          "hide_name": 0,
+          "bits": [ 71, 72, 73, 74 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:43.25-43.32"
+          }
+        },
+        "amplitude": {
+          "hide_name": 0,
+          "bits": [ 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:79.18-79.27"
+          }
+        },
+        "audio_clk": {
+          "hide_name": 0,
+          "bits": [ 75 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:46.25-46.34"
+          }
+        },
+        "bclk_int": {
+          "hide_name": 0,
+          "bits": [ 76 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:61.11-61.19"
+          }
+        },
+        "calibrate_start": {
+          "hide_name": 0,
+          "bits": [ 142 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:75.18-75.33"
+          }
+        },
+        "chipselect": {
+          "hide_name": 0,
+          "bits": [ 70 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:42.25-42.35"
+          }
+        },
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:36.25-36.28"
+          }
+        },
+        "done_rising": {
+          "hide_name": 0,
+          "bits": [ 153 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:150.11-150.22"
+          }
+        },
+        "done_sync1": {
+          "hide_name": 0,
+          "bits": [ 175 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:119.11-119.21"
+          }
+        },
+        "done_sync2": {
+          "hide_name": 0,
+          "bits": [ 83 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:119.23-119.33"
+          }
+        },
+        "done_sync2_prev": {
+          "hide_name": 0,
+          "bits": [ 84 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:149.11-149.26"
+          }
+        },
+        "fft_done": {
+          "hide_name": 0,
+          "bits": [ 283 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:76.18-76.26"
+          }
+        },
+        "fft_rd_addr": {
+          "hide_name": 0,
+          "bits": [ 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:71.18-71.29"
+          }
+        },
+        "fft_rd_imag": {
+          "hide_name": 0,
+          "bits": [ 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:82.31-82.42"
+          }
+        },
+        "fft_rd_real": {
+          "hide_name": 0,
+          "bits": [ 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:82.18-82.29"
+          }
+        },
+        "fifo_data_out": {
+          "hide_name": 0,
+          "bits": [ 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:83.18-83.31"
+          }
+        },
+        "fifo_data_valid": {
+          "hide_name": 0,
+          "bits": [ 323 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:84.18-84.33",
+            "unused_bits": "0 "
+          }
+        },
+        "fifo_empty": {
+          "hide_name": 0,
+          "bits": [ 284 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:85.18-85.28"
+          }
+        },
+        "fifo_hps_mode": {
+          "hide_name": 0,
+          "bits": [ 88 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:68.18-68.31"
+          }
+        },
+        "fifo_hps_pop": {
+          "hide_name": 0,
+          "bits": [ 171 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:86.18-86.30"
+          }
+        },
+        "lrck_int": {
+          "hide_name": 0,
+          "bits": [ 78 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:61.21-61.29"
+          }
+        },
+        "lut_addr": {
+          "hide_name": 0,
+          "bits": [ 90, 91, 92, 93, 94, 95, 96, 97, 98, 99 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:69.18-69.26"
+          }
+        },
+        "lut_data": {
+          "hide_name": 0,
+          "bits": [ 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:70.18-70.26"
+          }
+        },
+        "read": {
+          "hide_name": 0,
+          "bits": [ 69 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:41.25-41.29"
+          }
+        },
+        "readdata": {
+          "hide_name": 0,
+          "bits": [ 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:39.25-39.33"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:37.25-37.30"
+          }
+        },
+        "rst_sync1": {
+          "hide_name": 0,
+          "bits": [ 172 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:126.11-126.20"
+          }
+        },
+        "rst_sync2": {
+          "hide_name": 0,
+          "bits": [ 173 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:126.22-126.31"
+          }
+        },
+        "rx_left": {
+          "hide_name": 0,
+          "bits": [ 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:89.18-89.25"
+          }
+        },
+        "rx_right": {
+          "hide_name": 0,
+          "bits": [ 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:89.27-89.35",
+            "unused_bits": "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23"
+          }
+        },
+        "state": {
+          "hide_name": 0,
+          "bits": [ 149, 150, 151, 152 ],
+          "attributes": {
+            "enum_type": "$enum0",
+            "enum_value_0000": "\\IDLE",
+            "enum_value_0001": "\\SWEEP",
+            "enum_value_0010": "\\DONE",
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:145.13-145.18",
+            "wiretype": "\\state_t"
+          }
+        },
+        "sweep_done": {
+          "hide_name": 0,
+          "bits": [ 174 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:77.18-77.28"
+          }
+        },
+        "sweep_reset": {
+          "hide_name": 0,
+          "bits": [ 173 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:78.18-78.29"
+          }
+        },
+        "sweep_start": {
+          "hide_name": 0,
+          "bits": [ 81 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:67.18-67.29"
+          }
+        },
+        "sweep_start_audio": {
+          "hide_name": 0,
+          "bits": [ 322 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:116.10-116.27"
+          }
+        },
+        "sweep_start_toggle": {
+          "hide_name": 0,
+          "bits": [ 82 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:102.18-102.36"
+          }
+        },
+        "tog_sync1": {
+          "hide_name": 0,
+          "bits": [ 176 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:103.18-103.27"
+          }
+        },
+        "tog_sync2": {
+          "hide_name": 0,
+          "bits": [ 177 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:103.29-103.38"
+          }
+        },
+        "tog_sync3": {
+          "hide_name": 0,
+          "bits": [ 178 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:103.40-103.49"
+          }
+        },
+        "we_lut": {
+          "hide_name": 0,
+          "bits": [ 140 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:74.18-74.24"
+          }
+        },
+        "write": {
+          "hide_name": 0,
+          "bits": [ 68 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:40.25-40.30"
+          }
+        },
+        "writedata": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/room_eq_peripheral.sv:38.25-38.34"
+          }
+        }
+      }
+    },
+    "sample_fft": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:18.1-115.10"
+      },
+      "ports": {
+        "sysclk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset_n": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "sink_real": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "sink_valid": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "sink_ready": {
+          "direction": "output",
+          "bits": [ 29 ]
+        },
+        "source_real": {
+          "direction": "output",
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+        },
+        "source_imag": {
+          "direction": "output",
+          "bits": [ 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77 ]
+        },
+        "source_valid": {
+          "direction": "output",
+          "bits": [ 78 ]
+        },
+        "source_eop": {
+          "direction": "output",
+          "bits": [ 79 ]
+        },
+        "source_sop": {
+          "direction": "output",
+          "bits": [ 80 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "reset_n": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:36.11-36.18"
+          }
+        },
+        "sink_ready": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:41.12-41.22"
+          }
+        },
+        "sink_real": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:39.18-39.27"
+          }
+        },
+        "sink_valid": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:40.11-40.21"
+          }
+        },
+        "source_eop": {
+          "hide_name": 0,
+          "bits": [ 79 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:45.12-45.22"
+          }
+        },
+        "source_imag": {
+          "hide_name": 0,
+          "bits": [ 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:43.19-43.30"
+          }
+        },
+        "source_real": {
+          "hide_name": 0,
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:42.19-42.30"
+          }
+        },
+        "source_sop": {
+          "hide_name": 0,
+          "bits": [ 80 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:46.12-46.22"
+          }
+        },
+        "source_valid": {
+          "hide_name": 0,
+          "bits": [ 78 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:44.12-44.24"
+          }
+        },
+        "sysclk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fft.sv:35.11-35.17"
+          }
+        }
+      }
+    },
+    "sample_fifo": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:16.1-83.10"
+      },
+      "ports": {
+        "bclk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "lrclk": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "left_chan": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "sysclk": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "aclr": {
+          "direction": "input",
+          "bits": [ 29 ]
+        },
+        "data_out": {
+          "direction": "output",
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+        },
+        "data_valid": {
+          "direction": "output",
+          "bits": [ 54 ]
+        },
+        "fft_ready": {
+          "direction": "input",
+          "bits": [ 55 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "aclr": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:33.11-33.15"
+          }
+        },
+        "bclk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:30.11-30.15"
+          }
+        },
+        "data_out": {
+          "hide_name": 0,
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:39.19-39.27"
+          }
+        },
+        "data_valid": {
+          "hide_name": 0,
+          "bits": [ 54 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:37.12-37.22"
+          }
+        },
+        "fft_ready": {
+          "hide_name": 0,
+          "bits": [ 55 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:38.11-38.20"
+          }
+        },
+        "left_chan": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:36.18-36.27"
+          }
+        },
+        "lrclk": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:31.11-31.16"
+          }
+        },
+        "sysclk": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/calibration_engine/sample_fifo.sv:32.11-32.17"
+          }
+        }
+      }
+    },
+    "sine_lookup": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:17.1-128.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "sample_en": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "phase": {
+          "direction": "input",
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ]
+        },
+        "amplitude": {
+          "direction": "output",
+          "bits": [ 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 ]
+        },
+        "clk_sys": {
+          "direction": "input",
+          "bits": [ 61 ]
+        },
+        "we_lut": {
+          "direction": "input",
+          "bits": [ 62 ]
+        },
+        "addr_lut": {
+          "direction": "input",
+          "bits": [ 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ]
+        },
+        "din_lut": {
+          "direction": "input",
+          "bits": [ 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "addr_lut": {
+          "hide_name": 0,
+          "bits": [ 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:37.18-37.26"
+          }
+        },
+        "amplitude": {
+          "hide_name": 0,
+          "bits": [ 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:33.23-33.32"
+          }
+        },
+        "clk_sys": {
+          "hide_name": 0,
+          "bits": [ 61 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:35.18-35.25"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:29.18-29.23"
+          }
+        },
+        "din_lut": {
+          "hide_name": 0,
+          "bits": [ 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:38.18-38.25"
+          }
+        },
+        "phase": {
+          "hide_name": 0,
+          "bits": [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:32.18-32.23"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:30.18-30.23"
+          }
+        },
+        "sample_en": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:31.18-31.27"
+          }
+        },
+        "we_lut": {
+          "hide_name": 0,
+          "bits": [ 62 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sine_lookup.sv:36.18-36.24"
+          }
+        }
+      }
+    },
+    "sine_lut": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
+        "src": "src/hardware/memory/sine_lut.sv:26.1-52.10"
+      },
+      "ports": {
+        "clk_a": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "we_a": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "addr_a": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]
+        },
+        "din_a": {
+          "direction": "input",
+          "bits": [ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37 ]
+        },
+        "clk_b": {
+          "direction": "input",
+          "bits": [ 38 ]
+        },
+        "addr_b": {
+          "direction": "input",
+          "bits": [ 39, 40, 41, 42, 43, 44, 45, 46, 47, 48 ]
+        },
+        "dout_b": {
+          "direction": "output",
+          "bits": [ 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "addr_a": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:30.25-30.31"
+          }
+        },
+        "addr_b": {
+          "hide_name": 0,
+          "bits": [ 39, 40, 41, 42, 43, 44, 45, 46, 47, 48 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:35.25-35.31"
+          }
+        },
+        "clk_a": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:28.25-28.30"
+          }
+        },
+        "clk_b": {
+          "hide_name": 0,
+          "bits": [ 38 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:34.25-34.30"
+          }
+        },
+        "din_a": {
+          "hide_name": 0,
+          "bits": [ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:31.25-31.30"
+          }
+        },
+        "dout_b": {
+          "hide_name": 0,
+          "bits": [ 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:36.25-36.31"
+          }
+        },
+        "we_a": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/memory/sine_lut.sv:29.25-29.29"
+          }
+        }
+      }
+    },
+    "sweep_generator": {
+      "attributes": {
+        "blackbox": "00000000000000000000000000000001",
+        "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:19.1-94.10"
+      },
+      "ports": {
+        "clock": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "reset": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "amplitude": {
+          "direction": "output",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ]
+        },
+        "clk_sys": {
+          "direction": "input",
+          "bits": [ 28 ]
+        },
+        "we_lut": {
+          "direction": "input",
+          "bits": [ 29 ]
+        },
+        "addr_lut": {
+          "direction": "input",
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ]
+        },
+        "din_lut": {
+          "direction": "input",
+          "bits": [ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 ]
+        },
+        "start": {
+          "direction": "input",
+          "bits": [ 64 ]
+        },
+        "done": {
+          "direction": "output",
+          "bits": [ 65 ]
+        }
+      },
+      "cells": {
+      },
+      "netnames": {
+        "addr_lut": {
+          "hide_name": 0,
+          "bits": [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:37.20-37.28"
+          }
+        },
+        "amplitude": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:34.20-34.29"
+          }
+        },
+        "clk_sys": {
+          "hide_name": 0,
+          "bits": [ 28 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:35.20-35.27"
+          }
+        },
+        "clock": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:32.20-32.25"
+          }
+        },
+        "din_lut": {
+          "hide_name": 0,
+          "bits": [ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:38.20-38.27"
+          }
+        },
+        "done": {
+          "hide_name": 0,
+          "bits": [ 65 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:40.20-40.24"
+          }
+        },
+        "reset": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:33.20-33.25"
+          }
+        },
+        "start": {
+          "hide_name": 0,
+          "bits": [ 64 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:39.20-39.25"
+          }
+        },
+        "we_lut": {
+          "hide_name": 0,
+          "bits": [ 29 ],
+          "attributes": {
+            "src": "src/hardware/room_eq_peripheral/sweep_generator/sweep_generator.sv:36.20-36.26"
+          }
+        }
+      }
+    }
+  }
+}
